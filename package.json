@@ -1,0 +1,21 @@
+{
+  "name": "habitrack",
+  "version": "1.0.0",
+  "description": "Gestor de búsqueda de pisos y calculadora de gastos de compraventa en España con SQLite",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "dotenv": "^17.4.2",
+    "express": "^4.19.2",
+    "jsonwebtoken": "^9.0.3",
+    "pg": "^8.22.0",
+    "sqlite": "^5.1.1",
+    "sqlite3": "^5.1.7"
+  }
+}

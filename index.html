@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HogarTrack | Buscador y Calculadora de Gastos Inmobiliarios</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Login / Register Screen -->
+    <div id="login-container" class="login-container">
+        <div class="login-card glass">
+            <div class="login-header">
+                <div class="login-logo">
+                    <i class="fa-solid fa-house-laptop"></i>
+                </div>
+                <h2>HogarTrack</h2>
+                <p>Tu gestor de compraventa de viviendas</p>
+            </div>
+            
+            <div class="login-tabs">
+                <button id="tab-login" class="login-tab-btn active">Iniciar Sesión</button>
+                <button id="tab-register" class="login-tab-btn">Crear Cuenta</button>
+            </div>
+            
+            <form id="login-form" class="login-form active-form">
+                <div class="form-group">
+                    <label for="login-username">Usuario</label>
+                    <input type="text" id="login-username" required placeholder="Introduce tu usuario" autocomplete="username">
+                </div>
+                <div class="form-group">
+                    <label for="login-password">Contraseña</label>
+                    <input type="password" id="login-password" required placeholder="Introduce tu contraseña" autocomplete="current-password">
+                </div>
+                <button type="submit" class="btn btn-indigo block mt-4">
+                    Entrar <i class="fa-solid fa-right-to-bracket"></i>
+                </button>
+            </form>
+            
+            <form id="register-form" class="login-form">
+                <div class="form-group">
+                    <label for="register-username">Nuevo Usuario</label>
+                    <input type="text" id="register-username" required placeholder="Ej: cristian" autocomplete="username">
+                </div>
+                <div class="form-group">
+                    <label for="register-password">Contraseña</label>
+                    <input type="password" id="register-password" required placeholder="Mínimo 6 caracteres" autocomplete="new-password">
+                </div>
+                <button type="submit" class="btn btn-emerald block mt-4">
+                    Registrarse <i class="fa-solid fa-user-plus"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <div class="app-container hidden-app" id="app-container">
+        <!-- Sidebar / Navigation -->
+        <aside class="sidebar">
+            <div class="brand">
+                <div class="logo-icon">
+                    <i class="fa-solid fa-house-laptop"></i>
+                </div>
+                <h1>HogarTrack</h1>
+            </div>
+            
+            <nav class="nav-menu">
+                <a href="#" class="nav-item active" data-target="dashboard-section">
+                    <i class="fa-solid fa-chart-line"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="#" class="nav-item" data-target="listings-section">
+                    <i class="fa-solid fa-list-check"></i>
+                    <span>Mis Pisos</span>
+                </a>
+                <a href="#" class="nav-item" data-target="calculator-settings-section">
+                    <i class="fa-solid fa-calculator"></i>
+                    <span>Ajustes de Gastos</span>
+                </a>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <div class="user-profile-info" id="user-profile-info">
+                    <div class="user-avatar"><i class="fa-solid fa-user"></i></div>
+                    <div class="user-details">
+                        <span class="username-label" id="username-label">Cargando...</span>
+                        <a href="#" id="btn-logout" class="btn-logout" title="Cerrar Sesión">
+                            <i class="fa-solid fa-right-from-bracket"></i> Salir
+                        </a>
+                    </div>
+                </div>
+                <hr class="sidebar-divider" style="margin: 1rem 0; border: none; border-top: 1px solid var(--border-color);">
+                <button id="btn-export" class="btn btn-secondary btn-sm block" style="margin-bottom: 0.5rem;">
+                    <i class="fa-solid fa-file-export"></i> Exportar JSON
+                </button>
+                <button id="btn-import-trigger" class="btn btn-secondary btn-sm block" style="margin-bottom: 0.5rem;">
+                    <i class="fa-solid fa-file-import"></i> Importar JSON
+                </button>
+                <input type="file" id="import-file" accept=".json" style="display: none;">
+                <p class="version">v2.0.0 • DB Multi-usuario</p>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <!-- Topbar -->
+            <header class="topbar">
+                <div class="welcome-msg">
+                    <h2>Hola, encuentra tu hogar ideal</h2>
+                    <p>Gestiona, compara y calcula los gastos de tus pisos favoritos en un solo lugar.</p>
+                </div>
+                <div class="actions">
+                    <button id="btn-add-property" class="btn btn-primary">
+                        <i class="fa-solid fa-plus"></i> Añadir Piso
+                    </button>
+                </div>
+            </header>
+
+            <!-- SECTION: DASHBOARD -->
+            <section id="dashboard-section" class="content-section active">
+                <!-- KPIs Grid -->
+                <div class="kpi-grid">
+                    <div class="kpi-card">
+                        <div class="kpi-icon bg-indigo"><i class="fa-solid fa-house"></i></div>
+                        <div class="kpi-info">
+                            <span class="kpi-title">Pisos Guardados</span>
+                            <span class="kpi-value" id="kpi-total-properties">0</span>
+                        </div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon bg-emerald"><i class="fa-solid fa-tags"></i></div>
+                        <div class="kpi-info">
+                            <span class="kpi-title">Precio Medio</span>
+                            <span class="kpi-value" id="kpi-avg-price">0 €</span>
+                        </div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon bg-amber"><i class="fa-solid fa-wallet"></i></div>
+                        <div class="kpi-info">
+                            <span class="kpi-title">Presupuesto Firma Medio</span>
+                            <span class="kpi-value" id="kpi-avg-budget">0 €</span>
+                        </div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon bg-rose"><i class="fa-solid fa-percent"></i></div>
+                        <div class="kpi-info">
+                            <span class="kpi-title">Gastos Medios (10-12%)</span>
+                            <span class="kpi-value" id="kpi-avg-expenses">0 €</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Dashboard Content Layout -->
+                <div class="dashboard-layout">
+                    <!-- Quick Analyzer Box -->
+                    <div class="card glass shadow-sm span-2">
+                        <div class="card-header">
+                            <h3><i class="fa-solid fa-wand-magic-sparkles text-indigo"></i> Importación Rápida (Pegar Enlace o Texto)</h3>
+                            <p class="subtitle">Pega la URL de Idealista/Fotocasa o directamente copia todo el texto de la página del piso para autocompletar.</p>
+                        </div>
+                        <div class="card-body">
+                            <div class="quick-parser-container">
+                                <div class="form-group">
+                                    <textarea id="quick-input" rows="4" placeholder="Ejemplo 1: https://www.idealista.com/inmueble/104928503/ (Analiza URL)&#10;Ejemplo 2: Pega aquí la descripción o texto copiado de la web con el precio, habs y baños..."></textarea>
+                                </div>
+                                <div class="quick-parser-actions">
+                                    <button id="btn-parse-quick" class="btn btn-indigo">
+                                        <i class="fa-solid fa-magnifying-glass-chart"></i> Analizar Contenido
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Budget Summary Chart -->
+                    <div class="card glass shadow-sm">
+                        <div class="card-header">
+                            <h3><i class="fa-solid fa-pie-chart text-amber"></i> Resumen de Fondos</h3>
+                            <p class="subtitle">Distribución porcentual de los fondos totales necesarios para la compra.</p>
+                        </div>
+                        <div class="card-body flex-center flex-column">
+                            <div class="chart-container">
+                                <svg class="donut-chart" viewBox="0 0 36 36">
+                                    <circle class="donut-ring" cx="18" cy="18" r="15.915" fill="transparent" stroke="#1e293b" stroke-width="3"></circle>
+                                    <circle id="chart-slice-downpayment" class="donut-segment" cx="18" cy="18" r="15.915" fill="transparent" stroke="#6366f1" stroke-width="3" stroke-dasharray="60 40" stroke-dashoffset="25"></circle>
+                                    <circle id="chart-slice-taxes" class="donut-segment" cx="18" cy="18" r="15.915" fill="transparent" stroke="#10b981" stroke-width="3" stroke-dasharray="30 70" stroke-dashoffset="65"></circle>
+                                    <circle id="chart-slice-expenses" class="donut-segment" cx="18" cy="18" r="15.915" fill="transparent" stroke="#f59e0b" stroke-width="3" stroke-dasharray="10 90" stroke-dashoffset="95"></circle>
+                                    <g class="chart-text">
+                                        <text x="50%" y="48%" class="chart-percent" id="chart-total-percent">32%</text>
+                                        <text x="50%" y="65%" class="chart-label">Firma / Ahorro</text>
+                                    </g>
+                                </svg>
+                            </div>
+                            <div class="chart-legend">
+                                <div class="legend-item"><span class="bullet bg-indigo"></span> Entrada (20%)</div>
+                                <div class="legend-item"><span class="bullet bg-emerald"></span> Impuestos (ITP/IVA)</div>
+                                <div class="legend-item"><span class="bullet bg-amber"></span> Gastos Notaría/Tasación</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Listings Preview -->
+                <div class="section-header-row mt-4">
+                    <h3>Propiedades Recientes</h3>
+                    <a href="#" class="view-all nav-item" data-target="listings-section">Ver todos <i class="fa-solid fa-arrow-right"></i></a>
+                </div>
+                <div class="listings-grid grid-3" id="recent-listings-container">
+                    <!-- Dynamic rendering here -->
+                    <div class="empty-state">
+                        <i class="fa-solid fa-house-chimney-user"></i>
+                        <p>No tienes pisos guardados aún. Pega un enlace o introduce uno manualmente.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECTION: LISTINGS & COMPARISON -->
+            <section id="listings-section" class="content-section">
+                <!-- Filters & Controls Toolbar -->
+                <div class="toolbar card glass shadow-sm mb-4">
+                    <div class="toolbar-search">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                        <input type="text" id="filter-search" placeholder="Buscar por zona, nombre, comentarios...">
+                    </div>
+                    <div class="toolbar-filters">
+                        <div class="filter-item">
+                            <label>Precio Máx.</label>
+                            <input type="number" id="filter-price-max" placeholder="Cualquiera">
+                        </div>
+                        <div class="filter-item">
+                            <label>Habitaciones</label>
+                            <select id="filter-rooms">
+                                <option value="">Cualquiera</option>
+                                <option value="1">1+</option>
+                                <option value="2">2+</option>
+                                <option value="3">3+</option>
+                                <option value="4">4+</option>
+                            </select>
+                        </div>
+                        <div class="filter-item">
+                            <label>Garaje</label>
+                            <select id="filter-garage">
+                                <option value="">Cualquiera</option>
+                                <option value="si">Sí tiene</option>
+                                <option value="no">No tiene/Indiferente</option>
+                            </select>
+                        </div>
+                        <div class="filter-item">
+                            <label>Ordenar por</label>
+                            <select id="sort-by">
+                                <option value="date-desc">Fecha (Nuevos primero)</option>
+                                <option value="price-asc">Precio (Menor a Mayor)</option>
+                                <option value="price-desc">Precio (Mayor a Menor)</option>
+                                <option value="budget-asc">Presupuesto Firma (Menor a Mayor)</option>
+                                <option value="m2-desc">Tamaño (Mayor a Menor)</option>
+                                <option value="rating-desc">Puntuación (Mayor a Menor)</option>
+                            </select>
+                        </div>
+                        <div class="view-toggle">
+                            <button id="btn-view-grid" class="btn-toggle active" title="Vista Cuadrícula"><i class="fa-solid fa-grip"></i></button>
+                            <button id="btn-view-table" class="btn-toggle" title="Vista Tabla"><i class="fa-solid fa-list"></i></button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Main Listings Content -->
+                <div id="listings-grid-view" class="listings-grid grid-3">
+                    <!-- Dynamic Grid Cards -->
+                </div>
+
+                <div id="listings-table-view" class="table-container card glass shadow-sm hidden">
+                    <table class="comparison-table">
+                        <thead>
+                            <tr>
+                                <th>Propiedad</th>
+                                <th>Zona</th>
+                                <th class="text-right">Precio</th>
+                                <th class="text-center">Habs.</th>
+                                <th class="text-center">Baños</th>
+                                <th class="text-right">Superficie</th>
+                                <th class="text-center">Garaje</th>
+                                <th class="text-center">Ascensor</th>
+                                <th class="text-center">Puntuación</th>
+                                <th class="text-center">Ubicación</th>
+                                <th class="text-right">Ahorro Requerido</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="comparison-table-body">
+                            <!-- Dynamic Table Rows -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- SECTION: CALCULATOR SETTINGS -->
+            <section id="calculator-settings-section" class="content-section">
+                <div class="card glass shadow-sm max-w-lg">
+                    <div class="card-header">
+                        <h2><i class="fa-solid fa-sliders text-indigo"></i> Ajustes de la Calculadora de Gastos</h2>
+                        <p class="subtitle">Define los porcentajes y gastos estándares aplicados para calcular el presupuesto necesario para la firma del piso en España.</p>
+                    </div>
+                    <div class="card-body">
+                        <form id="settings-form">
+                            <div class="form-grid mb-4">
+                                <div class="form-group">
+                                    <label for="setting-downpayment">Porcentaje de Entrada (%)</label>
+                                    <div class="input-with-suffix">
+                                        <input type="number" id="setting-downpayment" value="20" min="0" max="100">
+                                        <span>%</span>
+                                    </div>
+                                    <small>El banco suele conceder el 80% del valor de tasación/compra, por lo que requieres el 20% en ahorros.</small>
+                                </div>
+                                <div class="form-group">
+                                    <label for="setting-notary-reg-pct">Notaría, Registro y Gestoría (%)</label>
+                                    <div class="input-with-suffix">
+                                        <input type="number" id="setting-notary-reg-pct" value="1.5" step="0.1" min="0" max="10">
+                                        <span>%</span>
+                                    </div>
+                                    <small>Estimación media del coste de formalización de la escritura pública e inscripción registral.</small>
+                                </div>
+                            </div>
+                            <div class="form-grid mb-4">
+                                <div class="form-group">
+                                    <label for="setting-appraisal">Gastos de Tasación Fijo (€)</label>
+                                    <div class="input-with-suffix">
+                                        <input type="number" id="setting-appraisal" value="400" min="0">
+                                        <span>€</span>
+                                    </div>
+                                    <small>Coste de la tasación obligatoria del inmueble requerida por el banco para el préstamo.</small>
+                                </div>
+                                <div class="form-group">
+                                    <label for="setting-new-build-ajd">AJD para Obra Nueva (%)</label>
+                                    <div class="input-with-suffix">
+                                        <input type="number" id="setting-new-build-ajd" value="1.0" step="0.1" min="0" max="5">
+                                        <span>%</span>
+                                    </div>
+                                    <small>Actos Jurídicos Documentados (varía entre 0.5% y 1.5% según la comunidad autónoma).</small>
+                                </div>
+                            </div>
+
+                            <hr class="form-divider">
+                            
+                            <h3>Impuestos por CCAA (Segunda Mano - ITP)</h3>
+                            <p class="subtitle mb-3">Valores de ITP estándar aplicados por defecto al seleccionar la Comunidad Autónoma.</p>
+                            <div class="ccaa-rates-grid" id="ccaa-rates-container">
+                                <!-- Prepopulated dynamic rates for editing -->
+                            </div>
+
+                            <div class="form-actions mt-4">
+                                <button type="button" id="btn-reset-settings" class="btn btn-secondary">
+                                    <i class="fa-solid fa-rotate-left"></i> Restablecer Valores
+                                </button>
+                                <button type="submit" class="btn btn-indigo">
+                                    <i class="fa-solid fa-floppy-disk"></i> Guardar Configuración
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- MODAL: ADD / EDIT PROPERTY -->
+    <div id="property-modal" class="modal">
+        <div class="modal-content glass">
+            <div class="modal-header">
+                <h2 id="modal-title">Añadir Nueva Propiedad</h2>
+                <button class="btn-close-modal" id="btn-close-property-modal"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body">
+                <!-- Extraction Helper Tab (Only for Add mode) -->
+                <div id="extraction-tabs" class="tabs">
+                    <button class="tab-btn active" data-tab="manual-form-tab">Datos del Piso</button>
+                    <button class="tab-btn" id="tab-parser-btn" data-tab="parser-tab"><i class="fa-solid fa-wand-magic-sparkles"></i> Analizador Inteligente</button>
+                </div>
+
+                <div class="tab-content" id="parser-tab">
+                    <p class="mb-2 info-text" style="margin-bottom: 1.25rem;">Extrae de forma inteligente los datos del piso (precio, superficie, fotos, mapa...) pegando el enlace directo del anuncio o la descripción del mismo.</p>
+                    
+                    <!-- Opción A: Enlace URL -->
+                    <div class="form-group" style="margin-bottom: 1.25rem;">
+                        <label style="color: var(--primary); font-weight: 600; font-size: 0.85rem;">Opción 1: Pegar Enlace del Anuncio (Fotocasa, etc.)</label>
+                        <div class="flex-center" style="gap: 0.5rem; width: 100%; margin-top: 0.25rem;">
+                            <input type="text" id="modal-url-input" placeholder="https://www.fotocasa.es/es/comprar/..." style="flex: 1; padding: 0.65rem;">
+                            <button type="button" id="btn-modal-parse-url" class="btn btn-indigo" style="padding: 0.65rem 1rem;"><i class="fa-solid fa-wand-magic-sparkles"></i> Analizar Enlace</button>
+                        </div>
+                        <small style="color: var(--text-muted); font-size: 0.75rem; display: block; margin-top: 0.25rem;">
+                            * Idealista y Facebook bloquean accesos directos desde el servidor. Para ellos, utiliza el Bookmarklet de 1-click.
+                        </small>
+                    </div>
+
+                    <div class="form-divider" style="margin: 1.25rem 0; display: flex; align-items: center; justify-content: center;">
+                        <span style="background: var(--bg-card); padding: 0 10px; font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">O bien</span>
+                    </div>
+
+                    <!-- Opción B: Texto plano -->
+                    <div class="form-group" style="margin-bottom: 1.25rem;">
+                        <label style="font-weight: 600; font-size: 0.85rem; margin-bottom: 0.25rem;">Opción 2: Pegar descripción o texto copiado</label>
+                        <textarea id="modal-paste-area" rows="4" placeholder="Pega el texto del anuncio aquí... Ej: 'Piso en Armilla, 175.000€, 3 habs, 1 baño...' o los datos copiados por el Bookmarklet."></textarea>
+                    </div>
+                    <button type="button" id="btn-modal-parse" class="btn btn-primary block mb-4">
+                        <i class="fa-solid fa-brain"></i> Extraer Datos del Texto
+                    </button>
+
+                    <!-- Extractor Bookmarklet Box -->
+                    <div class="bookmarklet-box card glass" style="margin-top: 1.5rem; padding: 1.25rem; border-color: rgba(99, 102, 241, 0.25); background: rgba(99, 102, 241, 0.04);">
+                        <h4 style="font-size: 0.9rem; color: var(--primary); display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                            <i class="fa-solid fa-bookmark text-indigo"></i> Extractor de 1-Click (Facebook / Idealista / Fotocasa)
+                        </h4>
+                        <p style="font-size: 0.75rem; color: var(--text-secondary); line-height: 1.45; margin-bottom: 0.75rem;">
+                            Idealista y Facebook bloquean la extracción directa por seguridad. Para solucionarlo, arrastra el siguiente botón morado a tu <strong>barra de marcadores (favoritos)</strong> de tu navegador. Al estar en la web de cualquier anuncio, haz clic en el marcador guardado para copiar sus datos al portapapeles, y luego pégalos en la <strong>Opción 2</strong> arriba.
+                        </p>
+                        <div class="flex-center" style="gap: 0.75rem; justify-content: flex-start; flex-wrap: wrap;">
+                            <a id="bookmarklet-btn" href="#" class="btn btn-indigo btn-sm" style="user-select: none; font-size: 0.75rem; padding: 0.55rem 0.85rem; border-radius: 6px;" onclick="if (event.preventDefault) event.preventDefault(); else return false;" title="Arrastra este botón a tu barra de marcadores">
+                                <i class="fa-solid fa-wand-magic-sparkles"></i> ⚡ HogarTrack Extractor
+                            </a>
+                            <button type="button" id="btn-copy-bookmarklet" class="btn btn-secondary btn-sm" style="font-size: 0.75rem; padding: 0.55rem 0.85rem; border-radius: 6px;">
+                                <i class="fa-solid fa-copy"></i> Copiar Código del Marcador
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tab-content active" id="manual-form-tab">
+                    <form id="property-form">
+                        <input type="hidden" id="property-id">
+                    
+                    <div class="form-group">
+                        <label for="prop-title">Apodo / Título de la Vivienda *</label>
+                        <input type="text" id="prop-title" required placeholder="Ej: Ático en Gracia con terraza o Piso Fotocasa Clot">
+                    </div>
+
+                    <div class="form-grid grid-3">
+                        <div class="form-group">
+                            <label for="prop-price">Precio (€) *</label>
+                            <input type="number" id="prop-price" required min="0" placeholder="Ej: 245000">
+                        </div>
+                        <div class="form-group">
+                            <label for="prop-m2">Superficie (m²)</label>
+                            <input type="number" id="prop-m2" min="0" placeholder="Ej: 85">
+                        </div>
+                        <div class="form-group">
+                            <label for="prop-ccaa">Comunidad Autónoma</label>
+                            <select id="prop-ccaa" required>
+                                <!-- JS Populated -->
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-grid grid-4">
+                        <div class="form-group">
+                            <label for="prop-rooms">Habitaciones</label>
+                            <input type="number" id="prop-rooms" min="0" value="2">
+                        </div>
+                        <div class="form-group">
+                            <label for="prop-baths">Baños</label>
+                            <input type="number" id="prop-baths" min="0" value="1">
+                        </div>
+                        <div class="form-group">
+                            <label for="prop-estate-type">Tipo de Vivienda</label>
+                            <select id="prop-estate-type">
+                                <option value="secondhand">Segunda Mano (ITP)</option>
+                                <option value="new">Obra Nueva (IVA + AJD)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="prop-garage">¿Tiene Garaje?</label>
+                            <select id="prop-garage">
+                                <option value="si">Sí</option>
+                                <option value="no">No</option>
+                                <option value="opcional">Opcional / Aparte</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="prop-zone">Zona / Barrio</label>
+                            <input type="text" id="prop-zone" placeholder="Ej: Gràcia, Barcelona">
+                        </div>
+                        <div class="form-group">
+                            <label for="prop-url">Enlace / URL del anuncio</label>
+                            <input type="url" id="prop-url" placeholder="https://www.idealista.com/inmueble/...">
+                        </div>
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="prop-photos">URLs de Fotos (Separadas por comas)</label>
+                            <input type="text" id="prop-photos" placeholder="https://ejemplo.com/foto1.jpg, https://ejemplo.com/foto2.jpg">
+                        </div>
+                        <div class="form-group">
+                            <label for="prop-elevator">¿Tiene Ascensor?</label>
+                            <select id="prop-elevator">
+                                <option value="si">Sí</option>
+                                <option value="no">No</option>
+                                <option value="desconocido">No especificado</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-grid grid-3">
+                        <div class="form-group">
+                            <label for="prop-rating">Puntuación / Valoración</label>
+                            <select id="prop-rating">
+                                <option value="0">Sin valorar</option>
+                                <option value="5">⭐⭐⭐⭐⭐ (Excelente)</option>
+                                <option value="4">⭐⭐⭐⭐☆ (Muy Bueno)</option>
+                                <option value="3">⭐⭐⭐☆☆ (Normal)</option>
+                                <option value="2">⭐⭐☆☆☆ (Regular)</option>
+                                <option value="1">⭐☆☆☆☆ (Malo)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="prop-latitude">Latitud</label>
+                            <input type="number" id="prop-latitude" step="any" placeholder="Ej: 40.4167">
+                        </div>
+                        <div class="form-group">
+                            <label for="prop-longitude">Longitud</label>
+                            <input type="number" id="prop-longitude" step="any" placeholder="Ej: -3.7037">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="prop-comments">Comentarios adicionales / Notas</label>
+                        <textarea id="prop-comments" rows="3" placeholder="Ej: Vistas despejadas, necesita reforma en cocina, gastos de comunidad: 50€/mes..."></textarea>
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" id="btn-cancel-property">Cancelar</button>
+                        <button type="submit" class="btn btn-indigo">Guardar Propiedad</button>
+                    </div>
+                </form>
+            </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: EXPENSES BREAKDOWN DETAILS -->
+    <div id="expenses-modal" class="modal">
+        <div class="modal-content glass max-w-md">
+            <div class="modal-header">
+                <h2>Cálculo Detallado de Gastos de Compra</h2>
+                <button class="btn-close-modal" id="btn-close-expenses-modal"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body" id="expenses-modal-content">
+                <!-- Populated dynamically via JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast hidden"></div>
+    <script src="app.js"></script>
+</body>
+</html>
