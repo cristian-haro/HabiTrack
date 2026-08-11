@@ -202,6 +202,32 @@ function authenticateToken(req, res, next) {
 
 // REST API Endpoints
 
+// Healthcheck & Diagnostic endpoint
+app.get('/api/health', async (req, res) => {
+    const diagnostics = {
+        nodeVersion: process.version,
+        envVercel: !!process.env.VERCEL,
+        hasDATABASE_URL: !!process.env.DATABASE_URL,
+        hasPOSTGRES_URL: !!process.env.POSTGRES_URL,
+        hasPOSTGRES_URL_NON_POOLING: !!process.env.POSTGRES_URL_NON_POOLING,
+        hasPOSTGRES_HOST: !!process.env.POSTGRES_HOST,
+        hasPOSTGRES_PASSWORD: !!process.env.POSTGRES_PASSWORD,
+    };
+    try {
+        const { getDB } = require('./db');
+        const database = await getDB();
+        const testRes = await database.get('SELECT 1 as test');
+        diagnostics.dbConnected = true;
+        diagnostics.dbTest = testRes;
+        res.json({ status: 'ok', diagnostics });
+    } catch (err) {
+        diagnostics.dbConnected = false;
+        diagnostics.error = err.message;
+        diagnostics.stack = err.stack;
+        res.status(500).json({ status: 'error', diagnostics });
+    }
+});
+
 // 0. Auth Endpoints
 app.post('/api/auth/register', async (req, res) => {
     const { username, password } = req.body;
