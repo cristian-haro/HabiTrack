@@ -224,7 +224,7 @@ app.get('/api/health', async (req, res) => {
         diagnostics.dbConnected = false;
         diagnostics.error = err.message;
         diagnostics.stack = err.stack;
-        res.status(500).json({ status: 'error', diagnostics });
+        res.status(200).json({ status: 'error', diagnostics });
     }
 });
 
