@@ -146,8 +146,12 @@ function setupAuthHandlers() {
                     const emailDisplay = document.getElementById('sent-email-display');
                     if (emailDisplay) emailDisplay.textContent = email;
 
-                    otpRequestForm.style.display = 'none';
-                    otpVerifyForm.style.display = 'block';
+                    otpRequestForm.style.setProperty('display', 'none', 'important');
+                    otpRequestForm.classList.remove('active-form');
+
+                    otpVerifyForm.style.setProperty('display', 'block', 'important');
+                    otpVerifyForm.classList.remove('hidden');
+                    otpVerifyForm.classList.add('active-form');
 
                     const codeInput = document.getElementById('otp-code');
                     if (codeInput) {
@@ -155,7 +159,7 @@ function setupAuthHandlers() {
                         codeInput.focus();
                     }
 
-                    showToast(`Código generado para ${email}${data.devOtp ? ` (Código: ${data.devOtp})` : ''}`, 'success');
+                    showToast(`Código enviado a ${email}`, 'success');
                 } else {
                     showToast(data.error || 'Error al enviar código de acceso.', 'error');
                 }
@@ -216,8 +220,11 @@ function setupAuthHandlers() {
 
     if (btnChangeEmail) {
         btnChangeEmail.addEventListener('click', () => {
-            otpVerifyForm.style.display = 'none';
-            otpRequestForm.style.display = 'block';
+            otpVerifyForm.style.setProperty('display', 'none', 'important');
+            otpVerifyForm.classList.remove('active-form');
+
+            otpRequestForm.style.setProperty('display', 'block', 'important');
+            otpRequestForm.classList.add('active-form');
         });
     }
 

@@ -307,7 +307,7 @@ async function sendOTPEmail(toEmail, otpCode) {
 
 // 0. Auth Endpoints (Email + OTP)
 
-app.post('/api/auth/send-otp', async (req, res) => {
+app.post(['/api/auth/send-otp', '/auth/send-otp'], async (req, res) => {
     const { email } = req.body;
     if (!email || !email.includes('@')) {
         return res.status(400).json({ error: 'Introduce un correo electrónico válido.' });
@@ -361,7 +361,7 @@ app.post('/api/auth/send-otp', async (req, res) => {
     }
 });
 
-app.post('/api/auth/verify-otp', async (req, res) => {
+app.post(['/api/auth/verify-otp', '/auth/verify-otp'], async (req, res) => {
     const { email, code } = req.body;
     if (!email || !code) {
         return res.status(400).json({ error: 'Correo y código de verificación obligatorios.' });
