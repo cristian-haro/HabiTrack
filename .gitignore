@@ -1,0 +1,4 @@
+node_modules/
+.env
+casas.db
+.DS_Store
