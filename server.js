@@ -36,11 +36,13 @@ app.use(async (req, res, next) => {
             await ensureDB();
         } catch (err) {
             console.error('Error al inicializar BD:', err);
-            return res.status(500).json({ error: 'Error de conexión a la base de datos.' });
+            return res.status(500).json({ error: 'Error de conexión a la base de datos: ' + (err.message || String(err)) });
         }
     }
     next();
 });
+
+app.get('/favicon.ico', (req, res) => res.status(204).end());
 
 // CCAA Default ITP Rates in Spain
 const DEFAULT_CCAA_ITP = {
@@ -257,7 +259,7 @@ app.post('/api/auth/register', async (req, res) => {
         res.status(201).json({ token, username, message: 'Usuario registrado correctamente.' });
     } catch (err) {
         console.error(err);
-        res.status(500).json({ error: 'Error al registrar el usuario.' });
+        res.status(500).json({ error: 'Error al registrar el usuario: ' + (err.message || String(err)) });
     }
 });
 
@@ -293,7 +295,7 @@ app.post('/api/auth/login', async (req, res) => {
         res.json({ token, username: user.username });
     } catch (err) {
         console.error(err);
-        res.status(500).json({ error: 'Error al iniciar sesión.' });
+        res.status(500).json({ error: 'Error al iniciar sesión: ' + (err.message || String(err)) });
     }
 });
 

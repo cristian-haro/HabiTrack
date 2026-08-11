@@ -7,7 +7,7 @@ dotenv.config();
 let dbInstance = null;
 let isPostgres = false;
 
-if (process.env.DATABASE_URL || process.env.POSTGRES_URL || process.env.POSTGRES_PRISMA_URL) {
+if (process.env.DATABASE_URL || process.env.POSTGRES_URL_NON_POOLING || process.env.POSTGRES_URL || process.env.POSTGRES_PRISMA_URL) {
     isPostgres = true;
     console.log("Controlador de Base de Datos: PostgreSQL (Vercel/Neon/Supabase)");
 } else {
@@ -19,7 +19,12 @@ async function getDB() {
 
     if (isPostgres) {
         const { Pool } = require('pg');
-        const connectionString = process.env.DATABASE_URL || process.env.POSTGRES_URL || process.env.POSTGRES_PRISMA_URL;
+        let connectionString = process.env.DATABASE_URL || process.env.POSTGRES_URL_NON_POOLING || process.env.POSTGRES_URL || process.env.POSTGRES_PRISMA_URL;
+
+        if (connectionString) {
+            // Clean up custom query params like supa=base-pooler.x that can break node-postgres URL parser
+            connectionString = connectionString.replace(/&supa=[^&]*/gi, '');
+        }
 
         const pool = new Pool({
             connectionString: connectionString,
