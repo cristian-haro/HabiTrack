@@ -34,6 +34,7 @@ async function getDB() {
         }
 
         connectionString = connectionString.replace(/&supa=[^&]*/gi, '');
+        connectionString = connectionString.replace(/[?&]sslmode=[^&]*/gi, '');
 
         const { Pool } = require('pg');
         const pool = new Pool({
