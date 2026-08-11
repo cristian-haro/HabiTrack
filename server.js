@@ -31,7 +31,7 @@ async function ensureDB() {
 }
 
 app.use(async (req, res, next) => {
-    if (req.path.startsWith('/api')) {
+    if (req.path.startsWith('/api') && req.path !== '/api/health') {
         try {
             await ensureDB();
         } catch (err) {
