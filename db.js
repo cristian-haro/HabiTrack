@@ -20,8 +20,17 @@ async function getDB() {
     if (isPostgres) {
         let connectionString = process.env.DATABASE_URL || process.env.POSTGRES_URL_NON_POOLING || process.env.POSTGRES_URL || process.env.POSTGRES_PRISMA_URL || process.env.SUPABASE_DATABASE_URL;
 
+        if (!connectionString && process.env.POSTGRES_HOST && process.env.POSTGRES_USER && process.env.POSTGRES_PASSWORD) {
+            const host = process.env.POSTGRES_HOST;
+            const user = process.env.POSTGRES_USER;
+            const pass = encodeURIComponent(process.env.POSTGRES_PASSWORD);
+            const dbName = process.env.POSTGRES_DATABASE || 'postgres';
+            const port = process.env.POSTGRES_PORT || 5432;
+            connectionString = `postgres://${user}:${pass}@${host}:${port}/${dbName}?sslmode=require`;
+        }
+
         if (!connectionString) {
-            throw new Error("No se ha encontrado la variable de entorno DATABASE_URL o POSTGRES_URL en Vercel. Por favor, añádela en Vercel (Project Settings > Environment Variables).");
+            throw new Error("No se ha encontrado la variable de entorno de base de datos en Vercel.");
         }
 
         connectionString = connectionString.replace(/&supa=[^&]*/gi, '');
