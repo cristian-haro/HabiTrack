@@ -14,6 +14,33 @@ app.use(express.json());
 app.use(express.static(__dirname));
 
 let db;
+let dbInitialized = false;
+let dbInitPromise = null;
+
+async function ensureDB() {
+    if (dbInitialized) return;
+    if (!dbInitPromise) {
+        dbInitPromise = initDB().then(() => {
+            dbInitialized = true;
+        }).catch(err => {
+            dbInitPromise = null;
+            throw err;
+        });
+    }
+    await dbInitPromise;
+}
+
+app.use(async (req, res, next) => {
+    if (req.path.startsWith('/api')) {
+        try {
+            await ensureDB();
+        } catch (err) {
+            console.error('Error al inicializar BD:', err);
+            return res.status(500).json({ error: 'Error de conexión a la base de datos.' });
+        }
+    }
+    next();
+});
 
 // CCAA Default ITP Rates in Spain
 const DEFAULT_CCAA_ITP = {
@@ -651,11 +678,15 @@ app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// Start Server
-initDB().then(() => {
-    app.listen(PORT, () => {
-        console.log(`Servidor activo en: http://localhost:${PORT}`);
+// Start Server en desarrollo local
+if (!process.env.VERCEL) {
+    initDB().then(() => {
+        app.listen(PORT, () => {
+            console.log(`Servidor activo en: http://localhost:${PORT}`);
+        });
+    }).catch(err => {
+        console.error('Error al inicializar la base de datos:', err);
     });
-}).catch(err => {
-    console.error('Error al inicializar la base de datos:', err);
-});
+}
+
+module.exports = app;
