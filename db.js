@@ -7,7 +7,7 @@ dotenv.config();
 let dbInstance = null;
 let isPostgres = false;
 
-if (process.env.DATABASE_URL || process.env.POSTGRES_URL_NON_POOLING || process.env.POSTGRES_URL || process.env.POSTGRES_PRISMA_URL) {
+if (process.env.VERCEL || process.env.DATABASE_URL || process.env.POSTGRES_URL_NON_POOLING || process.env.POSTGRES_URL || process.env.POSTGRES_PRISMA_URL || process.env.SUPABASE_DATABASE_URL) {
     isPostgres = true;
     console.log("Controlador de Base de Datos: PostgreSQL (Vercel/Neon/Supabase)");
 } else {
@@ -18,14 +18,15 @@ async function getDB() {
     if (dbInstance) return dbInstance;
 
     if (isPostgres) {
-        const { Pool } = require('pg');
-        let connectionString = process.env.DATABASE_URL || process.env.POSTGRES_URL_NON_POOLING || process.env.POSTGRES_URL || process.env.POSTGRES_PRISMA_URL;
+        let connectionString = process.env.DATABASE_URL || process.env.POSTGRES_URL_NON_POOLING || process.env.POSTGRES_URL || process.env.POSTGRES_PRISMA_URL || process.env.SUPABASE_DATABASE_URL;
 
-        if (connectionString) {
-            // Clean up custom query params like supa=base-pooler.x that can break node-postgres URL parser
-            connectionString = connectionString.replace(/&supa=[^&]*/gi, '');
+        if (!connectionString) {
+            throw new Error("No se ha encontrado la variable de entorno DATABASE_URL o POSTGRES_URL en Vercel. Por favor, añádela en Vercel (Project Settings > Environment Variables).");
         }
 
+        connectionString = connectionString.replace(/&supa=[^&]*/gi, '');
+
+        const { Pool } = require('pg');
         const pool = new Pool({
             connectionString: connectionString,
             ssl: {
@@ -34,7 +35,12 @@ async function getDB() {
         });
 
         // Probar conexión
-        await pool.query('SELECT 1');
+        try {
+            await pool.query('SELECT 1');
+        } catch (err) {
+            console.error("Error al conectar con PostgreSQL:", err);
+            throw new Error("Fallo de conexión a Supabase PostgreSQL: " + (err.message || String(err)));
+        }
 
         dbInstance = {
             isPostgres: true,

@@ -145,7 +145,13 @@ function setupAuthHandlers() {
                     body: JSON.stringify({ username: user, password: pass })
                 });
                 
-                const data = await response.json();
+                let data;
+                try {
+                    const text = await response.text();
+                    data = JSON.parse(text);
+                } catch (e) {
+                    data = { error: `Error del servidor (HTTP ${response.status})` };
+                }
                 
                 if (response.ok) {
                     token = data.token;
@@ -191,7 +197,13 @@ function setupAuthHandlers() {
                     body: JSON.stringify({ username: user, password: pass })
                 });
                 
-                const data = await response.json();
+                let data;
+                try {
+                    const text = await response.text();
+                    data = JSON.parse(text);
+                } catch (e) {
+                    data = { error: `Error del servidor (HTTP ${response.status})` };
+                }
                 
                 if (response.ok) {
                     token = data.token;
