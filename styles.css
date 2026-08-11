@@ -1632,3 +1632,82 @@ textarea:focus, input:focus, select:focus {
     color: #fda4af;
     transform: translateX(2px);
 }
+
+/* ==========================================================================
+   LEAFLET MAP INTEGRATION & POPUP STYLE (PREMIUM)
+   ========================================================================== */
+#interactive-map {
+    background-color: #0b0f19;
+    border-bottom-left-radius: var(--radius-md);
+    border-bottom-right-radius: var(--radius-md);
+    overflow: hidden;
+}
+
+.leaflet-container {
+    font-family: var(--font-body);
+}
+
+.leaflet-popup-content-wrapper {
+    background: rgba(22, 28, 45, 0.9) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(12px);
+    border-radius: var(--radius-sm) !important;
+    color: var(--text-main) !important;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3) !important;
+}
+
+.leaflet-popup-tip {
+    background: rgba(22, 28, 45, 0.9) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.leaflet-popup-content {
+    margin: 0.75rem 1rem !important;
+    font-size: 0.8rem;
+    line-height: 1.4;
+}
+
+.map-popup-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.map-popup-title {
+    font-weight: 700;
+    font-size: 0.85rem;
+    color: var(--text-main);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.map-popup-detail {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
+.map-popup-price {
+    font-weight: 700;
+    color: var(--primary);
+    font-size: 0.9rem;
+}
+
+.map-popup-button {
+    background-color: var(--primary-glow);
+    color: #a5b4fc;
+    border: 1px solid rgba(99, 102, 241, 0.3);
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    text-align: center;
+    cursor: pointer;
+    font-weight: 600;
+    margin-top: 0.25rem;
+    transition: var(--transition);
+}
+
+.map-popup-button:hover {
+    background-color: var(--primary);
+    color: white;
+}

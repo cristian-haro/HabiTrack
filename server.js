@@ -43,7 +43,9 @@ const DEFAULT_SETTINGS = {
     notaryRegistryPct: 1.5,
     appraisalCost: 400,
     newBuildAjd: 1.0,
-    ccaaRates: DEFAULT_CCAA_ITP
+    ccaaRates: DEFAULT_CCAA_ITP,
+    mortgageInterestRate: 3.0,
+    mortgageDurationYears: 30
 };
 
 // Initialize Database
@@ -507,22 +509,48 @@ app.post('/api/propiedades', authenticateToken, async (req, res) => {
     }
 
     try {
-        const result = await db.run(`
-            INSERT INTO properties (
-                title, price, m2, ccaa, rooms, baths,
-                estate_type, garage, zone, url, photos,
-                elevator, comments, rating, latitude, longitude, user_id
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `, [
-            title, price, m2 || null, ccaa, rooms || 0, baths || 0,
-            estate_type || 'secondhand', garage || 'no', zone || null,
-            url || null, photos || null, elevator || 'desconocido', comments || null,
-            rating || 0, latitude !== undefined ? latitude : null, longitude !== undefined ? longitude : null,
-            req.user.id
-        ]);
+        let existingProperty = null;
+        if (url) {
+            existingProperty = await db.get('SELECT * FROM properties WHERE url = ? AND user_id = ?', [url, req.user.id]);
+        }
 
-        const newProperty = await db.get('SELECT * FROM properties WHERE id = ? AND user_id = ?', [result.lastID, req.user.id]);
-        res.status(201).json(newProperty);
+        if (existingProperty) {
+            // Actualizar propiedad existente
+            await db.run(`
+                UPDATE properties SET
+                    title = ?, price = ?, m2 = ?, ccaa = ?, rooms = ?, baths = ?,
+                    estate_type = ?, garage = ?, zone = ?, photos = ?,
+                    elevator = ?, comments = ?, rating = ?, latitude = ?, longitude = ?
+                WHERE id = ? AND user_id = ?
+            `, [
+                title, price, m2 || null, ccaa, rooms || 0, baths || 0,
+                estate_type || 'secondhand', garage || 'no', zone || null,
+                photos || null, elevator || 'desconocido', comments || null,
+                rating || 0, latitude !== undefined ? latitude : null, longitude !== undefined ? longitude : null,
+                existingProperty.id, req.user.id
+            ]);
+
+            const updatedProperty = await db.get('SELECT * FROM properties WHERE id = ? AND user_id = ?', [existingProperty.id, req.user.id]);
+            res.status(200).json(updatedProperty);
+        } else {
+            // Crear nueva propiedad
+            const result = await db.run(`
+                INSERT INTO properties (
+                    title, price, m2, ccaa, rooms, baths,
+                    estate_type, garage, zone, url, photos,
+                    elevator, comments, rating, latitude, longitude, user_id
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            `, [
+                title, price, m2 || null, ccaa, rooms || 0, baths || 0,
+                estate_type || 'secondhand', garage || 'no', zone || null,
+                url || null, photos || null, elevator || 'desconocido', comments || null,
+                rating || 0, latitude !== undefined ? latitude : null, longitude !== undefined ? longitude : null,
+                req.user.id
+            ]);
+
+            const newProperty = await db.get('SELECT * FROM properties WHERE id = ? AND user_id = ?', [result.lastID, req.user.id]);
+            res.status(201).json(newProperty);
+        }
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: 'Error al guardar la propiedad.' });

@@ -9,6 +9,10 @@ let activeView = 'grid'; // 'grid' o 'table'
 let token = localStorage.getItem('token') || '';
 let username = localStorage.getItem('username') || '';
 let eventHandlersSetup = false;
+let mapInstance = null;
+let mapMarkers = [];
+let currentPage = 1;
+const pageSize = 9;
 
 // Comunidades Autónomas de España y sus CCAA ITP por defecto (Segunda Mano)
 const CCAA_LIST = [
@@ -322,8 +326,14 @@ async function addProperty(propertyData) {
         }
         if (response.ok) {
             const newProp = await response.json();
-            properties.unshift(newProp); // Añadir al principio
-            showToast('Propiedad guardada en base de datos.', 'success');
+            const existingIndex = properties.findIndex(p => p.id === newProp.id);
+            if (existingIndex !== -1) {
+                properties[existingIndex] = newProp;
+                showToast('Propiedad existente actualizada correctamente.', 'success');
+            } else {
+                properties.unshift(newProp); // Añadir al principio
+                showToast('Propiedad guardada en base de datos.', 'success');
+            }
             return true;
         } else {
             const err = await response.json();
@@ -437,6 +447,21 @@ function calculateExpenses(price, ccaa, estateType) {
     const totalRequiredBudget = downpayment + totalExpenses;
     const mortgageAmount = p - downpayment;
 
+    // 5. Hipoteca Mensual Estimada
+    const mortgageInterestRate = parseFloat(appSettings.mortgageInterestRate) || 3.0;
+    const mortgageDurationYears = parseInt(appSettings.mortgageDurationYears) || 30;
+    
+    let mortgageMonthlyPayment = 0;
+    if (mortgageAmount > 0) {
+        const r = mortgageInterestRate / 12 / 100;
+        const n = mortgageDurationYears * 12;
+        if (r > 0) {
+            mortgageMonthlyPayment = mortgageAmount * (r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
+        } else {
+            mortgageMonthlyPayment = mortgageAmount / n;
+        }
+    }
+
     return {
         price: p,
         downpayment,
@@ -448,7 +473,10 @@ function calculateExpenses(price, ccaa, estateType) {
         appraisal,
         totalExpenses,
         totalRequiredBudget,
-        mortgageAmount
+        mortgageAmount,
+        mortgageMonthlyPayment,
+        mortgageInterestRate,
+        mortgageDurationYears
     };
 }
 
@@ -714,6 +742,9 @@ function renderDashboard() {
 
     // Cargar tarjetas recientes (máximo 3)
     renderRecentListings(properties.slice(0, 3));
+
+    // Renderizar Mapa Leaflet
+    renderMap();
 }
 
 function updateDonutChart(downpaymentPct, taxesPct, otherPct, centerText = '32%') {
@@ -842,6 +873,14 @@ function createPropertyCardDOM(prop) {
                 <span class="budget-val">${formatCurrency(calc.totalRequiredBudget)}</span>
             </div>
 
+            <div class="card-budget-box" style="margin-top: 0.5rem; background: rgba(99, 102, 241, 0.04); border-color: rgba(99, 102, 241, 0.15);">
+                <div class="budget-lbl">
+                    <span>Hipoteca Estimada</span>
+                    <small>Cuota al ${calc.mortgageInterestRate}% a ${calc.mortgageDurationYears} años</small>
+                </div>
+                <span class="budget-val" style="color: var(--primary);">${formatCurrency(calc.mortgageMonthlyPayment)}/mes</span>
+            </div>
+
             <div class="card-actions">
                 <button class="btn btn-secondary btn-sm btn-view-expenses" data-id="${prop.id}">
                     <i class="fa-solid fa-calculator"></i> Ver Gastos
@@ -870,6 +909,26 @@ function renderListings() {
     // Aplicar filtros
     const filteredProperties = applyFilters(properties);
 
+    // Calcular páginas totales y reajustar currentPage si es necesario
+    const totalPages = Math.ceil(filteredProperties.length / pageSize) || 1;
+    if (currentPage > totalPages) {
+        currentPage = totalPages;
+    }
+    if (currentPage < 1) {
+        currentPage = 1;
+    }
+
+    // Actualizar botones e indicador de página en el DOM
+    const prevBtn = document.getElementById('btn-prev-page');
+    const nextBtn = document.getElementById('btn-next-page');
+    const indicator = document.getElementById('page-indicator');
+
+    if (prevBtn && nextBtn && indicator) {
+        prevBtn.disabled = currentPage === 1;
+        nextBtn.disabled = currentPage === totalPages;
+        indicator.textContent = `Página ${currentPage} de ${totalPages} (${filteredProperties.length} pisos total)`;
+    }
+
     if (filteredProperties.length === 0) {
         const emptyHTML = `
             <div class="empty-state">
@@ -878,19 +937,24 @@ function renderListings() {
             </div>
         `;
         gridViewContainer.innerHTML = emptyHTML;
-        tableBody.innerHTML = `<tr><td colspan="10" class="text-center">No hay viviendas que cumplan con los filtros.</td></tr>`;
+        tableBody.innerHTML = `<tr><td colspan="13" class="text-center">No hay viviendas que cumplan con los filtros.</td></tr>`;
         return;
     }
 
+    // Slicing para paginación
+    const start = (currentPage - 1) * pageSize;
+    const end = start + pageSize;
+    const paginatedProperties = filteredProperties.slice(start, end);
+
     // Renderizar vista cuadrícula
     gridViewContainer.innerHTML = '';
-    filteredProperties.forEach(prop => {
+    paginatedProperties.forEach(prop => {
         gridViewContainer.appendChild(createPropertyCardDOM(prop));
     });
 
     // Renderizar vista tabla
     tableBody.innerHTML = '';
-    filteredProperties.forEach(prop => {
+    paginatedProperties.forEach(prop => {
         const tr = document.createElement('tr');
         const calc = calculateExpenses(prop.price, prop.ccaa, prop.estate_type);
         
@@ -933,6 +997,7 @@ function renderListings() {
             <td class="text-center">${prop.rating ? generateStarsHTML(prop.rating) : '<span class="text-muted">--</span>'}</td>
             <td class="text-center">${mapLink}</td>
             <td class="text-right font-heading" style="color: var(--amber); font-weight: 700;">${formatCurrency(calc.totalRequiredBudget)}</td>
+            <td class="text-right font-heading" style="color: var(--primary); font-weight: 700;">${formatCurrency(calc.mortgageMonthlyPayment)}/mes</td>
             <td>
                 <div class="flex-center" style="gap: 0.5rem;">
                     <button class="btn btn-secondary btn-xs btn-view-expenses" data-id="${prop.id}"><i class="fa-solid fa-calculator"></i></button>
@@ -951,6 +1016,7 @@ function renderListings() {
 function applyFilters(propsList) {
     const searchVal = document.getElementById('filter-search').value.toLowerCase();
     const priceMaxVal = parseFloat(document.getElementById('filter-price-max').value);
+    const savingsMaxVal = parseFloat(document.getElementById('filter-savings-max').value);
     const roomsVal = document.getElementById('filter-rooms').value;
     const garageVal = document.getElementById('filter-garage').value;
     const sortBy = document.getElementById('sort-by').value;
@@ -982,6 +1048,14 @@ function applyFilters(propsList) {
         result = result.filter(p => p.garage === 'si');
     }
 
+    // Ahorro máximo
+    if (!isNaN(savingsMaxVal)) {
+        result = result.filter(p => {
+            const calc = calculateExpenses(p.price, p.ccaa, p.estate_type);
+            return calc.totalRequiredBudget <= savingsMaxVal;
+        });
+    }
+
     // Ordenaciones
     result.sort((a, b) => {
         if (sortBy === 'date-desc') {
@@ -1010,6 +1084,8 @@ function renderSettingsForm() {
     const notaryRegInput = document.getElementById('setting-notary-reg-pct');
     const appraisalInput = document.getElementById('setting-appraisal');
     const newBuildAjdInput = document.getElementById('setting-new-build-ajd');
+    const mortgageRateInput = document.getElementById('setting-mortgage-rate');
+    const mortgageDurationInput = document.getElementById('setting-mortgage-duration');
     const ccaaContainer = document.getElementById('ccaa-rates-container');
 
     if (!downpaymentInput || !ccaaContainer) return;
@@ -1018,6 +1094,8 @@ function renderSettingsForm() {
     notaryRegInput.value = appSettings.notaryRegistryPct;
     appraisalInput.value = appSettings.appraisalCost;
     newBuildAjdInput.value = appSettings.newBuildAjd;
+    if (mortgageRateInput) mortgageRateInput.value = appSettings.mortgageInterestRate || 3.0;
+    if (mortgageDurationInput) mortgageDurationInput.value = appSettings.mortgageDurationYears || 30;
 
     // Crear entradas para ITP de cada CCAA
     ccaaContainer.innerHTML = '';
@@ -1092,6 +1170,10 @@ function showExpensesBreakdownModal(property) {
                     <td>Financiación Bancaria Proyectada (${100 - calc.downpaymentPct}%)</td>
                     <td class="val text-right">${formatCurrency(calc.mortgageAmount)}</td>
                 </tr>
+                <tr style="color: var(--text-secondary); font-size: 0.85rem; font-weight: 600;">
+                    <td>Cuota Hipoteca Mensual Est.<br><small>Al ${calc.mortgageInterestRate}% a ${calc.mortgageDurationYears} años</small></td>
+                    <td class="val text-right" style="color: var(--primary);">${formatCurrency(calc.mortgageMonthlyPayment)}/mes</td>
+                </tr>
             </tbody>
         </table>
 
@@ -1136,6 +1218,13 @@ function setupEventHandlers() {
             document.getElementById(target).classList.add('active');
             
             activeSection = target;
+
+            // Ajustar el tamaño del mapa si volvemos al dashboard
+            if (target === 'dashboard-section' && mapInstance) {
+                setTimeout(() => {
+                    mapInstance.invalidateSize();
+                }, 100);
+            }
         });
     });
 
@@ -1424,16 +1513,19 @@ function setupEventHandlers() {
     // --- 5. FILTRADO Y BÚSQUEDA ---
     const filterSearch = document.getElementById('filter-search');
     const filterPriceMax = document.getElementById('filter-price-max');
+    const filterSavingsMax = document.getElementById('filter-savings-max');
     const filterRooms = document.getElementById('filter-rooms');
     const filterGarage = document.getElementById('filter-garage');
     const sortBy = document.getElementById('sort-by');
 
     const filterTrigger = () => {
+        currentPage = 1;
         renderListings();
     };
 
     if (filterSearch) filterSearch.addEventListener('input', filterTrigger);
     if (filterPriceMax) filterPriceMax.addEventListener('input', filterTrigger);
+    if (filterSavingsMax) filterSavingsMax.addEventListener('input', filterTrigger);
     if (filterRooms) filterRooms.addEventListener('change', filterTrigger);
     if (filterGarage) filterGarage.addEventListener('change', filterTrigger);
     if (sortBy) sortBy.addEventListener('change', filterTrigger);
@@ -1462,6 +1554,32 @@ function setupEventHandlers() {
         });
     }
 
+    // --- 6a. BOTONES DE PAGINACIÓN ---
+    const btnPrevPage = document.getElementById('btn-prev-page');
+    const btnNextPage = document.getElementById('btn-next-page');
+
+    if (btnPrevPage && btnNextPage) {
+        btnPrevPage.addEventListener('click', () => {
+            if (currentPage > 1) {
+                currentPage--;
+                renderListings();
+                const toolbar = document.querySelector('.toolbar');
+                if (toolbar) {
+                    toolbar.scrollIntoView({ behavior: 'smooth' });
+                }
+            }
+        });
+
+        btnNextPage.addEventListener('click', () => {
+            currentPage++;
+            renderListings();
+            const toolbar = document.querySelector('.toolbar');
+            if (toolbar) {
+                toolbar.scrollIntoView({ behavior: 'smooth' });
+            }
+        });
+    }
+
     // --- 7. CONFIGURACIÓN DE GASTOS ---
     const settingsForm = document.getElementById('settings-form');
     const btnResetSettings = document.getElementById('btn-reset-settings');
@@ -1482,6 +1600,8 @@ function setupEventHandlers() {
                 notaryRegistryPct: parseFloat(document.getElementById('setting-notary-reg-pct').value),
                 appraisalCost: parseFloat(document.getElementById('setting-appraisal').value),
                 newBuildAjd: parseFloat(document.getElementById('setting-new-build-ajd').value),
+                mortgageInterestRate: parseFloat(document.getElementById('setting-mortgage-rate').value),
+                mortgageDurationYears: parseInt(document.getElementById('setting-mortgage-duration').value),
                 ccaaRates
             };
 
@@ -1508,6 +1628,8 @@ function setupEventHandlers() {
                     notaryRegistryPct: 1.5,
                     appraisalCost: 400,
                     newBuildAjd: 1.0,
+                    mortgageInterestRate: 3.0,
+                    mortgageDurationYears: 30,
                     ccaaRates: DEFAULT_CCAA_ITP
                 };
 
@@ -1545,7 +1667,7 @@ function setupEventHandlers() {
             const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(dataToExport, null, 2));
             const downloadAnchor = document.createElement('a');
             downloadAnchor.setAttribute("href", dataStr);
-            downloadAnchor.setAttribute("download", `HogarTrack_Backup_${new Date().toISOString().split('T')[0]}.json`);
+            downloadAnchor.setAttribute("download", `HabiTrack_Backup_${new Date().toISOString().split('T')[0]}.json`);
             document.body.appendChild(downloadAnchor);
             downloadAnchor.click();
             downloadAnchor.remove();
@@ -1600,7 +1722,7 @@ function setupEventHandlers() {
                     }
                 } catch (err) {
                     console.error(err);
-                    showToast('Error al parsear el archivo JSON. Verifica que sea un backup de HogarTrack.', 'error');
+                    showToast('Error al parsear el archivo JSON. Verifica que sea un backup de HabiTrack.', 'error');
                 }
                 importFileInput.value = ''; // Resetear file input
             };
@@ -1767,7 +1889,7 @@ function setupEventHandlers() {
     "try{success=document.execCommand('copy');}catch(err){}" +
     "document.body.removeChild(dummy);" +
     "if(success){" +
-    "alert('¡Datos del piso copiados al portapapeles!\\n\\nVuelve a HogarTrack y pega (Ctrl+V) en el área de texto del Analizador Inteligente para autocompletar la propiedad.');" +
+    "alert('¡Datos del piso copiados al portapapeles!\\n\\nVuelve a HabiTrack y pega (Ctrl+V) en el área de texto del Analizador Inteligente para autocompletar la propiedad.');" +
     "}else{" +
     "prompt('No se pudo copiar automáticamente. Copia este texto manualmente:',jsonStr);" +
     "}" +
@@ -1985,3 +2107,87 @@ function showToast(message, type = 'success') {
         toast.className = 'toast hidden';
     }, 3500);
 }
+
+// ==========================================================================
+// INTEGRACIÓN DE MAPA INTERACTIVO (LEAFLET)
+// ==========================================================================
+
+function renderMap() {
+    const mapContainer = document.getElementById('interactive-map');
+    if (!mapContainer) return;
+
+    const propertiesWithCoords = properties.filter(p => p.latitude !== null && p.longitude !== null);
+    
+    // Actualizar contador en cabecera
+    const counterEl = document.getElementById('map-counter');
+    if (counterEl) {
+        counterEl.textContent = `${propertiesWithCoords.length} ubicadas`;
+    }
+
+    if (propertiesWithCoords.length === 0) {
+        if (!mapInstance) {
+            mapInstance = L.map('interactive-map', { zoomControl: false }).setView([40.4167, -3.7037], 5);
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+                subdomains: 'abcd',
+                maxZoom: 20
+            }).addTo(mapInstance);
+        }
+        return;
+    }
+
+    if (!mapInstance) {
+        mapInstance = L.map('interactive-map').setView([40.4167, -3.7037], 6);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+            subdomains: 'abcd',
+            maxZoom: 20
+        }).addTo(mapInstance);
+    }
+
+    // Limpiar marcadores existentes
+    mapMarkers.forEach(marker => mapInstance.removeLayer(marker));
+    mapMarkers = [];
+
+    // Añadir marcadores de pisos
+    propertiesWithCoords.forEach(p => {
+        const calc = calculateExpenses(p.price, p.ccaa, p.estate_type);
+        
+        let photoHTML = '';
+        if (p.photos) {
+            const firstPhoto = p.photos.split(',')[0].trim();
+            if (firstPhoto) {
+                photoHTML = `<img src="${firstPhoto}" style="width: 100%; height: 75px; object-fit: cover; border-radius: 4px; margin-bottom: 0.35rem;">`;
+            }
+        }
+
+        const popupContent = `
+            <div class="map-popup-card">
+                ${photoHTML}
+                <div class="map-popup-title">${p.title}</div>
+                <div class="map-popup-price">${formatCurrency(p.price)}</div>
+                <div class="map-popup-detail"><i class="fa-solid fa-calculator"></i> Hipoteca: <strong>${formatCurrency(calc.mortgageMonthlyPayment)}/mes</strong></div>
+                <div class="map-popup-detail"><i class="fa-solid fa-wallet"></i> Ahorro Firma: <strong>${formatCurrency(calc.totalRequiredBudget)}</strong></div>
+                <div class="map-popup-button" onclick="showExpensesModalFromMap(${p.id})"><i class="fa-solid fa-list"></i> Ver desglose</div>
+            </div>
+        `;
+
+        const marker = L.marker([p.latitude, p.longitude]).addTo(mapInstance);
+        marker.bindPopup(popupContent);
+        mapMarkers.push(marker);
+    });
+
+    // Auto-ajustar mapa para englobar todos los marcadores
+    if (mapMarkers.length > 0) {
+        const group = new L.featureGroup(mapMarkers);
+        mapInstance.fitBounds(group.getBounds().pad(0.15));
+    }
+}
+
+// Ventana global de desglose llamada desde popup del mapa
+window.showExpensesModalFromMap = function(id) {
+    const prop = properties.find(p => p.id === id);
+    if (prop) {
+        showExpensesBreakdownModal(prop);
+    }
+};

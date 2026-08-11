@@ -77,7 +77,7 @@ async function extractImages() {
             console.log('----------------------------------------------------');
             console.log(imageUrls.join(', '));
             console.log('----------------------------------------------------');
-            console.log('\nPuedes copiar y pegar esta cadena de URLs directamente en el campo de "Fotos" al añadir tu piso en HogarTrack.\n');
+            console.log('\nPuedes copiar y pegar esta cadena de URLs directamente en el campo de "Fotos" al añadir tu piso en HabiTrack.\n');
         } else {
             console.log('\n❌ No se pudieron extraer URLs de imágenes de este anuncio. Intenta usar el Bookmarklet.\n');
         }
