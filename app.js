@@ -109,127 +109,118 @@ function hideLoginScreen() {
 }
 
 function setupAuthHandlers() {
-    const tabLogin = document.getElementById('tab-login');
-    const tabRegister = document.getElementById('tab-register');
-    const loginForm = document.getElementById('login-form');
-    const registerForm = document.getElementById('register-form');
-    
-    if (tabLogin && tabRegister && loginForm && registerForm) {
-        tabLogin.addEventListener('click', () => {
-            tabLogin.classList.add('active');
-            tabRegister.classList.remove('active');
-            loginForm.classList.add('active-form');
-            registerForm.classList.remove('active-form');
-        });
-        
-        tabRegister.addEventListener('click', () => {
-            tabRegister.classList.add('active');
-            tabLogin.classList.remove('active');
-            registerForm.classList.add('active-form');
-            loginForm.classList.remove('active-form');
-        });
-    }
-    
-    if (loginForm) {
-        loginForm.addEventListener('submit', async (e) => {
+    const otpRequestForm = document.getElementById('otp-request-form');
+    const otpVerifyForm = document.getElementById('otp-verify-form');
+    const btnChangeEmail = document.getElementById('btn-change-email');
+
+    let currentPendingEmail = '';
+
+    if (otpRequestForm) {
+        otpRequestForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const user = document.getElementById('login-username').value.trim();
-            const pass = document.getElementById('login-password').value;
-            
-            if (!user || !pass) return;
-            
+            const emailInput = document.getElementById('otp-email');
+            const email = emailInput ? emailInput.value.trim() : '';
+
+            if (!email || !email.includes('@')) {
+                showToast('Introduce un correo electrónico válido.', 'error');
+                return;
+            }
+
             try {
-                const response = await fetch('/api/auth/login', {
+                const response = await fetch('/api/auth/send-otp', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username: user, password: pass })
+                    body: JSON.stringify({ email })
                 });
-                
+
                 let data;
                 try {
                     const text = await response.text();
                     data = JSON.parse(text);
-                } catch (e) {
+                } catch (err) {
                     data = { error: `Error del servidor (HTTP ${response.status})` };
                 }
-                
+
+                if (response.ok) {
+                    currentPendingEmail = email;
+                    const emailDisplay = document.getElementById('sent-email-display');
+                    if (emailDisplay) emailDisplay.textContent = email;
+
+                    otpRequestForm.style.display = 'none';
+                    otpVerifyForm.style.display = 'block';
+
+                    const codeInput = document.getElementById('otp-code');
+                    if (codeInput) {
+                        codeInput.value = '';
+                        codeInput.focus();
+                    }
+
+                    showToast(`Código generado para ${email}${data.devOtp ? ` (Código: ${data.devOtp})` : ''}`, 'success');
+                } else {
+                    showToast(data.error || 'Error al enviar código de acceso.', 'error');
+                }
+            } catch (err) {
+                console.error('Error requesting OTP:', err);
+                showToast('Error de conexión con el servidor.', 'error');
+            }
+        });
+    }
+
+    if (otpVerifyForm) {
+        otpVerifyForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const codeInput = document.getElementById('otp-code');
+            const code = codeInput ? codeInput.value.trim() : '';
+
+            if (!code || code.length < 6) {
+                showToast('Introduce el código de 6 dígitos.', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/auth/verify-otp', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: currentPendingEmail, code })
+                });
+
+                let data;
+                try {
+                    const text = await response.text();
+                    data = JSON.parse(text);
+                } catch (err) {
+                    data = { error: `Error del servidor (HTTP ${response.status})` };
+                }
+
                 if (response.ok) {
                     token = data.token;
-                    username = data.username;
+                    username = data.email || data.username;
                     localStorage.setItem('token', token);
                     localStorage.setItem('username', username);
-                    
+
                     const label = document.getElementById('username-label');
                     if (label) label.textContent = username;
-                    
-                    document.getElementById('login-username').value = '';
-                    document.getElementById('login-password').value = '';
-                    
+
                     showToast('Sesión iniciada correctamente.', 'success');
                     hideLoginScreen();
                     await loadAppData();
                 } else {
-                    showToast(data.error || 'Error al iniciar sesión.', 'error');
+                    showToast(data.error || 'Código incorrecto o caducado.', 'error');
                 }
             } catch (err) {
-                console.error('Error logging in:', err);
+                console.error('Error verifying OTP:', err);
                 showToast('Error de conexión con el servidor.', 'error');
             }
         });
     }
-    
-    if (registerForm) {
-        registerForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const user = document.getElementById('register-username').value.trim();
-            const pass = document.getElementById('register-password').value;
-            
-            if (!user || !pass) return;
-            if (pass.length < 6) {
-                showToast('La contraseña debe tener al menos 6 caracteres.', 'error');
-                return;
-            }
-            
-            try {
-                const response = await fetch('/api/auth/register', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username: user, password: pass })
-                });
-                
-                let data;
-                try {
-                    const text = await response.text();
-                    data = JSON.parse(text);
-                } catch (e) {
-                    data = { error: `Error del servidor (HTTP ${response.status})` };
-                }
-                
-                if (response.ok) {
-                    token = data.token;
-                    username = data.username;
-                    localStorage.setItem('token', token);
-                    localStorage.setItem('username', username);
-                    
-                    const label = document.getElementById('username-label');
-                    if (label) label.textContent = username;
-                    
-                    document.getElementById('register-username').value = '';
-                    document.getElementById('register-password').value = '';
-                    
-                    showToast('Cuenta registrada e inicio de sesión correcto.', 'success');
-                    hideLoginScreen();
-                    await loadAppData();
-                } else {
-                    showToast(data.error || 'Error al registrarse.', 'error');
-                }
-            } catch (err) {
-                console.error('Error registering:', err);
-                showToast('Error de conexión con el servidor.', 'error');
-            }
+
+    if (btnChangeEmail) {
+        btnChangeEmail.addEventListener('click', () => {
+            otpVerifyForm.style.display = 'none';
+            otpRequestForm.style.display = 'block';
         });
     }
-    
+
     const btnLogout = document.getElementById('btn-logout');
     if (btnLogout) {
         btnLogout.addEventListener('click', (e) => {

@@ -86,11 +86,18 @@ async function initDB() {
         await db.exec(`
             CREATE TABLE IF NOT EXISTS users (
                 id SERIAL PRIMARY KEY,
-                username VARCHAR(255) UNIQUE NOT NULL,
-                password VARCHAR(255) NOT NULL,
+                email VARCHAR(255) UNIQUE,
+                username VARCHAR(255),
+                password VARCHAR(255),
+                otp_code VARCHAR(10),
+                otp_expires_at TIMESTAMP,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         `);
+
+        try { await db.exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS email VARCHAR(255)"); } catch(e) {}
+        try { await db.exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS otp_code VARCHAR(10)"); } catch(e) {}
+        try { await db.exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS otp_expires_at TIMESTAMP"); } catch(e) {}
 
         // Create table for properties in Postgres
         await db.exec(`
@@ -131,11 +138,18 @@ async function initDB() {
         await db.exec(`
             CREATE TABLE IF NOT EXISTS users (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                username TEXT UNIQUE NOT NULL,
-                password TEXT NOT NULL,
+                email TEXT UNIQUE,
+                username TEXT,
+                password TEXT,
+                otp_code TEXT,
+                otp_expires_at DATETIME,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP
             )
         `);
+
+        try { await db.exec("ALTER TABLE users ADD COLUMN email TEXT"); } catch(e) {}
+        try { await db.exec("ALTER TABLE users ADD COLUMN otp_code TEXT"); } catch(e) {}
+        try { await db.exec("ALTER TABLE users ADD COLUMN otp_expires_at DATETIME"); } catch(e) {}
 
         // Create table for properties in SQLite
         await db.exec(`
@@ -228,102 +242,104 @@ app.get('/api/health', async (req, res) => {
     }
 });
 
-// 0. Auth Endpoints
-app.post('/api/auth/register', async (req, res) => {
-    const { username, password } = req.body;
-    if (!username || !password) {
-        return res.status(400).json({ error: 'Usuario y contraseña obligatorios.' });
+// 0. Auth Endpoints (Email + OTP)
+
+app.post('/api/auth/send-otp', async (req, res) => {
+    const { email } = req.body;
+    if (!email || !email.includes('@')) {
+        return res.status(400).json({ error: 'Introduce un correo electrónico válido.' });
     }
+
+    const cleanEmail = email.trim().toLowerCase();
 
     try {
-        const existingUser = await db.get('SELECT * FROM users WHERE username = ?', [username]);
-        if (existingUser) {
-            return res.status(400).json({ error: 'El nombre de usuario ya está registrado.' });
-        }
+        const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+        const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
 
-        const hashedPassword = await bcrypt.hash(password, 10);
-        
-        // Registrar usuario
-        const result = await db.run(
-            'INSERT INTO users (username, password) VALUES (?, ?)',
-            [username, hashedPassword]
-        );
-        const userId = result.lastID;
+        let user = await db.get('SELECT * FROM users WHERE email = ? OR username = ?', [cleanEmail, cleanEmail]);
 
-        // Si es el primer usuario en el sistema, migrar todas las propiedades huérfanas (user_id IS NULL)
-        const userCount = await db.get('SELECT COUNT(*) as count FROM users');
-        const totalUsers = userCount ? (userCount.count || userCount.COUNT || 1) : 1;
-        if (parseInt(totalUsers) === 1) {
-            // Migrar propiedades huérfanas
-            await db.run('UPDATE properties SET user_id = ? WHERE user_id IS NULL', [userId]);
-            
-            // Migrar configuración de calculadora antigua (si existe) a user_settings
-            // check first if settings table exists
-            try {
-                const oldConfig = await db.get("SELECT value FROM settings WHERE key = 'calculator_config'");
-                if (oldConfig) {
-                    await db.run(
-                        "INSERT INTO user_settings (user_id, key, value) VALUES (?, 'calculator_config', ?) ON CONFLICT(user_id, key) DO UPDATE SET value = excluded.value",
-                        [userId, oldConfig.value]
-                    );
-                }
-            } catch (e) {
-                // Ignore if settings table doesn't exist
-            }
-        }
-
-        // Crear configuración por defecto si no se migró nada o no existía
-        const configExist = await db.get("SELECT 1 FROM user_settings WHERE user_id = ? AND key = 'calculator_config'", [userId]);
-        if (!configExist) {
-            await db.run(
-                "INSERT INTO user_settings (user_id, key, value) VALUES (?, 'calculator_config', ?)",
-                [userId, JSON.stringify(DEFAULT_SETTINGS)]
-            );
-        }
-
-        const token = jwt.sign({ id: userId, username }, JWT_SECRET, { expiresIn: '30d' });
-        res.status(201).json({ token, username, message: 'Usuario registrado correctamente.' });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: 'Error al registrar el usuario: ' + (err.message || String(err)) });
-    }
-});
-
-app.post('/api/auth/login', async (req, res) => {
-    const { username, password } = req.body;
-    if (!username || !password) {
-        return res.status(400).json({ error: 'Usuario y contraseña obligatorios.' });
-    }
-
-    try {
-        const user = await db.get('SELECT * FROM users WHERE username = ?', [username]);
         if (!user) {
-            return res.status(400).json({ error: 'Usuario o contraseña incorrectos.' });
-        }
+            const result = await db.run(
+                'INSERT INTO users (email, username, password, otp_code, otp_expires_at) VALUES (?, ?, ?, ?, ?)',
+                [cleanEmail, cleanEmail, '', otpCode, expiresAt]
+            );
+            const userId = result.lastID;
 
-        const validPassword = await bcrypt.compare(password, user.password);
-        if (!validPassword) {
-            return res.status(400).json({ error: 'Usuario o contraseña incorrectos.' });
-        }
+            const userCount = await db.get('SELECT COUNT(*) as count FROM users');
+            const totalUsers = userCount ? (userCount.count || userCount.COUNT || 1) : 1;
+            if (parseInt(totalUsers) === 1) {
+                await db.run('UPDATE properties SET user_id = ? WHERE user_id IS NULL', [userId]);
+            }
 
-        const userId = user.id;
-        
-        // Asegurarse de que el usuario tenga configuración de calculadora
-        const configExist = await db.get("SELECT 1 FROM user_settings WHERE user_id = ? AND key = 'calculator_config'", [userId]);
-        if (!configExist) {
             await db.run(
-                "INSERT INTO user_settings (user_id, key, value) VALUES (?, 'calculator_config', ?)",
+                "INSERT INTO user_settings (user_id, key, value) VALUES (?, 'calculator_config', ?) ON CONFLICT(user_id, key) DO NOTHING",
                 [userId, JSON.stringify(DEFAULT_SETTINGS)]
+            );
+        } else {
+            await db.run(
+                'UPDATE users SET otp_code = ?, otp_expires_at = ? WHERE id = ?',
+                [otpCode, expiresAt, user.id]
             );
         }
 
-        const token = jwt.sign({ id: userId, username: user.username }, JWT_SECRET, { expiresIn: '30d' });
-        res.json({ token, username: user.username });
+        console.log(`[OTP GENERATED] Email: ${cleanEmail} | Code: ${otpCode}`);
+
+        res.json({
+            success: true,
+            message: 'Código de acceso generado correctamente.',
+            email: cleanEmail,
+            devOtp: otpCode
+        });
     } catch (err) {
         console.error(err);
-        res.status(500).json({ error: 'Error al iniciar sesión: ' + (err.message || String(err)) });
+        res.status(500).json({ error: 'Error al generar el código de acceso: ' + (err.message || String(err)) });
     }
 });
+
+app.post('/api/auth/verify-otp', async (req, res) => {
+    const { email, code } = req.body;
+    if (!email || !code) {
+        return res.status(400).json({ error: 'Correo y código de verificación obligatorios.' });
+    }
+
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanCode = code.trim();
+
+    try {
+        const user = await db.get('SELECT * FROM users WHERE email = ? OR username = ?', [cleanEmail, cleanEmail]);
+
+        if (!user) {
+            return res.status(400).json({ error: 'Usuario no encontrado. Por favor, solicita un nuevo código.' });
+        }
+
+        if (!user.otp_code || user.otp_code !== cleanCode) {
+            return res.status(400).json({ error: 'Código de verificación incorrecto.' });
+        }
+
+        if (user.otp_expires_at && new Date(user.otp_expires_at).getTime() < Date.now()) {
+            return res.status(400).json({ error: 'El código ha caducado. Solicita uno nuevo.' });
+        }
+
+        await db.run('UPDATE users SET otp_code = NULL, otp_expires_at = NULL WHERE id = ?', [user.id]);
+
+        const userEmail = user.email || user.username || cleanEmail;
+        const token = jwt.sign({ id: user.id, username: userEmail, email: userEmail }, JWT_SECRET, { expiresIn: '30d' });
+
+        res.json({
+            token,
+            username: userEmail,
+            email: userEmail,
+            message: 'Inicio de sesión correcto.'
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Error al verificar el código: ' + (err.message || String(err)) });
+    }
+});
+
+// Deprecated fallback endpoints for compatibility
+app.post('/api/auth/register', (req, res) => res.status(400).json({ error: 'El sistema usa autenticación por correo y OTP.' }));
+app.post('/api/auth/login', (req, res) => res.status(400).json({ error: 'El sistema usa autenticación por correo y OTP.' }));
 
 // Endpoint de validación de sesión
 app.get('/api/auth/me', authenticateToken, (req, res) => {

@@ -17,6 +17,7 @@
 </head>
 <body>
     <!-- Login / Register Screen -->
+    <!-- Login Screen (Email + OTP) -->
     <div id="login-container" class="login-container">
         <div class="login-card glass">
             <div class="login-header">
@@ -24,39 +25,34 @@
                     <i class="fa-solid fa-house-laptop"></i>
                 </div>
                 <h2>HabiTrack</h2>
-                <p>Tu gestor de compraventa de viviendas</p>
+                <p>Acceso rápido mediante correo electrónico y código OTP</p>
             </div>
             
-            <div class="login-tabs">
-                <button id="tab-login" class="login-tab-btn active">Iniciar Sesión</button>
-                <button id="tab-register" class="login-tab-btn">Crear Cuenta</button>
-            </div>
-            
-            <form id="login-form" class="login-form active-form">
+            <!-- Step 1: Send OTP -->
+            <form id="otp-request-form" class="login-form active-form">
                 <div class="form-group">
-                    <label for="login-username">Usuario</label>
-                    <input type="text" id="login-username" required placeholder="Introduce tu usuario" autocomplete="username">
+                    <label for="otp-email"><i class="fa-solid fa-envelope"></i> Correo Electrónico</label>
+                    <input type="email" id="otp-email" required placeholder="tu@email.com" autocomplete="email">
                 </div>
-                <div class="form-group">
-                    <label for="login-password">Contraseña</label>
-                    <input type="password" id="login-password" required placeholder="Introduce tu contraseña" autocomplete="current-password">
-                </div>
-                <button type="submit" class="btn btn-indigo block mt-4">
-                    Entrar <i class="fa-solid fa-right-to-bracket"></i>
+                <button type="submit" id="btn-send-otp" class="btn btn-indigo block mt-4">
+                    Enviar Código de Acceso <i class="fa-solid fa-paper-plane"></i>
                 </button>
             </form>
-            
-            <form id="register-form" class="login-form">
-                <div class="form-group">
-                    <label for="register-username">Nuevo Usuario</label>
-                    <input type="text" id="register-username" required placeholder="Ej: cristian" autocomplete="username">
+
+            <!-- Step 2: Verify OTP -->
+            <form id="otp-verify-form" class="login-form hidden" style="display: none;">
+                <div class="otp-sent-info text-center mb-3" style="background: rgba(99, 102, 241, 0.08); padding: 0.75rem; border-radius: 8px; font-size: 0.85rem; border: 1px solid rgba(99, 102, 241, 0.2); margin-bottom: 1rem;">
+                    <span>Código enviado a <strong id="sent-email-display">tu@email.com</strong></span>
                 </div>
                 <div class="form-group">
-                    <label for="register-password">Contraseña</label>
-                    <input type="password" id="register-password" required placeholder="Mínimo 6 caracteres" autocomplete="new-password">
+                    <label for="otp-code"><i class="fa-solid fa-key"></i> Código de 6 dígitos</label>
+                    <input type="text" id="otp-code" required placeholder="123456" maxlength="6" pattern="[0-9]{6}" autocomplete="one-time-code" style="letter-spacing: 0.35em; font-weight: 700; text-align: center; font-size: 1.25rem;">
                 </div>
-                <button type="submit" class="btn btn-emerald block mt-4">
-                    Registrarse <i class="fa-solid fa-user-plus"></i>
+                <button type="submit" id="btn-verify-otp" class="btn btn-emerald block mt-4">
+                    Verificar e Entrar <i class="fa-solid fa-right-to-bracket"></i>
+                </button>
+                <button type="button" id="btn-change-email" class="btn btn-secondary btn-sm block mt-2" style="background: transparent; border: none; color: var(--text-secondary); width: 100%; margin-top: 0.75rem; cursor: pointer;">
+                    <i class="fa-solid fa-arrow-left"></i> Cambiar correo
                 </button>
             </form>
         </div>
