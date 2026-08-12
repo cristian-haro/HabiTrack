@@ -448,6 +448,14 @@ app.get('/api/analizar', authenticateToken, async (req, res) => {
 
         const response = await fetch(urlStr, { headers });
         if (!response.ok) {
+            if (response.status === 403 || response.status === 405 || response.status === 429 || response.status === 503) {
+                const siteName = url.hostname.replace('www.', '');
+                return res.json({
+                    success: false,
+                    source: siteName.split('.')[0],
+                    error: `El portal ${siteName} bloquea las peticiones automáticas desde servidores en la nube (Vercel) con código ${response.status}. Por favor, utiliza el Bookmarklet de 1-click en tu navegador para extraer los datos al instante.`
+                });
+            }
             return res.status(response.status).json({ error: `El servidor respondió con código ${response.status}` });
         }
 

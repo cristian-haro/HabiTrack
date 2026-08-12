@@ -1362,6 +1362,9 @@ function setupEventHandlers() {
                 
                 if (result.success === false) {
                     showToast(result.error || 'No se pudieron extraer los datos.', 'error');
+                    if (result.source === 'idealista' || result.source === 'facebook' || result.source === 'fotocasa') {
+                        switchTab('parser-tab');
+                    }
                 } else if (result.success) {
                     fillPropertyForm(result.data);
                     showToast('Datos y fotos extraídos del enlace correctamente.', 'success');
@@ -1403,6 +1406,9 @@ function setupEventHandlers() {
                     const result = await res.json();
                     if (result.success === false) {
                         showToast(result.error || 'No se pudieron extraer los datos.', 'error');
+                        if (result.source === 'idealista' || result.source === 'facebook' || result.source === 'fotocasa') {
+                            switchTab('parser-tab');
+                        }
                     } else if (result.success) {
                         fillPropertyForm(result.data);
                         showToast('Datos y fotos extraídos del enlace correctamente.', 'success');
@@ -1461,8 +1467,8 @@ function setupEventHandlers() {
                     if (result.success === false) {
                         showToast(result.error || 'No se pudieron extraer los datos del enlace.', 'error');
                         
-                        // Si es Idealista o Facebook, abrimos el modal pre-rellenando la URL para el bookmarklet
-                        if (result.source === 'idealista' || result.source === 'facebook') {
+                        // Si es Idealista, Facebook o Fotocasa, abrimos el modal pre-rellenando la URL para el bookmarklet
+                        if (result.source === 'idealista' || result.source === 'facebook' || result.source === 'fotocasa') {
                             propertyForm.reset();
                             document.getElementById('property-id').value = '';
                             document.getElementById('modal-title').textContent = 'Añadir Nueva Propiedad';
