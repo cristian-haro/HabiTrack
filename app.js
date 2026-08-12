@@ -2207,3 +2207,77 @@ window.showExpensesModalFromMap = function(id) {
         showExpensesBreakdownModal(prop);
     }
 };
+
+// --- DETECTOR GLOBAL DE PEGADO DE BOOKMARKLET (Ctrl+V / Cmd+V) ---
+window.addEventListener('paste', (e) => {
+    const activeElement = document.activeElement;
+    // Si el usuario ya está escribiendo en el área de pegado manual, dejamos que actúe por defecto
+    if (activeElement && activeElement.id === 'modal-paste-area') {
+        return;
+    }
+
+    const pastedText = (e.clipboardData || window.clipboardData).getData('text');
+    try {
+        const cleanText = pastedText.trim();
+        if (cleanText.startsWith('{') && cleanText.endsWith('}')) {
+            const parsed = JSON.parse(cleanText);
+            if (parsed.url && (parsed.price !== undefined || parsed.m2 !== undefined)) {
+                e.preventDefault();
+                
+                const data = parseListingText(cleanText);
+                if (data) {
+                    // Resetear y preparar modal
+                    const propertyForm = document.getElementById('property-form');
+                    const propertyModal = document.getElementById('property-modal');
+                    if (propertyForm && propertyModal) {
+                        propertyForm.reset();
+                        document.getElementById('property-id').value = '';
+                        document.getElementById('modal-title').textContent = 'Guardar Propiedad Detectada';
+                        document.getElementById('modal-paste-area').value = '';
+                        document.getElementById('modal-url-input').value = '';
+                        
+                        fillPropertyForm(data);
+                        
+                        // Ocultar pestañas de extracción e ir al formulario
+                        document.getElementById('extraction-tabs').style.display = 'none';
+                        switchTab('manual-form-tab');
+                        
+                        // Abrir modal
+                        propertyModal.classList.add('active');
+                        showToast('¡Datos del anuncio importados automáticamente!', 'success');
+                    }
+                }
+            }
+        }
+    } catch (err) {
+        // Ignorar errores de análisis y dejar comportamiento nativo para textos ordinarios
+    }
+});
+
+// --- INTERACTIVIDAD DEL SELECTOR DE DISPOSITIVOS EN EL BOOKMARKLET ---
+document.addEventListener('DOMContentLoaded', () => {
+    const toggleDesktopBtn = document.getElementById('toggle-desktop');
+    const toggleMobileBtn = document.getElementById('toggle-mobile');
+    const desktopInstructions = document.getElementById('instructions-desktop');
+    const mobileInstructions = document.getElementById('instructions-mobile');
+
+    if (toggleDesktopBtn && toggleMobileBtn && desktopInstructions && mobileInstructions) {
+        toggleDesktopBtn.addEventListener('click', () => {
+            toggleDesktopBtn.style.background = 'var(--primary)';
+            toggleDesktopBtn.style.color = '#fff';
+            toggleMobileBtn.style.background = 'transparent';
+            toggleMobileBtn.style.color = 'var(--text-muted)';
+            desktopInstructions.style.display = 'block';
+            mobileInstructions.style.display = 'none';
+        });
+        
+        toggleMobileBtn.addEventListener('click', () => {
+            toggleMobileBtn.style.background = 'var(--primary)';
+            toggleMobileBtn.style.color = '#fff';
+            toggleDesktopBtn.style.background = 'transparent';
+            toggleDesktopBtn.style.color = 'var(--text-muted)';
+            desktopInstructions.style.display = 'none';
+            mobileInstructions.style.display = 'block';
+        });
+    }
+});

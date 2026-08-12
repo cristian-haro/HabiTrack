@@ -439,7 +439,7 @@
                             <button type="button" id="btn-modal-parse-url" class="btn btn-indigo" style="padding: 0.65rem 1rem;"><i class="fa-solid fa-wand-magic-sparkles"></i> Analizar Enlace</button>
                         </div>
                         <small style="color: var(--text-muted); font-size: 0.75rem; display: block; margin-top: 0.25rem;">
-                            * Idealista y Facebook bloquean accesos directos desde el servidor. Para ellos, utiliza el Bookmarklet de 1-click.
+                            * Idealista, Fotocasa y Facebook bloquean accesos directos desde el servidor. Para ellos, utiliza el Bookmarklet de 1-click.
                         </small>
                     </div>
 
@@ -459,17 +459,89 @@
                     <!-- Extractor Bookmarklet Box -->
                     <div class="bookmarklet-box card glass" style="margin-top: 1.5rem; padding: 1.25rem; border-color: rgba(99, 102, 241, 0.25); background: rgba(99, 102, 241, 0.04);">
                         <h4 style="font-size: 0.9rem; color: var(--primary); display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
-                            <i class="fa-solid fa-bookmark text-indigo"></i> Extractor de 1-Click (Facebook / Idealista / Fotocasa)
+                            <i class="fa-solid fa-bookmark text-indigo"></i> Asistente de Extracción de 1-Click
                         </h4>
-                        <p style="font-size: 0.75rem; color: var(--text-secondary); line-height: 1.45; margin-bottom: 0.75rem;">
-                            Idealista y Facebook bloquean la extracción directa por seguridad. Para solucionarlo, arrastra el siguiente botón morado a tu <strong>barra de marcadores (favoritos)</strong> de tu navegador. Al estar en la web de cualquier anuncio, haz clic en el marcador guardado para copiar sus datos al portapapeles, y luego pégalos en la <strong>Opción 2</strong> arriba.
+                        
+                        <p style="font-size: 0.75rem; color: var(--text-secondary); line-height: 1.45; margin-bottom: 1rem;">
+                            Algunas webs bloquean la extracción directa. Elige tu dispositivo para ver cómo instalar el extractor:
                         </p>
+
+                        <!-- Selector de dispositivo -->
+                        <div class="device-toggle" style="display: flex; gap: 0.5rem; margin-bottom: 1rem; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 0.5rem;">
+                            <button type="button" class="btn btn-sm" id="toggle-desktop" style="font-size: 0.7rem; padding: 0.3rem 0.6rem; border-radius: 4px; background: var(--primary); color: #fff; border: none; cursor: pointer; font-weight: 600;">💻 Ordenador</button>
+                            <button type="button" class="btn btn-sm" id="toggle-mobile" style="font-size: 0.7rem; padding: 0.3rem 0.6rem; border-radius: 4px; background: transparent; color: var(--text-muted); border: none; cursor: pointer; font-weight: 600;">📱 Móvil (iOS/Android)</button>
+                        </div>
+
+                        <!-- Instrucciones de Escritorio -->
+                        <div id="instructions-desktop">
+                            <div style="display: flex; flex-direction: column; gap: 0.75rem; font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 1.25rem;">
+                                <div style="display: flex; gap: 0.5rem; align-items: flex-start;">
+                                    <span style="background: var(--primary); color: #fff; border-radius: 50%; width: 18px; height: 18px; display: inline-flex; align-items: center; justify-content: center; font-weight: bold; flex-shrink: 0; font-size: 0.7rem;">1</span>
+                                    <span><strong>Activa tus favoritos:</strong> Asegúrate de ver la barra de marcadores en tu navegador (<kbd>Ctrl + Shift + B</kbd> o <kbd>Cmd + Shift + B</kbd>).</span>
+                                </div>
+                                <div style="display: flex; gap: 0.5rem; align-items: flex-start;">
+                                    <span style="background: var(--primary); color: #fff; border-radius: 50%; width: 18px; height: 18px; display: inline-flex; align-items: center; justify-content: center; font-weight: bold; flex-shrink: 0; font-size: 0.7rem;">2</span>
+                                    <span><strong>Guarda el botón:</strong> Arrastra el botón morado de abajo hacia tu barra de marcadores (o copia su código si estás en móvil).</span>
+                                </div>
+                                <div style="display: flex; gap: 0.5rem; align-items: flex-start;">
+                                    <span style="background: var(--primary); color: #fff; border-radius: 50%; width: 18px; height: 18px; display: inline-flex; align-items: center; justify-content: center; font-weight: bold; flex-shrink: 0; font-size: 0.7rem;">3</span>
+                                    <span><strong>¡Listo para usar!</strong> Abre el anuncio en Fotocasa/Idealista/Facebook, pulsa en el marcador guardado y luego vuelve aquí y presiona <kbd>Ctrl + V</kbd> en cualquier parte de la pantalla.</span>
+                                </div>
+                            </div>
+                            
+                            <!-- Animación Demostrativa -->
+                            <div class="browser-mockup" style="margin-bottom: 1.25rem;">
+                                <div class="browser-header">
+                                    <div class="dot red"></div>
+                                    <div class="dot yellow"></div>
+                                    <div class="dot green"></div>
+                                    <div class="browser-address"></div>
+                                </div>
+                                <div class="browser-bookmarks-bar">
+                                    <div class="bookmarks-bar-target">
+                                        <i class="fa-solid fa-star"></i> Barra de marcadores (soltar aquí)
+                                    </div>
+                                </div>
+                                <div class="drag-animation-container">
+                                    <div class="animated-button">⚡ HabiTrack Extractor</div>
+                                    <div class="animated-cursor"><i class="fa-solid fa-arrow-pointer"></i></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Instrucciones de Móvil -->
+                        <div id="instructions-mobile" style="display: none;">
+                            <div style="display: flex; flex-direction: column; gap: 0.75rem; font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 1.25rem;">
+                                <div style="display: flex; gap: 0.5rem; align-items: flex-start;">
+                                    <span style="background: var(--primary); color: #fff; border-radius: 50%; width: 18px; height: 18px; display: inline-flex; align-items: center; justify-content: center; font-weight: bold; flex-shrink: 0; font-size: 0.7rem;">1</span>
+                                    <span><strong>Copia el código:</strong> Pulsa sobre el botón <strong>Copiar Código</strong> abajo.</span>
+                                </div>
+                                <div style="display: flex; gap: 0.5rem; align-items: flex-start;">
+                                    <span style="background: var(--primary); color: #fff; border-radius: 50%; width: 18px; height: 18px; display: inline-flex; align-items: center; justify-content: center; font-weight: bold; flex-shrink: 0; font-size: 0.7rem;">2</span>
+                                    <span><strong>Guarda un marcador temporal:</strong> Guarda esta página como favorito en tu móvil llamándola <code>⚡ HabiTrack</code>.</span>
+                                </div>
+                                <div style="display: flex; gap: 0.5rem; align-items: flex-start;">
+                                    <span style="background: var(--primary); color: #fff; border-radius: 50%; width: 18px; height: 18px; display: inline-flex; align-items: center; justify-content: center; font-weight: bold; flex-shrink: 0; font-size: 0.7rem;">3</span>
+                                    <span><strong>Modifica la dirección:</strong> Edita ese marcador en tu navegador, borra el enlace actual y pega el código JavaScript copiado.</span>
+                                </div>
+                                <div style="display: flex; gap: 0.5rem; align-items: flex-start;">
+                                    <span style="background: var(--primary); color: #fff; border-radius: 50%; width: 18px; height: 18px; display: inline-flex; align-items: center; justify-content: center; font-weight: bold; flex-shrink: 0; font-size: 0.7rem;">4</span>
+                                    <span><strong>Úsalo en el anuncio:</strong> Abre el anuncio en Safari o Chrome, escribe <code>⚡ HabiTrack</code> en tu barra de direcciones y pulsa sobre el marcador sugerido.</span>
+                                </div>
+                                <div style="display: flex; gap: 0.5rem; align-items: flex-start;">
+                                    <span style="background: var(--primary); color: #fff; border-radius: 50%; width: 18px; height: 18px; display: inline-flex; align-items: center; justify-content: center; font-weight: bold; flex-shrink: 0; font-size: 0.7rem;">5</span>
+                                    <span><strong>Pégalo aquí:</strong> Vuelve a HabiTrack, abre el modal y pega los datos copiados en el cuadro de texto.</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Contenedor del Botón e Instalador -->
                         <div class="flex-center" style="gap: 0.75rem; justify-content: flex-start; flex-wrap: wrap;">
                             <a id="bookmarklet-btn" href="#" class="btn btn-indigo btn-sm" style="user-select: none; font-size: 0.75rem; padding: 0.55rem 0.85rem; border-radius: 6px;" onclick="if (event.preventDefault) event.preventDefault(); else return false;" title="Arrastra este botón a tu barra de marcadores">
                                 <i class="fa-solid fa-wand-magic-sparkles"></i> ⚡ HabiTrack Extractor
                             </a>
                             <button type="button" id="btn-copy-bookmarklet" class="btn btn-secondary btn-sm" style="font-size: 0.75rem; padding: 0.55rem 0.85rem; border-radius: 6px;">
-                                <i class="fa-solid fa-copy"></i> Copiar Código del Marcador
+                                <i class="fa-solid fa-copy"></i> Copiar Código
                             </button>
                         </div>
                     </div>
