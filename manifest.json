@@ -1,0 +1,17 @@
+{
+  "name": "HabiTrack - Gestor Inmobiliario",
+  "short_name": "HabiTrack",
+  "description": "Buscador de viviendas y calculadora avanzada de gastos e hipotecas en España",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#6366f1",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    }
+  ]
+}
