@@ -174,7 +174,7 @@ function renderPropertyCardHtml(prop) {
     return `
         <div class="property-card glass" data-id="${prop.id}">
             <div class="card-media">
-                <img src="${escapeHtml(mainPhoto)}" alt="${escapeHtml(prop.title)}" loading="lazy" onerror="this.src='https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=600&q=80'">
+                <img src="${escapeHtml(mainPhoto)}" alt="${escapeHtml(prop.title)}" referrerpolicy="no-referrer" loading="lazy" onerror="this.src='https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=600&q=80'">
                 <div class="media-badges">
                     <span class="badge ${prop.estate_type === 'new' ? 'badge-amber' : 'badge-indigo'}">
                         ${prop.estate_type === 'new' ? '<i class=\"fa-solid fa-sparkles\"></i> Obra Nueva' : 'Segunda Mano'}

@@ -943,7 +943,7 @@ function createPropertyCardDOM(prop) {
     if (prop.photos) {
         const photoList = prop.photos.split(',').map(u => u.trim());
         if (photoList.length > 0 && photoList[0]) {
-            imageHTML = `<img src="${photoList[0]}" class="property-img" alt="${prop.title}">`;
+            imageHTML = `<img src="${photoList[0]}" class="property-img" alt="${prop.title}" referrerpolicy="no-referrer" loading="lazy" onerror="this.onerror=null;this.parentElement.innerHTML='<div class=\\'no-img-placeholder\\'><i class=\\'fa-solid fa-house-chimney\\'></i><span>Sin fotos</span></div>';">`;
         }
     }
 
@@ -1091,7 +1091,7 @@ function renderListings() {
         if (prop.photos) {
             const firstPhoto = prop.photos.split(',')[0].trim();
             if (firstPhoto) {
-                photoHTML = `<img src="${firstPhoto}" class="table-prop-img" alt="${prop.title}">`;
+                photoHTML = `<img src="${firstPhoto}" class="table-prop-img" alt="${prop.title}" referrerpolicy="no-referrer" loading="lazy" onerror="this.onerror=null;this.parentElement.innerHTML='<div class=\\'table-prop-img bg-indigo flex-center\\'><i class=\\'fa-solid fa-house text-muted\\' style=\\'font-size: 1.2rem;\\'></i></div>';">`;
             }
         }
 
@@ -2320,7 +2320,7 @@ function renderMap() {
         if (p.photos) {
             const firstPhoto = p.photos.split(',')[0].trim();
             if (firstPhoto) {
-                photoHTML = `<img src="${firstPhoto}" style="width: 100%; height: 85px; object-fit: cover; border-radius: 6px; margin-bottom: 0.45rem;">`;
+                photoHTML = `<img src="${firstPhoto}" referrerpolicy="no-referrer" loading="lazy" style="width: 100%; height: 85px; object-fit: cover; border-radius: 6px; margin-bottom: 0.45rem;" alt="${p.title}">`;
             }
         }
 
