@@ -12,49 +12,85 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Leaflet Map CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <meta name="theme-color" content="#6366f1">
+    <link rel="manifest" href="manifest.json">
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles.css?v=20.0">
 </head>
 <body>
     <!-- Login / Register Screen -->
-    <!-- Login Screen (Email + OTP) -->
+    <!-- Login Screen (Hero Bento Layout) -->
     <div id="login-container" class="login-container">
-        <div class="login-card glass">
-            <div class="login-header">
-                <div class="login-logo">
-                    <i class="fa-solid fa-house-laptop"></i>
+        <div class="login-bento-grid">
+            <!-- Left Showcase Hero -->
+            <div class="login-hero-showcase">
+                <div>
+                    <div class="showcase-brand">
+                        <div class="logo-icon">
+                            <i class="fa-solid fa-house-laptop"></i>
+                        </div>
+                        <h1>HabiTrack</h1>
+                    </div>
+                    <h3 class="showcase-tagline">Tu copiloto financiero inmobiliario de alta precisión.</h3>
+                    <p class="showcase-description">Gestiona, compara y calcula al céntimo los impuestos, notaría e hipoteca de tus inmuebles favoritos.</p>
                 </div>
-                <h2>HabiTrack</h2>
-                <p>Acceso rápido mediante correo electrónico y código OTP</p>
+                
+                <div class="showcase-features">
+                    <div class="feature-pill">
+                        <i class="fa-solid fa-bolt"></i>
+                        <span>Extracción en 1-click desde Idealista y Fotocasa</span>
+                    </div>
+                    <div class="feature-pill">
+                        <i class="fa-solid fa-chart-pie"></i>
+                        <span>Cálculo ITP/IVA por CCAA y amortización francesa</span>
+                    </div>
+                    <div class="feature-pill">
+                        <i class="fa-solid fa-shield-halved"></i>
+                        <span>Acceso seguro sin contraseña mediante código OTP</span>
+                    </div>
+                </div>
             </div>
-            
-            <!-- Step 1: Send OTP -->
-            <form id="otp-request-form" class="login-form active-form">
-                <div class="form-group">
-                    <label for="otp-email"><i class="fa-solid fa-envelope"></i> Correo Electrónico</label>
-                    <input type="email" id="otp-email" required placeholder="tu@email.com" autocomplete="email">
-                </div>
-                <button type="submit" id="btn-send-otp" class="btn btn-indigo block mt-4">
-                    Enviar Código de Acceso <i class="fa-solid fa-paper-plane"></i>
-                </button>
-            </form>
 
-            <!-- Step 2: Verify OTP -->
-            <form id="otp-verify-form" class="login-form hidden" style="display: none;">
-                <div class="otp-sent-info text-center mb-3" style="background: rgba(99, 102, 241, 0.08); padding: 0.75rem; border-radius: 8px; font-size: 0.85rem; border: 1px solid rgba(99, 102, 241, 0.2); margin-bottom: 1rem;">
-                    <span>Código enviado a <strong id="sent-email-display">tu@email.com</strong></span>
+            <!-- Right Login Form Pane -->
+            <div class="login-form-pane">
+                <div class="login-header">
+                    <h2>Bienvenido</h2>
+                    <p>Introduce tu correo para recibir un código de acceso instantáneo.</p>
                 </div>
-                <div class="form-group">
-                    <label for="otp-code"><i class="fa-solid fa-key"></i> Código de 6 dígitos</label>
-                    <input type="text" id="otp-code" required placeholder="123456" maxlength="6" pattern="[0-9]{6}" autocomplete="one-time-code" style="letter-spacing: 0.35em; font-weight: 700; text-align: center; font-size: 1.25rem;">
-                </div>
-                <button type="submit" id="btn-verify-otp" class="btn btn-emerald block mt-4">
-                    Verificar e Entrar <i class="fa-solid fa-right-to-bracket"></i>
-                </button>
-                <button type="button" id="btn-change-email" class="btn btn-secondary btn-sm block mt-2" style="background: transparent; border: none; color: var(--text-secondary); width: 100%; margin-top: 0.75rem; cursor: pointer;">
-                    <i class="fa-solid fa-arrow-left"></i> Cambiar correo
-                </button>
-            </form>
+                
+                <!-- Step 1: Send OTP -->
+                <form id="otp-request-form" class="login-form active-form">
+                    <div class="form-group">
+                        <label for="otp-email"><i class="fa-solid fa-envelope"></i> Correo Electrónico</label>
+                        <input type="email" id="otp-email" required placeholder="tu@email.com" autocomplete="email">
+                    </div>
+                    <button type="submit" id="btn-send-otp" class="btn btn-indigo block mt-4">
+                        Enviar Código de Acceso <i class="fa-solid fa-paper-plane"></i>
+                    </button>
+                </form>
+
+                <!-- Step 2: Verify OTP -->
+                <form id="otp-verify-form" class="login-form hidden" style="display: none;">
+                    <div id="otp-dev-banner" class="otp-dev-banner mb-3" style="display: none; background: #ecfdf5; border: 1.5px solid #a7f3d0; border-radius: 8px; padding: 0.75rem; text-align: center;">
+                        <span style="font-size: 0.775rem; font-weight: 600; color: #065f46; display: block; margin-bottom: 0.25rem;">🔑 Código de acceso generado:</span>
+                        <strong id="otp-dev-code" style="font-size: 1.35rem; letter-spacing: 4px; color: #047857; font-family: monospace;">123456</strong>
+                    </div>
+
+                    <div class="otp-sent-info text-center mb-3" style="background: rgba(99, 102, 241, 0.08); padding: 0.75rem; border-radius: 8px; font-size: 0.85rem; border: 1px solid rgba(99, 102, 241, 0.2); margin-bottom: 1rem;">
+                        <span>Código enviado a <strong id="sent-email-display">tu@email.com</strong></span>
+                    </div>
+                    <div class="form-group">
+                        <label for="otp-code"><i class="fa-solid fa-key"></i> Código de 6 dígitos</label>
+                        <input type="text" id="otp-code" required placeholder="123456" maxlength="6" pattern="[0-9]{6}" autocomplete="one-time-code" style="letter-spacing: 0.35em; font-weight: 700; text-align: center; font-size: 1.25rem;">
+                    </div>
+                    <button type="submit" id="btn-verify-otp" class="btn btn-emerald block mt-4">
+                        Verificar e Entrar <i class="fa-solid fa-right-to-bracket"></i>
+                    </button>
+                    <button type="button" id="btn-change-email" class="btn btn-secondary btn-sm block mt-2" style="background: transparent; border: none; color: var(--text-secondary); width: 100%; margin-top: 0.75rem; cursor: pointer;">
+                        <i class="fa-solid fa-arrow-left"></i> Cambiar correo
+                    </button>
+                </form>
+            </div>
         </div>
     </div>
 
@@ -77,9 +113,13 @@
                     <i class="fa-solid fa-list-check"></i>
                     <span>Mis Pisos</span>
                 </a>
+                <a href="#" class="nav-item" data-target="extractor-guide-section">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i>
+                    <span>Captura & Extractor</span>
+                </a>
                 <a href="#" class="nav-item" data-target="calculator-settings-section">
-                    <i class="fa-solid fa-calculator"></i>
-                    <span>Ajustes de Gastos</span>
+                    <i class="fa-solid fa-gear"></i>
+                    <span>Ajustes</span>
                 </a>
             </nav>
             
@@ -93,15 +133,6 @@
                         </a>
                     </div>
                 </div>
-                <hr class="sidebar-divider" style="margin: 1rem 0; border: none; border-top: 1px solid var(--border-color);">
-                <button id="btn-export" class="btn btn-secondary btn-sm block" style="margin-bottom: 0.5rem;">
-                    <i class="fa-solid fa-file-export"></i> Exportar JSON
-                </button>
-                <button id="btn-import-trigger" class="btn btn-secondary btn-sm block" style="margin-bottom: 0.5rem;">
-                    <i class="fa-solid fa-file-import"></i> Importar JSON
-                </button>
-                <input type="file" id="import-file" accept=".json" style="display: none;">
-                <p class="version">v2.0.0 • DB Multi-usuario</p>
             </div>
         </aside>
 
@@ -235,52 +266,69 @@
             <!-- SECTION: LISTINGS & COMPARISON -->
             <section id="listings-section" class="content-section">
                 <!-- Filters & Controls Toolbar -->
-                <div class="toolbar card glass shadow-sm mb-4">
-                    <div class="toolbar-search">
-                        <i class="fa-solid fa-magnifying-glass"></i>
-                        <input type="text" id="filter-search" placeholder="Buscar por zona, nombre, comentarios...">
+                <div class="toolbar card shadow-sm mb-4">
+                    <!-- Top Search & Actions Row -->
+                    <div class="toolbar-top-row">
+                        <div class="toolbar-search">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                            <input type="text" id="filter-search" placeholder="Buscar por zona, nombre, comentarios...">
+                        </div>
+                        <div class="toolbar-top-actions">
+                            <div class="filter-item sort-item">
+                                <select id="sort-by">
+                                    <option value="date-desc">Nuevos primero</option>
+                                    <option value="price-asc">Precio: Menor a Mayor</option>
+                                    <option value="price-desc">Precio: Mayor a Menor</option>
+                                    <option value="budget-asc">Ahorro: Menor a Mayor</option>
+                                    <option value="m2-desc">Superficie: Mayor a Menor</option>
+                                    <option value="rating-desc">Puntuación: Mayor a Menor</option>
+                                </select>
+                            </div>
+                            <div class="view-toggle">
+                                <button id="btn-view-grid" class="btn-toggle active" title="Vista Cuadrícula"><i class="fa-solid fa-grip"></i></button>
+                                <button id="btn-view-table" class="btn-toggle" title="Vista Tabla"><i class="fa-solid fa-list"></i></button>
+                            </div>
+                        </div>
                     </div>
-                    <div class="toolbar-filters">
+
+                    <!-- Filter Inputs Grid -->
+                    <div class="toolbar-filters" id="toolbar-filters">
                         <div class="filter-item">
-                            <label>Precio Máx.</label>
-                            <input type="number" id="filter-price-max" placeholder="Cualquiera">
+                            <label><i class="fa-solid fa-tag text-emerald"></i> Precio Máx.</label>
+                            <div class="input-with-suffix">
+                                <input type="number" id="filter-price-max" placeholder="Cualquiera">
+                                <span>€</span>
+                            </div>
                         </div>
                         <div class="filter-item">
-                            <label>Ahorro Máx.</label>
-                            <input type="number" id="filter-savings-max" placeholder="Cualquiera">
+                            <label><i class="fa-solid fa-wallet text-amber"></i> Ahorro Máx.</label>
+                            <div class="input-with-suffix">
+                                <input type="number" id="filter-savings-max" placeholder="Cualquiera">
+                                <span>€</span>
+                            </div>
                         </div>
                         <div class="filter-item">
-                            <label>Habitaciones</label>
+                            <label><i class="fa-solid fa-bed text-indigo"></i> Habitaciones</label>
                             <select id="filter-rooms">
                                 <option value="">Cualquiera</option>
-                                <option value="1">1+</option>
-                                <option value="2">2+</option>
-                                <option value="3">3+</option>
-                                <option value="4">4+</option>
+                                <option value="1">1+ habs</option>
+                                <option value="2">2+ habs</option>
+                                <option value="3">3+ habs</option>
+                                <option value="4">4+ habs</option>
                             </select>
                         </div>
                         <div class="filter-item">
-                            <label>Garaje</label>
+                            <label><i class="fa-solid fa-car text-indigo"></i> Garaje</label>
                             <select id="filter-garage">
                                 <option value="">Cualquiera</option>
                                 <option value="si">Sí tiene</option>
                                 <option value="no">No tiene/Indiferente</option>
                             </select>
                         </div>
-                        <div class="filter-item">
-                            <label>Ordenar por</label>
-                            <select id="sort-by">
-                                <option value="date-desc">Fecha (Nuevos primero)</option>
-                                <option value="price-asc">Precio (Menor a Mayor)</option>
-                                <option value="price-desc">Precio (Mayor a Menor)</option>
-                                <option value="budget-asc">Presupuesto Firma (Menor a Mayor)</option>
-                                <option value="m2-desc">Tamaño (Mayor a Menor)</option>
-                                <option value="rating-desc">Puntuación (Mayor a Menor)</option>
-                            </select>
-                        </div>
-                        <div class="view-toggle">
-                            <button id="btn-view-grid" class="btn-toggle active" title="Vista Cuadrícula"><i class="fa-solid fa-grip"></i></button>
-                            <button id="btn-view-table" class="btn-toggle" title="Vista Tabla"><i class="fa-solid fa-list"></i></button>
+                        <div class="filter-item filter-reset-item">
+                            <button type="button" id="btn-clear-filters" class="btn btn-secondary btn-sm block">
+                                <i class="fa-solid fa-rotate-left"></i> Limpiar
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -316,100 +364,306 @@
                 </div>
 
                 <!-- Pagination Controls -->
-                <div class="pagination-container card glass shadow-sm mt-4" style="margin-top: 1.5rem; display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 1.5rem;">
+                <div class="pagination-container card shadow-sm mt-4">
                     <button id="btn-prev-page" class="btn btn-secondary btn-sm" disabled>
                         <i class="fa-solid fa-chevron-left"></i> Anterior
                     </button>
-                    <span id="page-indicator" style="font-size: 0.85rem; color: var(--text-secondary); font-weight: 500;">Página 1 de 1</span>
+                    <div id="page-indicator" class="page-indicator">
+                        <span>Página <strong class="page-num">1</strong> de <strong class="page-num">1</strong></span>
+                    </div>
                     <button id="btn-next-page" class="btn btn-secondary btn-sm" disabled>
                         Siguiente <i class="fa-solid fa-chevron-right"></i>
                     </button>
                 </div>
             </section>
 
-            <!-- SECTION: CALCULATOR SETTINGS -->
-            <section id="calculator-settings-section" class="content-section">
-                <div class="card glass shadow-sm max-w-lg">
-                    <div class="card-header">
-                        <h2><i class="fa-solid fa-sliders text-indigo"></i> Ajustes de la Calculadora de Gastos</h2>
-                        <p class="subtitle">Define los porcentajes y gastos estándares aplicados para calcular el presupuesto necesario para la firma del piso en España.</p>
-                    </div>
-                    <div class="card-body">
-                        <form id="settings-form">
-                            <div class="form-grid mb-4">
-                                <div class="form-group">
-                                    <label for="setting-downpayment">Porcentaje de Entrada (%)</label>
-                                    <div class="input-with-suffix">
-                                        <input type="number" id="setting-downpayment" value="20" min="0" max="100">
-                                        <span>%</span>
-                                    </div>
-                                    <small>El banco suele conceder el 80% del valor de tasación/compra, por lo que requieres el 20% en ahorros.</small>
-                                </div>
-                                <div class="form-group">
-                                    <label for="setting-notary-reg-pct">Notaría, Registro y Gestoría (%)</label>
-                                    <div class="input-with-suffix">
-                                        <input type="number" id="setting-notary-reg-pct" value="1.5" step="0.1" min="0" max="10">
-                                        <span>%</span>
-                                    </div>
-                                    <small>Estimación media del coste de formalización de la escritura pública e inscripción registral.</small>
-                                </div>
+            <!-- SECTION: EXTRACTOR & BOOKMARKLET GUIDE -->
+            <section id="extractor-guide-section" class="content-section">
+                <!-- Guide Header -->
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header" style="background: linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%);">
+                        <div style="display: flex; align-items: center; gap: 1rem;">
+                            <div class="logo-icon" style="background: var(--primary-gradient); width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 1.25rem; box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25); flex-shrink: 0;">
+                                <i class="fa-solid fa-wand-magic-sparkles"></i>
                             </div>
-                            <div class="form-grid mb-4">
-                                <div class="form-group">
-                                    <label for="setting-appraisal">Gastos de Tasación Fijo (€)</label>
-                                    <div class="input-with-suffix">
-                                        <input type="number" id="setting-appraisal" value="400" min="0">
-                                        <span>€</span>
-                                    </div>
-                                    <small>Coste de la tasación obligatoria del inmueble requerida por el banco para el préstamo.</small>
-                                </div>
-                                <div class="form-group">
-                                    <label for="setting-new-build-ajd">AJD para Obra Nueva (%)</label>
-                                    <div class="input-with-suffix">
-                                        <input type="number" id="setting-new-build-ajd" value="1.0" step="0.1" min="0" max="5">
-                                        <span>%</span>
-                                    </div>
-                                    <small>Actos Jurídicos Documentados (varía entre 0.5% y 1.5% según la comunidad autónoma).</small>
-                                </div>
+                            <div>
+                                <h2 style="font-size: 1.4rem; color: var(--text-main); margin-bottom: 0.25rem;">Módulo de Captura Inteligente & Bookmarklet 1-Click</h2>
+                                <p class="subtitle" style="margin: 0;">Arquitectura de extracción de Fotocasa, Idealista y Marketplace, e instrucciones de uso de la extensión.</p>
                             </div>
-                            <div class="form-grid mb-4">
-                                <div class="form-group">
-                                    <label for="setting-mortgage-rate">Interés Hipoteca TIN (%)</label>
-                                    <div class="input-with-suffix">
-                                        <input type="number" id="setting-mortgage-rate" value="3.0" step="0.05" min="0" max="25">
-                                        <span>%</span>
-                                    </div>
-                                    <small>Tipo de Interés Nominal anual estimado para la hipoteca.</small>
-                                </div>
-                                <div class="form-group">
-                                    <label for="setting-mortgage-duration">Plazo Hipoteca (Años)</label>
-                                    <div class="input-with-suffix">
-                                        <input type="number" id="setting-mortgage-duration" value="30" min="1" max="50">
-                                        <span>Años</span>
-                                    </div>
-                                    <small>Número de años para amortizar el préstamo hipotecario.</small>
-                                </div>
-                            </div>
-
-                            <hr class="form-divider">
-                            
-                            <h3>Impuestos por CCAA (Segunda Mano - ITP)</h3>
-                            <p class="subtitle mb-3">Valores de ITP estándar aplicados por defecto al seleccionar la Comunidad Autónoma.</p>
-                            <div class="ccaa-rates-grid" id="ccaa-rates-container">
-                                <!-- Prepopulated dynamic rates for editing -->
-                            </div>
-
-                            <div class="form-actions mt-4">
-                                <button type="button" id="btn-reset-settings" class="btn btn-secondary">
-                                    <i class="fa-solid fa-rotate-left"></i> Restablecer Valores
-                                </button>
-                                <button type="submit" class="btn btn-indigo">
-                                    <i class="fa-solid fa-floppy-disk"></i> Guardar Configuración
-                                </button>
-                            </div>
-                        </form>
+                        </div>
                     </div>
                 </div>
+
+                <div class="settings-grid-layout">
+                    <!-- Column 1: Funcionamiento Técnico del Motor de Captura -->
+                    <div class="card shadow-sm settings-card">
+                        <div class="card-header">
+                            <h3><i class="fa-solid fa-microchip text-indigo"></i> ¿Cómo Funciona la Extracción de Datos?</h3>
+                            <p class="subtitle">El motor combina 4 capas consecutivas de análisis para garantizar la máxima precisión.</p>
+                        </div>
+                        <div class="card-body" style="display: flex; flex-direction: column; gap: 1.25rem;">
+                            <!-- Capa 1: Fotocasa -->
+                            <div class="guide-step-card">
+                                <div class="guide-step-num" style="background: #eef2ff; color: var(--primary); border: 1px solid #c7d2fe;">1</div>
+                                <div class="guide-step-content">
+                                    <h4 style="font-size: 0.95rem; color: var(--text-main); margin-bottom: 0.35rem;">
+                                        <i class="fa-solid fa-house-user text-indigo"></i> Captura Específica en Fotocasa
+                                    </h4>
+                                    <p style="font-size: 0.825rem; color: var(--text-secondary); line-height: 1.5; margin-bottom: 0.5rem;">
+                                        El extractor lee directamente la estructura interna del DOM de Fotocasa:
+                                    </p>
+                                    <ul style="font-size: 0.8rem; color: var(--text-muted); list-style: disc; margin-left: 1.25rem; line-height: 1.6;">
+                                        <li><strong>Título:</strong> Extraído de <code>.re-DetailHeader-title</code>.</li>
+                                        <li><strong>Precio:</strong> Limpieza numérica desde <code>.re-DetailHeader-price</code>.</li>
+                                        <li><strong>Características:</strong> Inspección de <code>.re-DetailFeaturesList-feature</code> para extraer metros cuadrados (<code>m²</code>), habitaciones (<code>habs</code>) y baños (<code>baño/aseo</code>).</li>
+                                        <li><strong>Descripción:</strong> Texto de <code>.re-DetailDescription-text</code>.</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <!-- Capa 2: Idealista & Facebook Marketplace -->
+                            <div class="guide-step-card">
+                                <div class="guide-step-num" style="background: #ecfdf5; color: var(--emerald); border: 1px solid var(--emerald-border);">2</div>
+                                <div class="guide-step-content">
+                                    <h4 style="font-size: 0.95rem; color: var(--text-main); margin-bottom: 0.35rem;">
+                                        <i class="fa-solid fa-layer-group text-emerald"></i> Compatibilidad con Idealista y Marketplace
+                                    </h4>
+                                    <p style="font-size: 0.825rem; color: var(--text-secondary); line-height: 1.5; margin-bottom: 0.5rem;">
+                                        El script se adapta al portal activo:
+                                    </p>
+                                    <ul style="font-size: 0.8rem; color: var(--text-muted); list-style: disc; margin-left: 1.25rem; line-height: 1.6;">
+                                        <li><strong>Idealista:</strong> Mapea <code>.main-info__title-main</code>, <code>.info-data-price</code>, <code>.info-features</code> y galería multimedia.</li>
+                                        <li><strong>Facebook Marketplace:</strong> Filtra títulos, detecta precios en euros y extrae fotos de alta resolución (<code>fbcdn/scontent</code>).</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <!-- Capa 3: Microdatos JSON-LD & Fallback Regex -->
+                            <div class="guide-step-card">
+                                <div class="guide-step-num" style="background: #fffbeb; color: var(--amber); border: 1px solid var(--amber-border);">3</div>
+                                <div class="guide-step-content">
+                                    <h4 style="font-size: 0.95rem; color: var(--text-main); margin-bottom: 0.35rem;">
+                                        <i class="fa-solid fa-code text-amber"></i> Microdatos Schema.org / JSON-LD & Regex
+                                    </h4>
+                                    <p style="font-size: 0.825rem; color: var(--text-secondary); line-height: 1.5;">
+                                        Inspecciona scripts <code>application/ld+json</code> buscando entidades <code>SingleFamilyResidence</code>, <code>Offer</code> o <code>Product</code>. Si algún dato no está accesible, un motor de expresiones regulares semánticas analiza el texto para deducir garaje, ascensor y superficie.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <!-- Capa 4: Pegado Mágico -->
+                            <div class="guide-step-card">
+                                <div class="guide-step-num" style="background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0;">4</div>
+                                <div class="guide-step-content">
+                                    <h4 style="font-size: 0.95rem; color: var(--text-main); margin-bottom: 0.35rem;">
+                                        <i class="fa-solid fa-paste text-emerald"></i> Pegado Mágico (Auto-Detección Ctrl + V)
+                                    </h4>
+                                    <p style="font-size: 0.825rem; color: var(--text-secondary); line-height: 1.5;">
+                                        Al ejecutar el bookmarklet, copia un objeto JSON al portapapeles. Al regresar a HabiTrack y pulsar <kbd>Ctrl + V</kbd>, la plataforma detecta automáticamente los datos, abre el modal y calcula el ahorro para firma y cuota hipotecaria estimada en tiempo real.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Column 2: La Extensión Bookmarklet (Uso e Instalación) -->
+                    <div class="settings-col-right">
+                        <div class="card shadow-sm settings-card">
+                            <div class="card-header">
+                                <h3><i class="fa-solid fa-bookmark text-indigo"></i> Instalar y Usar el Bookmarklet</h3>
+                                <p class="subtitle">Guarda el botón en tus marcadores para extraer con 1 clic en cualquier portal.</p>
+                            </div>
+                            <div class="card-body">
+                                <!-- Botón Arrastrable -->
+                                <div style="text-align: center; padding: 1.5rem; background: #f8fafc; border: 2px dashed var(--border-color); border-radius: var(--radius-md); margin-bottom: 1.5rem;">
+                                    <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.85rem;">
+                                        👇 <strong>Arrastra este botón morado</strong> hacia tu barra de marcadores del navegador:
+                                    </p>
+                                    <a id="guide-bookmarklet-btn" href="#" class="btn btn-indigo" style="cursor: grab; font-size: 0.95rem; padding: 0.85rem 1.5rem; box-shadow: 0 4px 14px rgba(79, 70, 229, 0.35);">
+                                        <i class="fa-solid fa-house-laptop"></i> + HabiTrack Extractor
+                                    </a>
+                                </div>
+
+                                <!-- Acciones Rápidas -->
+                                <div class="backup-actions-grid mb-4">
+                                    <button type="button" id="btn-guide-copy-bookmarklet" class="btn btn-secondary btn-sm">
+                                        <i class="fa-solid fa-copy text-indigo"></i> Copiar Código JS
+                                    </button>
+                                    <button type="button" id="btn-guide-view-code" class="btn btn-secondary btn-sm">
+                                        <i class="fa-solid fa-code text-secondary"></i> Ver Código Fuente
+                                    </button>
+                                </div>
+
+                                <!-- Selector de Instrucciones por Dispositivo -->
+                                <div class="device-toggle" style="display: flex; gap: 0.5rem; margin-bottom: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem;">
+                                    <button type="button" class="btn btn-sm" id="guide-toggle-desktop" style="font-size: 0.75rem; padding: 0.4rem 0.85rem; border-radius: 6px; background: var(--primary); color: #fff; border: none; cursor: pointer; font-weight: 600;">💻 En Ordenador (PC / Mac)</button>
+                                    <button type="button" class="btn btn-sm" id="guide-toggle-mobile" style="font-size: 0.75rem; padding: 0.4rem 0.85rem; border-radius: 6px; background: transparent; color: var(--text-muted); border: none; cursor: pointer; font-weight: 600;">📱 En Móvil (iOS / Android)</button>
+                                </div>
+
+                                <!-- Instrucciones Ordenador -->
+                                <div id="guide-instructions-desktop">
+                                    <div style="display: flex; flex-direction: column; gap: 0.75rem; font-size: 0.825rem; color: var(--text-secondary);">
+                                        <div style="display: flex; gap: 0.6rem; align-items: flex-start;">
+                                            <span style="background: var(--primary); color: #fff; border-radius: 50%; width: 20px; height: 20px; display: inline-flex; align-items: center; justify-content: center; font-weight: bold; flex-shrink: 0; font-size: 0.75rem;">1</span>
+                                            <span>Muestra la barra de marcadores en tu navegador (<kbd>Ctrl + Shift + B</kbd> o <kbd>Cmd + Shift + B</kbd>).</span>
+                                        </div>
+                                        <div style="display: flex; gap: 0.6rem; align-items: flex-start;">
+                                            <span style="background: var(--primary); color: #fff; border-radius: 50%; width: 20px; height: 20px; display: inline-flex; align-items: center; justify-content: center; font-weight: bold; flex-shrink: 0; font-size: 0.75rem;">2</span>
+                                            <span>Arrastra el botón <strong>+ HabiTrack Extractor</strong> a tu barra de marcadores.</span>
+                                        </div>
+                                        <div style="display: flex; gap: 0.6rem; align-items: flex-start;">
+                                            <span style="background: var(--primary); color: #fff; border-radius: 50%; width: 20px; height: 20px; display: inline-flex; align-items: center; justify-content: center; font-weight: bold; flex-shrink: 0; font-size: 0.75rem;">3</span>
+                                            <span>Entra en cualquier anuncio de Fotocasa o Idealista y pulsa el marcador. Vuelve a HabiTrack y pulsa <kbd>Ctrl + V</kbd>.</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Instrucciones Móvil -->
+                                <div id="guide-instructions-mobile" style="display: none;">
+                                    <div style="display: flex; flex-direction: column; gap: 0.75rem; font-size: 0.825rem; color: var(--text-secondary);">
+                                        <div style="display: flex; gap: 0.6rem; align-items: flex-start;">
+                                            <span style="background: var(--emerald); color: #fff; border-radius: 50%; width: 20px; height: 20px; display: inline-flex; align-items: center; justify-content: center; font-weight: bold; flex-shrink: 0; font-size: 0.75rem;">1</span>
+                                            <span>Copia el código pulsando en el botón <strong>Copiar Código JS</strong> de arriba.</span>
+                                        </div>
+                                        <div style="display: flex; gap: 0.6rem; align-items: flex-start;">
+                                            <span style="background: var(--emerald); color: #fff; border-radius: 50%; width: 20px; height: 20px; display: inline-flex; align-items: center; justify-content: center; font-weight: bold; flex-shrink: 0; font-size: 0.75rem;">2</span>
+                                            <span>Guarda cualquier página en favoritos en Safari o Chrome Móvil y edita la URL pegando el script.</span>
+                                        </div>
+                                        <div style="display: flex; gap: 0.6rem; align-items: flex-start;">
+                                            <span style="background: var(--emerald); color: #fff; border-radius: 50%; width: 20px; height: 20px; display: inline-flex; align-items: center; justify-content: center; font-weight: bold; flex-shrink: 0; font-size: 0.75rem;">3</span>
+                                            <span>En Fotocasa, ejecuta el marcador desde la barra de direcciones y pega el contenido en HabiTrack.</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Bloque de Código JS Ocultable -->
+                                <div id="guide-code-box" style="display: none; margin-top: 1.25rem;">
+                                    <label style="font-size: 0.75rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.35rem; display: block;">Código JavaScript del Extractor:</label>
+                                    <textarea id="guide-code-textarea" readonly rows="5" style="width: 100%; font-family: monospace; font-size: 0.75rem; background: #0f172a; color: #38bdf8; padding: 0.75rem; border-radius: 6px; border: 1px solid #334155; line-height: 1.4; resize: vertical;"></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECTION: CALCULATOR SETTINGS -->
+            <section id="calculator-settings-section" class="content-section">
+                <form id="settings-form">
+                    <div class="settings-grid-layout">
+                        <!-- Column 1: Parámetros Financieros e Hipotecarios -->
+                        <div class="card shadow-sm settings-card">
+                            <div class="card-header">
+                                <h3><i class="fa-solid fa-sliders text-indigo"></i> Parámetros de Compra e Hipoteca</h3>
+                                <p class="subtitle">Define los gastos y porcentajes estándar aplicados para el cálculo de firma en España.</p>
+                            </div>
+                            <div class="card-body">
+                                <div class="form-grid mb-3">
+                                    <div class="form-group">
+                                        <label for="setting-downpayment"><i class="fa-solid fa-piggy-bank text-emerald"></i> Entrada Ahorro (%)</label>
+                                        <div class="input-with-suffix">
+                                            <input type="number" id="setting-downpayment" value="20" min="0" max="100">
+                                            <span>%</span>
+                                        </div>
+                                        <small>Aportación inicial requerida (el banco suele conceder el 80%).</small>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="setting-notary-reg-pct"><i class="fa-solid fa-file-signature text-indigo"></i> Notaría y Gestoría (%)</label>
+                                        <div class="input-with-suffix">
+                                            <input type="number" id="setting-notary-reg-pct" value="1.5" step="0.1" min="0" max="10">
+                                            <span>%</span>
+                                        </div>
+                                        <small>Escritura pública, aranceles e inscripción en el Registro.</small>
+                                    </div>
+                                </div>
+
+                                <div class="form-grid mb-3">
+                                    <div class="form-group">
+                                        <label for="setting-appraisal"><i class="fa-solid fa-receipt text-amber"></i> Tasación Fija (€)</label>
+                                        <div class="input-with-suffix">
+                                            <input type="number" id="setting-appraisal" value="400" min="0">
+                                            <span>€</span>
+                                        </div>
+                                        <small>Coste medio de tasación oficial para el banco.</small>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="setting-new-build-ajd"><i class="fa-solid fa-building text-indigo"></i> AJD Obra Nueva (%)</label>
+                                        <div class="input-with-suffix">
+                                            <input type="number" id="setting-new-build-ajd" value="1.0" step="0.1" min="0" max="5">
+                                            <span>%</span>
+                                        </div>
+                                        <small>Actos Jurídicos Documentados (0.5% - 1.5% según CCAA).</small>
+                                    </div>
+                                </div>
+
+                                <div class="form-grid mb-4">
+                                    <div class="form-group">
+                                        <label for="setting-mortgage-rate"><i class="fa-solid fa-percent text-indigo"></i> Interés Hipoteca (TIN %)</label>
+                                        <div class="input-with-suffix">
+                                            <input type="number" id="setting-mortgage-rate" value="3.0" step="0.05" min="0" max="25">
+                                            <span>%</span>
+                                        </div>
+                                        <small>Tipo de interés nominal anual para el cálculo de cuota.</small>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="setting-mortgage-duration"><i class="fa-solid fa-calendar text-indigo"></i> Plazo Hipoteca (Años)</label>
+                                        <div class="input-with-suffix">
+                                            <input type="number" id="setting-mortgage-duration" value="30" min="1" max="50">
+                                            <span>Años</span>
+                                        </div>
+                                        <small>Plazo en años para la amortización del préstamo.</small>
+                                    </div>
+                                </div>
+
+                                <div class="settings-actions-footer">
+                                    <button type="button" id="btn-reset-settings" class="btn btn-secondary">
+                                        <i class="fa-solid fa-rotate-left"></i> Restablecer Valores
+                                    </button>
+                                    <button type="submit" class="btn btn-indigo">
+                                        <i class="fa-solid fa-floppy-disk"></i> Guardar Configuración
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Column 2: Impuestos ITP por CCAA y Copia de Seguridad -->
+                        <div class="settings-col-right">
+                            <div class="card shadow-sm settings-card">
+                                <div class="card-header">
+                                    <h3><i class="fa-solid fa-map-location-dot text-indigo"></i> ITP por Comunidad Autónoma</h3>
+                                    <p class="subtitle">Porcentaje de Impuesto de Transmisiones Patrimoniales (Segunda Mano).</p>
+                                </div>
+                                <div class="card-body">
+                                    <div class="ccaa-rates-grid" id="ccaa-rates-container">
+                                        <!-- Prepopulated dynamic rates -->
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Card: Copia de Seguridad y Datos JSON -->
+                            <div class="card shadow-sm settings-card mt-4">
+                                <div class="card-header">
+                                    <h3><i class="fa-solid fa-database text-emerald"></i> Copia de Seguridad y Datos</h3>
+                                    <p class="subtitle">Exporta o restaura tus inmuebles y parámetros en formato JSON.</p>
+                                </div>
+                                <div class="card-body">
+                                    <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1.25rem; line-height: 1.5;">
+                                        Descarga una copia completa de todos tus pisos guardados y gastos configurados, o restaura un archivo de copia de seguridad previo.
+                                    </p>
+                                    <div class="backup-actions-grid">
+                                        <button type="button" id="btn-export" class="btn btn-secondary btn-sm">
+                                            <i class="fa-solid fa-file-export text-indigo"></i> Exportar JSON
+                                        </button>
+                                        <button type="button" id="btn-import-trigger" class="btn btn-secondary btn-sm">
+                                            <i class="fa-solid fa-file-import text-emerald"></i> Importar JSON
+                                        </button>
+                                        <input type="file" id="import-file" accept=".json" style="display: none;">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
             </section>
         </main>
     </div>
@@ -503,7 +757,7 @@
                                     </div>
                                 </div>
                                 <div class="drag-animation-container">
-                                    <div class="animated-button">⚡ HabiTrack Extractor</div>
+                                    <div class="animated-button"><i class="fa-solid fa-bolt"></i> HabiTrack Extractor</div>
                                     <div class="animated-cursor"><i class="fa-solid fa-arrow-pointer"></i></div>
                                 </div>
                             </div>
@@ -518,7 +772,7 @@
                                 </div>
                                 <div style="display: flex; gap: 0.5rem; align-items: flex-start;">
                                     <span style="background: var(--primary); color: #fff; border-radius: 50%; width: 18px; height: 18px; display: inline-flex; align-items: center; justify-content: center; font-weight: bold; flex-shrink: 0; font-size: 0.7rem;">2</span>
-                                    <span><strong>Guarda un marcador temporal:</strong> Guarda esta página como favorito en tu móvil llamándola <code>⚡ HabiTrack</code>.</span>
+                                    <span><strong>Guarda un marcador temporal:</strong> Guarda esta página como favorito en tu móvil llamándola <code>HabiTrack Extractor</code>.</span>
                                 </div>
                                 <div style="display: flex; gap: 0.5rem; align-items: flex-start;">
                                     <span style="background: var(--primary); color: #fff; border-radius: 50%; width: 18px; height: 18px; display: inline-flex; align-items: center; justify-content: center; font-weight: bold; flex-shrink: 0; font-size: 0.7rem;">3</span>
@@ -526,7 +780,7 @@
                                 </div>
                                 <div style="display: flex; gap: 0.5rem; align-items: flex-start;">
                                     <span style="background: var(--primary); color: #fff; border-radius: 50%; width: 18px; height: 18px; display: inline-flex; align-items: center; justify-content: center; font-weight: bold; flex-shrink: 0; font-size: 0.7rem;">4</span>
-                                    <span><strong>Úsalo en el anuncio:</strong> Abre el anuncio en Safari o Chrome, escribe <code>⚡ HabiTrack</code> en tu barra de direcciones y pulsa sobre el marcador sugerido.</span>
+                                    <span><strong>Úsalo en el anuncio:</strong> Abre el anuncio en Safari o Chrome, escribe <code>HabiTrack</code> en tu barra de direcciones y pulsa sobre el marcador sugerido.</span>
                                 </div>
                                 <div style="display: flex; gap: 0.5rem; align-items: flex-start;">
                                     <span style="background: var(--primary); color: #fff; border-radius: 50%; width: 18px; height: 18px; display: inline-flex; align-items: center; justify-content: center; font-weight: bold; flex-shrink: 0; font-size: 0.7rem;">5</span>
@@ -538,7 +792,7 @@
                         <!-- Contenedor del Botón e Instalador -->
                         <div class="flex-center" style="gap: 0.75rem; justify-content: flex-start; flex-wrap: wrap;">
                             <a id="bookmarklet-btn" href="#" class="btn btn-indigo btn-sm" style="user-select: none; font-size: 0.75rem; padding: 0.55rem 0.85rem; border-radius: 6px;" onclick="if (event.preventDefault) event.preventDefault(); else return false;" title="Arrastra este botón a tu barra de marcadores">
-                                <i class="fa-solid fa-wand-magic-sparkles"></i> ⚡ HabiTrack Extractor
+                                <i class="fa-solid fa-wand-magic-sparkles"></i> HabiTrack Extractor
                             </a>
                             <button type="button" id="btn-copy-bookmarklet" class="btn btn-secondary btn-sm" style="font-size: 0.75rem; padding: 0.55rem 0.85rem; border-radius: 6px;">
                                 <i class="fa-solid fa-copy"></i> Copiar Código
@@ -630,11 +884,11 @@
                             <label for="prop-rating">Puntuación / Valoración</label>
                             <select id="prop-rating">
                                 <option value="0">Sin valorar</option>
-                                <option value="5">⭐⭐⭐⭐⭐ (Excelente)</option>
-                                <option value="4">⭐⭐⭐⭐☆ (Muy Bueno)</option>
-                                <option value="3">⭐⭐⭐☆☆ (Normal)</option>
-                                <option value="2">⭐⭐☆☆☆ (Regular)</option>
-                                <option value="1">⭐☆☆☆☆ (Malo)</option>
+                                <option value="5">5 / 5 — Excelente</option>
+                                <option value="4">4 / 5 — Muy Bueno</option>
+                                <option value="3">3 / 5 — Normal</option>
+                                <option value="2">2 / 5 — Regular</option>
+                                <option value="1">1 / 5 — Mejorable</option>
                             </select>
                         </div>
                         <div class="form-group">
@@ -679,6 +933,6 @@
     <div id="toast" class="toast hidden"></div>
     <!-- Leaflet Map JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-    <script src="app.js"></script>
+    <script src="app.js?v=21.0"></script>
 </body>
 </html>

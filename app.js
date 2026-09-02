@@ -27,6 +27,13 @@ const CCAA_LIST = [
 // ==========================================================================
 
 document.addEventListener('DOMContentLoaded', async () => {
+    // Registro de Service Worker para soporte PWA Offline
+    if ('serviceWorker' in navigator && window.location.protocol.startsWith('http')) {
+        navigator.serviceWorker.register('/sw.js').catch(err => {
+            console.debug('Service Worker no registrado:', err);
+        });
+    }
+
     // Configurar manejadores de autenticación
     setupAuthHandlers();
     
@@ -50,7 +57,11 @@ async function checkSession() {
         });
         
         if (response.status === 401 || response.status === 403) {
-            logout();
+            token = '';
+            username = '';
+            localStorage.removeItem('token');
+            localStorage.removeItem('username');
+            showLoginScreen();
             return;
         }
         
@@ -65,166 +76,239 @@ async function checkSession() {
             hideLoginScreen();
             await loadAppData();
         } else {
-            logout();
+            token = '';
+            username = '';
+            localStorage.removeItem('token');
+            localStorage.removeItem('username');
+            showLoginScreen();
         }
     } catch (err) {
         console.error('Error verifying session:', err);
-        showToast('Error de conexión al verificar sesión.', 'error');
-        // Dejar pasar si es error de red y ya tenemos credenciales cacheadas
         hideLoginScreen();
         await loadAppData();
     }
 }
 
 async function loadAppData() {
-    // 1. Cargar configuración de la calculadora desde el servidor
-    await fetchSettings();
-    
-    // 2. Cargar propiedades guardadas en la base de datos
-    await fetchProperties();
-    
-    // 3. Poblar desplegables de CCAA
-    populateCcaaDropdowns();
+    try {
+        await fetchSettings();
+        await fetchProperties();
+        
+        populateCcaaDropdowns();
 
-    // 4. Configurar manejadores de eventos (evitar duplicados)
-    if (!eventHandlersSetup) {
-        setupEventHandlers();
-        eventHandlersSetup = true;
+        if (!eventHandlersSetup) {
+            setupEventHandlers();
+            eventHandlersSetup = true;
+        }
+
+        renderDashboard();
+        renderListings();
+        renderSettingsForm();
+    } catch (err) {
+        console.error('Error loading app data:', err);
     }
-
-    // 5. Renderizar vistas
-    renderDashboard();
-    renderListings();
-    renderSettingsForm();
 }
 
 function showLoginScreen() {
-    document.getElementById('login-container').classList.remove('hidden-app');
-    document.getElementById('app-container').classList.add('hidden-app');
+    const loginContainer = document.getElementById('login-container');
+    const appContainer = document.getElementById('app-container');
+    if (loginContainer) {
+        loginContainer.style.setProperty('display', 'flex', 'important');
+        loginContainer.classList.remove('hidden-app');
+    }
+    if (appContainer) {
+        appContainer.style.setProperty('display', 'none', 'important');
+        appContainer.classList.add('hidden-app');
+    }
 }
 
 function hideLoginScreen() {
-    document.getElementById('login-container').classList.add('hidden-app');
-    document.getElementById('app-container').classList.remove('hidden-app');
+    const loginContainer = document.getElementById('login-container');
+    const appContainer = document.getElementById('app-container');
+    if (loginContainer) {
+        loginContainer.style.setProperty('display', 'none', 'important');
+        loginContainer.classList.add('hidden-app');
+    }
+    if (appContainer) {
+        appContainer.style.setProperty('display', 'flex', 'important');
+        appContainer.classList.remove('hidden-app');
+    }
 }
 
 function setupAuthHandlers() {
     const otpRequestForm = document.getElementById('otp-request-form');
     const otpVerifyForm = document.getElementById('otp-verify-form');
+    const btnSendOtp = document.getElementById('btn-send-otp');
+    const btnVerifyOtp = document.getElementById('btn-verify-otp');
     const btnChangeEmail = document.getElementById('btn-change-email');
+    const emailInput = document.getElementById('otp-email');
+    const codeInput = document.getElementById('otp-code');
 
-    let currentPendingEmail = '';
+    let currentPendingEmail = localStorage.getItem('pending_email') || '';
 
-    if (otpRequestForm) {
-        otpRequestForm.addEventListener('submit', async (e) => {
+    // Función unificada para solicitar OTP
+    const handleSendOtp = async (e) => {
+        if (e) {
             e.preventDefault();
-            const emailInput = document.getElementById('otp-email');
-            const email = emailInput ? emailInput.value.trim() : '';
+            e.stopPropagation();
+        }
 
-            if (!email || !email.includes('@')) {
-                showToast('Introduce un correo electrónico válido.', 'error');
-                return;
+        const email = emailInput ? emailInput.value.trim() : '';
+        if (!email || !email.includes('@')) {
+            showToast('Introduce un correo electrónico válido.', 'error');
+            return;
+        }
+
+        if (btnSendOtp) {
+            btnSendOtp.disabled = true;
+            btnSendOtp.innerHTML = 'Enviando código... <i class="fa-solid fa-spinner fa-spin"></i>';
+        }
+
+        try {
+            const response = await fetch('/api/auth/send-otp', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email })
+            });
+
+            let data;
+            try {
+                const text = await response.text();
+                data = JSON.parse(text);
+            } catch (err) {
+                data = { error: `Error del servidor (HTTP ${response.status})` };
             }
 
+            if (response.ok) {
+                currentPendingEmail = email;
+                localStorage.setItem('pending_email', email);
+                const emailDisplay = document.getElementById('sent-email-display');
+                if (emailDisplay) emailDisplay.textContent = email;
+
+                if (otpRequestForm) otpRequestForm.style.display = 'none';
+                if (otpVerifyForm) otpVerifyForm.style.display = 'block';
+
+                const devBanner = document.getElementById('otp-dev-banner');
+                const devCodeEl = document.getElementById('otp-dev-code');
+
+                if (data.devOtp) {
+                    if (devCodeEl) devCodeEl.textContent = data.devOtp;
+                    if (devBanner) devBanner.style.display = 'block';
+                    if (codeInput) codeInput.value = data.devOtp;
+                }
+
+                if (codeInput) codeInput.focus();
+
+                showToast(data.message || `Código enviado a ${email}`, 'success');
+            } else {
+                showToast(data.error || 'Error al enviar código de acceso.', 'error');
+            }
+        } catch (err) {
+            console.error('Error requesting OTP:', err);
+            showToast('Error de conexión con el servidor.', 'error');
+        } finally {
+            if (btnSendOtp) {
+                btnSendOtp.disabled = false;
+                btnSendOtp.innerHTML = 'Enviar Código de Acceso <i class="fa-solid fa-paper-plane"></i>';
+            }
+        }
+    };
+
+    // Función unificada para verificar OTP
+    const handleVerifyOtp = async (e) => {
+        if (e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        const code = codeInput ? codeInput.value.trim() : '';
+        const targetEmail = currentPendingEmail || 
+                            (emailInput ? emailInput.value.trim() : '') || 
+                            localStorage.getItem('pending_email') || '';
+
+        if (!targetEmail) {
+            showToast('Por favor, indica tu correo electrónico primero.', 'error');
+            return;
+        }
+
+        if (!code || code.length < 6) {
+            showToast('Introduce el código de 6 dígitos.', 'error');
+            return;
+        }
+
+        if (btnVerifyOtp) {
+            btnVerifyOtp.disabled = true;
+            btnVerifyOtp.innerHTML = 'Verificando... <i class="fa-solid fa-spinner fa-spin"></i>';
+        }
+
+        try {
+            const response = await fetch('/api/auth/verify-otp', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: targetEmail, code })
+            });
+
+            let data;
             try {
-                const response = await fetch('/api/auth/send-otp', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email })
-                });
-
-                let data;
-                try {
-                    const text = await response.text();
-                    data = JSON.parse(text);
-                } catch (err) {
-                    data = { error: `Error del servidor (HTTP ${response.status})` };
-                }
-
-                if (response.ok) {
-                    currentPendingEmail = email;
-                    const emailDisplay = document.getElementById('sent-email-display');
-                    if (emailDisplay) emailDisplay.textContent = email;
-
-                    otpRequestForm.style.setProperty('display', 'none', 'important');
-                    otpRequestForm.classList.remove('active-form');
-
-                    otpVerifyForm.style.setProperty('display', 'block', 'important');
-                    otpVerifyForm.classList.remove('hidden');
-                    otpVerifyForm.classList.add('active-form');
-
-                    const codeInput = document.getElementById('otp-code');
-                    if (codeInput) {
-                        codeInput.value = '';
-                        codeInput.focus();
-                    }
-
-                    showToast(`Código enviado a ${email}`, 'success');
-                } else {
-                    showToast(data.error || 'Error al enviar código de acceso.', 'error');
-                }
+                const text = await response.text();
+                data = JSON.parse(text);
             } catch (err) {
-                console.error('Error requesting OTP:', err);
-                showToast('Error de conexión con el servidor.', 'error');
+                data = { error: `Error del servidor (HTTP ${response.status})` };
+            }
+
+            if (response.ok) {
+                token = data.token;
+                username = data.email || data.username || targetEmail;
+                localStorage.setItem('token', token);
+                localStorage.setItem('username', username);
+
+                const label = document.getElementById('username-label');
+                if (label) label.textContent = username;
+
+                showToast('Sesión iniciada correctamente.', 'success');
+                hideLoginScreen();
+                await loadAppData();
+            } else {
+                showToast(data.error || 'Código incorrecto o caducado.', 'error');
+            }
+        } catch (err) {
+            console.error('Error verifying OTP:', err);
+            showToast('Error de conexión con el servidor.', 'error');
+        } finally {
+            if (btnVerifyOtp) {
+                btnVerifyOtp.disabled = false;
+                btnVerifyOtp.innerHTML = 'Verificar e Entrar <i class="fa-solid fa-right-to-bracket"></i>';
+            }
+        }
+    };
+
+    if (btnSendOtp) btnSendOtp.addEventListener('click', handleSendOtp);
+    if (otpRequestForm) otpRequestForm.addEventListener('submit', handleSendOtp);
+    if (emailInput) {
+        emailInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                handleSendOtp(e);
             }
         });
     }
 
-    if (otpVerifyForm) {
-        otpVerifyForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const codeInput = document.getElementById('otp-code');
-            const code = codeInput ? codeInput.value.trim() : '';
-
-            if (!code || code.length < 6) {
-                showToast('Introduce el código de 6 dígitos.', 'error');
-                return;
-            }
-
-            try {
-                const response = await fetch('/api/auth/verify-otp', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email: currentPendingEmail, code })
-                });
-
-                let data;
-                try {
-                    const text = await response.text();
-                    data = JSON.parse(text);
-                } catch (err) {
-                    data = { error: `Error del servidor (HTTP ${response.status})` };
-                }
-
-                if (response.ok) {
-                    token = data.token;
-                    username = data.email || data.username;
-                    localStorage.setItem('token', token);
-                    localStorage.setItem('username', username);
-
-                    const label = document.getElementById('username-label');
-                    if (label) label.textContent = username;
-
-                    showToast('Sesión iniciada correctamente.', 'success');
-                    hideLoginScreen();
-                    await loadAppData();
-                } else {
-                    showToast(data.error || 'Código incorrecto o caducado.', 'error');
-                }
-            } catch (err) {
-                console.error('Error verifying OTP:', err);
-                showToast('Error de conexión con el servidor.', 'error');
+    if (btnVerifyOtp) btnVerifyOtp.addEventListener('click', handleVerifyOtp);
+    if (otpVerifyForm) otpVerifyForm.addEventListener('submit', handleVerifyOtp);
+    if (codeInput) {
+        codeInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                handleVerifyOtp(e);
             }
         });
     }
 
     if (btnChangeEmail) {
         btnChangeEmail.addEventListener('click', () => {
-            otpVerifyForm.style.setProperty('display', 'none', 'important');
-            otpVerifyForm.classList.remove('active-form');
-
-            otpRequestForm.style.setProperty('display', 'block', 'important');
-            otpRequestForm.classList.add('active-form');
+            if (otpVerifyForm) otpVerifyForm.style.display = 'none';
+            if (otpRequestForm) otpRequestForm.style.display = 'block';
+            if (emailInput) emailInput.focus();
         });
     }
 
@@ -845,11 +929,13 @@ function createPropertyCardDOM(prop) {
                 <span class="badge badge-price">${formatCurrency(prop.price)}</span>
                 <span class="badge badge-type">${badgeTypeStr}</span>
             </div>
-            ${prop.rating ? `<div class="card-rating-container">${generateStarsHTML(prop.rating)}</div>` : ''}
         </div>
         <div class="card-content">
             <div class="card-title-row">
-                <h4 title="${prop.title}">${prop.title}</h4>
+                <div class="card-title-main">
+                    <h4 title="${prop.title}">${prop.title}</h4>
+                    ${prop.rating ? generateStarsHTML(prop.rating) : ''}
+                </div>
                 <span class="card-zone"><i class="fa-solid fa-location-dot"></i> ${prop.zone || 'Zona no especificada'}</span>
             </div>
             
@@ -936,7 +1022,7 @@ function renderListings() {
     if (prevBtn && nextBtn && indicator) {
         prevBtn.disabled = currentPage === 1;
         nextBtn.disabled = currentPage === totalPages;
-        indicator.textContent = `Página ${currentPage} de ${totalPages} (${filteredProperties.length} pisos total)`;
+        indicator.innerHTML = `<span>Página <strong class="page-num">${currentPage}</strong> de <strong class="page-num">${totalPages}</strong></span>`;
     }
 
     if (filteredProperties.length === 0) {
@@ -1543,8 +1629,19 @@ function setupEventHandlers() {
     if (filterPriceMax) filterPriceMax.addEventListener('input', filterTrigger);
     if (filterSavingsMax) filterSavingsMax.addEventListener('input', filterTrigger);
     if (filterRooms) filterRooms.addEventListener('change', filterTrigger);
-    if (filterGarage) filterGarage.addEventListener('change', filterTrigger);
-    if (sortBy) sortBy.addEventListener('change', filterTrigger);
+    const btnClearFilters = document.getElementById('btn-clear-filters');
+    if (btnClearFilters) {
+        btnClearFilters.addEventListener('click', () => {
+            if (filterSearch) filterSearch.value = '';
+            if (filterPriceMax) filterPriceMax.value = '';
+            if (filterSavingsMax) filterSavingsMax.value = '';
+            if (filterRooms) filterRooms.value = '';
+            if (filterGarage) filterGarage.value = '';
+            if (sortBy) sortBy.value = 'date-desc';
+            filterTrigger();
+            showToast('Filtros restablecidos.', 'success');
+        });
+    }
 
     // --- 6. CAMBIO DE VISTA (CUADRÍCULA / TABLA) ---
     const btnViewGrid = document.getElementById('btn-view-grid');
@@ -1913,19 +2010,35 @@ function setupEventHandlers() {
 
     const bookmarkletBtn = document.getElementById('bookmarklet-btn');
     const btnCopyBookmarklet = document.getElementById('btn-copy-bookmarklet');
+    const guideBookmarkletBtn = document.getElementById('guide-bookmarklet-btn');
+    const btnGuideCopyBookmarklet = document.getElementById('btn-guide-copy-bookmarklet');
+    const btnGuideViewCode = document.getElementById('btn-guide-view-code');
+    const guideCodeBox = document.getElementById('guide-code-box');
+    const guideCodeTextarea = document.getElementById('guide-code-textarea');
     
-    if (bookmarkletBtn) {
-        bookmarkletBtn.href = bookmarkletCode;
-    }
-    
-    if (btnCopyBookmarklet) {
-        btnCopyBookmarklet.addEventListener('click', () => {
-            navigator.clipboard.writeText(bookmarkletCode).then(() => {
-                showToast('Código de marcador copiado al portapapeles. Agrégalo manualmente en tus favoritos.', 'success');
-            }).catch(err => {
-                console.error('Error al copiar:', err);
-                showToast('No se pudo copiar el código automáticamente.', 'error');
-            });
+    if (bookmarkletBtn) bookmarkletBtn.href = bookmarkletCode;
+    if (guideBookmarkletBtn) guideBookmarkletBtn.href = bookmarkletCode;
+    if (guideCodeTextarea) guideCodeTextarea.value = bookmarkletCode;
+
+    const copyHandler = () => {
+        navigator.clipboard.writeText(bookmarkletCode).then(() => {
+            showToast('Código Bookmarklet copiado al portapapeles con éxito.', 'success');
+        }).catch(err => {
+            console.error('Error al copiar:', err);
+            showToast('No se pudo copiar el código automáticamente.', 'error');
+        });
+    };
+
+    if (btnCopyBookmarklet) btnCopyBookmarklet.addEventListener('click', copyHandler);
+    if (btnGuideCopyBookmarklet) btnGuideCopyBookmarklet.addEventListener('click', copyHandler);
+
+    if (btnGuideViewCode && guideCodeBox) {
+        btnGuideViewCode.addEventListener('click', () => {
+            const isHidden = guideCodeBox.style.display === 'none';
+            guideCodeBox.style.display = isHidden ? 'block' : 'none';
+            btnGuideViewCode.innerHTML = isHidden ? 
+                '<i class="fa-solid fa-code text-indigo"></i> Ocultar Código' : 
+                '<i class="fa-solid fa-code text-secondary"></i> Ver Código Fuente';
         });
     }
 }
@@ -2061,15 +2174,17 @@ function openEditModal(property) {
 }
 
 function generateStarsHTML(rating) {
-    let html = '';
+    const r = parseInt(rating) || 0;
+    if (r <= 0) return '';
+    let stars = '';
     for (let i = 1; i <= 5; i++) {
-        if (i <= rating) {
-            html += '<i class="fa-solid fa-star"></i>';
+        if (i <= r) {
+            stars += '<i class="fa-solid fa-star text-amber"></i>';
         } else {
-            html += '<i class="fa-regular fa-star"></i>';
+            stars += '<i class="fa-regular fa-star text-muted-star"></i>';
         }
     }
-    return `<span class="rating-stars" title="Puntuación: ${rating}/5">${html}</span>`;
+    return `<div class="rating-badge" title="Valoración: ${r}/5"><span class="rating-stars">${stars}</span><span class="rating-score">${r}.0</span></div>`;
 }
 
 function getValidUrl(text) {
@@ -2140,32 +2255,31 @@ function renderMap() {
         counterEl.textContent = `${propertiesWithCoords.length} ubicadas`;
     }
 
+    const satelliteLayerUrl = 'https://{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}';
+    const satelliteOptions = {
+        subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+        maxZoom: 20,
+        attribution: '&copy; Google Maps Satélite'
+    };
+
     if (propertiesWithCoords.length === 0) {
         if (!mapInstance) {
-            mapInstance = L.map('interactive-map', { zoomControl: false }).setView([40.4167, -3.7037], 5);
-            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
-                subdomains: 'abcd',
-                maxZoom: 20
-            }).addTo(mapInstance);
+            mapInstance = L.map('interactive-map', { zoomControl: false }).setView([40.4167, -3.7037], 6);
+            L.tileLayer(satelliteLayerUrl, satelliteOptions).addTo(mapInstance);
         }
         return;
     }
 
     if (!mapInstance) {
         mapInstance = L.map('interactive-map').setView([40.4167, -3.7037], 6);
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
-            subdomains: 'abcd',
-            maxZoom: 20
-        }).addTo(mapInstance);
+        L.tileLayer(satelliteLayerUrl, satelliteOptions).addTo(mapInstance);
     }
 
     // Limpiar marcadores existentes
     mapMarkers.forEach(marker => mapInstance.removeLayer(marker));
     mapMarkers = [];
 
-    // Añadir marcadores de pisos
+    // Añadir marcadores de pisos con pines satelitales estilizados
     propertiesWithCoords.forEach(p => {
         const calc = calculateExpenses(p.price, p.ccaa, p.estate_type);
         
@@ -2173,7 +2287,7 @@ function renderMap() {
         if (p.photos) {
             const firstPhoto = p.photos.split(',')[0].trim();
             if (firstPhoto) {
-                photoHTML = `<img src="${firstPhoto}" style="width: 100%; height: 75px; object-fit: cover; border-radius: 4px; margin-bottom: 0.35rem;">`;
+                photoHTML = `<img src="${firstPhoto}" style="width: 100%; height: 85px; object-fit: cover; border-radius: 6px; margin-bottom: 0.45rem;">`;
             }
         }
 
@@ -2182,13 +2296,21 @@ function renderMap() {
                 ${photoHTML}
                 <div class="map-popup-title">${p.title}</div>
                 <div class="map-popup-price">${formatCurrency(p.price)}</div>
-                <div class="map-popup-detail"><i class="fa-solid fa-calculator"></i> Hipoteca: <strong>${formatCurrency(calc.mortgageMonthlyPayment)}/mes</strong></div>
-                <div class="map-popup-detail"><i class="fa-solid fa-wallet"></i> Ahorro Firma: <strong>${formatCurrency(calc.totalRequiredBudget)}</strong></div>
-                <div class="map-popup-button" onclick="showExpensesModalFromMap(${p.id})"><i class="fa-solid fa-list"></i> Ver desglose</div>
+                <div class="map-popup-detail"><i class="fa-solid fa-calculator text-indigo"></i> Hipoteca: <strong>${formatCurrency(calc.mortgageMonthlyPayment)}/mes</strong></div>
+                <div class="map-popup-detail"><i class="fa-solid fa-wallet text-amber"></i> Ahorro Firma: <strong>${formatCurrency(calc.totalRequiredBudget)}</strong></div>
+                <div class="map-popup-button" onclick="showExpensesModalFromMap(${p.id})"><i class="fa-solid fa-calculator"></i> Ver Desglose Completo</div>
             </div>
         `;
 
-        const marker = L.marker([p.latitude, p.longitude]).addTo(mapInstance);
+        const pinIcon = L.divIcon({
+            className: 'custom-map-marker',
+            html: `<div class="map-marker-pin"><i class="fa-solid fa-house"></i> <span>${formatCurrency(p.price)}</span></div>`,
+            iconSize: [85, 30],
+            iconAnchor: [42, 30],
+            popupAnchor: [0, -32]
+        });
+
+        const marker = L.marker([p.latitude, p.longitude], { icon: pinIcon }).addTo(mapInstance);
         marker.bindPopup(popupContent);
         mapMarkers.push(marker);
     });
@@ -2278,6 +2400,31 @@ document.addEventListener('DOMContentLoaded', () => {
             toggleDesktopBtn.style.color = 'var(--text-muted)';
             desktopInstructions.style.display = 'none';
             mobileInstructions.style.display = 'block';
+        });
+    }
+
+    const guideToggleDesktopBtn = document.getElementById('guide-toggle-desktop');
+    const guideToggleMobileBtn = document.getElementById('guide-toggle-mobile');
+    const guideDesktopInstructions = document.getElementById('guide-instructions-desktop');
+    const guideMobileInstructions = document.getElementById('guide-instructions-mobile');
+
+    if (guideToggleDesktopBtn && guideToggleMobileBtn && guideDesktopInstructions && guideMobileInstructions) {
+        guideToggleDesktopBtn.addEventListener('click', () => {
+            guideToggleDesktopBtn.style.background = 'var(--primary)';
+            guideToggleDesktopBtn.style.color = '#fff';
+            guideToggleMobileBtn.style.background = 'transparent';
+            guideToggleMobileBtn.style.color = 'var(--text-muted)';
+            guideDesktopInstructions.style.display = 'block';
+            guideMobileInstructions.style.display = 'none';
+        });
+        
+        guideToggleMobileBtn.addEventListener('click', () => {
+            guideToggleMobileBtn.style.background = 'var(--primary)';
+            guideToggleMobileBtn.style.color = '#fff';
+            guideToggleDesktopBtn.style.background = 'transparent';
+            guideToggleDesktopBtn.style.color = 'var(--text-muted)';
+            guideDesktopInstructions.style.display = 'none';
+            guideMobileInstructions.style.display = 'block';
         });
     }
 });
