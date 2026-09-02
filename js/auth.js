@@ -90,6 +90,11 @@ export function setupAuthHandlers(onLoginSuccess) {
                     if (devBanner) devBanner.style.display = 'block';
                 }
 
+                const loginTitle = document.getElementById('login-title');
+                const loginSubtitle = document.getElementById('login-subtitle');
+                if (loginTitle) loginTitle.textContent = 'Verificar Código';
+                if (loginSubtitle) loginSubtitle.textContent = `Introduce el código de acceso enviado a tu correo.`;
+
                 otpRequestForm.classList.add('hidden');
                 otpRequestForm.style.display = 'none';
 
@@ -144,6 +149,11 @@ export function setupAuthHandlers(onLoginSuccess) {
 
     if (btnChangeEmail) {
         btnChangeEmail.addEventListener('click', () => {
+            const loginTitle = document.getElementById('login-title');
+            const loginSubtitle = document.getElementById('login-subtitle');
+            if (loginTitle) loginTitle.textContent = 'Bienvenido';
+            if (loginSubtitle) loginSubtitle.textContent = 'Introduce tu correo para recibir un código de acceso instantáneo.';
+
             otpVerifyForm.classList.add('hidden');
             otpVerifyForm.style.display = 'none';
             otpRequestForm.classList.remove('hidden');

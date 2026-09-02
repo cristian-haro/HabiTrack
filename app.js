@@ -185,6 +185,11 @@ function setupAuthHandlers() {
                 const emailDisplay = document.getElementById('sent-email-display');
                 if (emailDisplay) emailDisplay.textContent = email;
 
+                const loginTitle = document.getElementById('login-title');
+                const loginSubtitle = document.getElementById('login-subtitle');
+                if (loginTitle) loginTitle.textContent = 'Verificar Código';
+                if (loginSubtitle) loginSubtitle.textContent = `Introduce el código de acceso enviado a tu correo.`;
+
                 if (otpRequestForm) otpRequestForm.style.display = 'none';
                 if (otpVerifyForm) otpVerifyForm.style.display = 'block';
 
@@ -197,7 +202,10 @@ function setupAuthHandlers() {
                     if (codeInput) codeInput.value = data.devOtp;
                 }
 
-                if (codeInput) codeInput.focus();
+                if (codeInput) {
+                    if (!data.devOtp) codeInput.value = '';
+                    codeInput.focus();
+                }
 
                 showToast(data.message || `Código enviado a ${email}`, 'success');
             } else {
@@ -306,6 +314,11 @@ function setupAuthHandlers() {
 
     if (btnChangeEmail) {
         btnChangeEmail.addEventListener('click', () => {
+            const loginTitle = document.getElementById('login-title');
+            const loginSubtitle = document.getElementById('login-subtitle');
+            if (loginTitle) loginTitle.textContent = 'Bienvenido';
+            if (loginSubtitle) loginSubtitle.textContent = 'Introduce tu correo para recibir un código de acceso instantáneo.';
+
             if (otpVerifyForm) otpVerifyForm.style.display = 'none';
             if (otpRequestForm) otpRequestForm.style.display = 'block';
             if (emailInput) emailInput.focus();

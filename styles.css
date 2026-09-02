@@ -2118,3 +2118,39 @@ code {
 .btn-logout:hover {
     color: #e11d48;
 }
+
+/* ==========================================================================
+   TOAST NOTIFICATIONS
+   ========================================================================== */
+.toast {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    background: #0f172a;
+    color: #ffffff;
+    padding: 0.9rem 1.4rem;
+    border-radius: var(--radius-md);
+    box-shadow: 0 12px 30px -4px rgba(0, 0, 0, 0.3);
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 0.925rem;
+    font-weight: 500;
+    z-index: 100000;
+    opacity: 0;
+    transform: translateY(1.5rem);
+    pointer-events: none;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.toast.show {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+}
+
+.toast.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
