@@ -2031,6 +2031,49 @@ code {
     margin-bottom: 0.45rem;
 }
 
+.login-form {
+    display: block;
+    width: 100%;
+}
+
+.login-form.hidden {
+    display: none !important;
+}
+
+.login-form.active-form {
+    display: block !important;
+}
+
+#otp-code {
+    letter-spacing: 0.35em !important;
+    font-weight: 700 !important;
+    text-align: center !important;
+    font-size: 1.35rem !important;
+    padding: 0.75rem 1rem !important;
+    background-color: #ffffff !important;
+    border: 2px solid var(--primary) !important;
+    color: var(--text-main) !important;
+}
+
+.otp-dev-banner {
+    background: #ecfdf5;
+    border: 1.5px solid #a7f3d0;
+    border-radius: var(--radius-md);
+    padding: 0.75rem 1rem;
+    text-align: center;
+    margin-bottom: 1rem;
+}
+
+.otp-sent-info {
+    background: rgba(99, 102, 241, 0.08);
+    padding: 0.75rem 1rem;
+    border-radius: var(--radius-md);
+    font-size: 0.85rem;
+    border: 1px solid rgba(99, 102, 241, 0.2);
+    margin-bottom: 1rem;
+    text-align: center;
+}
+
 .login-form input {
     width: 100%;
     padding: 0.75rem 1rem;

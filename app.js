@@ -203,8 +203,16 @@ function setupAuthHandlers() {
                 if (loginTitle) loginTitle.textContent = 'Verificar Código';
                 if (loginSubtitle) loginSubtitle.textContent = `Introduce el código de acceso enviado a tu correo.`;
 
-                if (otpRequestForm) otpRequestForm.style.display = 'none';
-                if (otpVerifyForm) otpVerifyForm.style.display = 'block';
+                if (otpRequestForm) {
+                    otpRequestForm.classList.remove('active-form');
+                    otpRequestForm.classList.add('hidden');
+                    otpRequestForm.style.display = 'none';
+                }
+                if (otpVerifyForm) {
+                    otpVerifyForm.classList.remove('hidden');
+                    otpVerifyForm.classList.add('active-form');
+                    otpVerifyForm.style.display = 'block';
+                }
 
                 const devBanner = document.getElementById('otp-dev-banner');
                 const devCodeEl = document.getElementById('otp-dev-code');
@@ -332,8 +340,16 @@ function setupAuthHandlers() {
             if (loginTitle) loginTitle.textContent = 'Bienvenido';
             if (loginSubtitle) loginSubtitle.textContent = 'Introduce tu correo para recibir un código de acceso instantáneo.';
 
-            if (otpVerifyForm) otpVerifyForm.style.display = 'none';
-            if (otpRequestForm) otpRequestForm.style.display = 'block';
+            if (otpVerifyForm) {
+                otpVerifyForm.classList.remove('active-form');
+                otpVerifyForm.classList.add('hidden');
+                otpVerifyForm.style.display = 'none';
+            }
+            if (otpRequestForm) {
+                otpRequestForm.classList.remove('hidden');
+                otpRequestForm.classList.add('active-form');
+                otpRequestForm.style.display = 'block';
+            }
             if (emailInput) emailInput.focus();
         });
     }
