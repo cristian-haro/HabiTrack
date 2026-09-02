@@ -41,14 +41,17 @@ async function sendOtp(req, res, next) {
 
         const emailResult = await sendOTPEmail(cleanEmail, otpCode);
 
-        res.json({
+        const responseData = {
             success: true,
-            message: emailResult.sent
-                ? `Código de acceso enviado a tu correo (${cleanEmail}).`
-                : `Código de acceso generado: ${otpCode}`,
-            email: cleanEmail,
-            devOtp: otpCode
-        });
+            message: `Código de acceso enviado a tu correo (${cleanEmail}).`,
+            email: cleanEmail
+        };
+
+        if (process.env.NODE_ENV === 'test') {
+            responseData.devOtp = otpCode;
+        }
+
+        res.json(responseData);
     } catch (err) {
         next(err);
     }

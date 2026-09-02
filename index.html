@@ -15,7 +15,7 @@
     <meta name="theme-color" content="#6366f1">
     <link rel="manifest" href="manifest.json">
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="styles.css?v=25.0">
+    <link rel="stylesheet" href="styles.css?v=26.0">
     <script>
         // Purga preventiva de Service Workers antiguos en caché
         if ('serviceWorker' in navigator) {
@@ -84,11 +84,6 @@
 
                 <!-- Step 2: Verify OTP -->
                 <form id="otp-verify-form" class="login-form hidden" style="display: none;">
-                    <div id="otp-dev-banner" class="otp-dev-banner mb-3" style="display: none; background: #ecfdf5; border: 1.5px solid #a7f3d0; border-radius: 8px; padding: 0.75rem; text-align: center;">
-                        <span style="font-size: 0.775rem; font-weight: 600; color: #065f46; display: block; margin-bottom: 0.25rem;">🔑 Código de acceso generado:</span>
-                        <strong id="otp-dev-code" style="font-size: 1.35rem; letter-spacing: 4px; color: #047857; font-family: monospace;">123456</strong>
-                    </div>
-
                     <div class="otp-sent-info text-center mb-3" style="background: rgba(99, 102, 241, 0.08); padding: 0.75rem; border-radius: 8px; font-size: 0.85rem; border: 1px solid rgba(99, 102, 241, 0.2); margin-bottom: 1rem;">
                         <span>Código enviado a <strong id="sent-email-display">tu@email.com</strong></span>
                     </div>
@@ -946,6 +941,6 @@
     <div id="toast" class="toast hidden"></div>
     <!-- Leaflet Map JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-    <script src="app.js?v=25.0"></script>
+    <script src="app.js?v=26.0"></script>
 </body>
 </html>

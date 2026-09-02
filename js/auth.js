@@ -83,12 +83,6 @@ export function setupAuthHandlers(onLoginSuccess) {
                 const sentDisplay = document.getElementById('sent-email-display');
                 if (sentDisplay) sentDisplay.textContent = email;
 
-                const devBanner = document.getElementById('otp-dev-banner');
-                const devCodeEl = document.getElementById('otp-dev-code');
-                if (data.devOtp) {
-                    if (devCodeEl) devCodeEl.textContent = data.devOtp;
-                    if (devBanner) devBanner.style.display = 'block';
-                }
 
                 const loginTitle = document.getElementById('login-title');
                 const loginSubtitle = document.getElementById('login-subtitle');

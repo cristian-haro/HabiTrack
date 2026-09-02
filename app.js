@@ -214,17 +214,8 @@ function setupAuthHandlers() {
                     otpVerifyForm.style.display = 'block';
                 }
 
-                const devBanner = document.getElementById('otp-dev-banner');
-                const devCodeEl = document.getElementById('otp-dev-code');
-
-                if (data.devOtp) {
-                    if (devCodeEl) devCodeEl.textContent = data.devOtp;
-                    if (devBanner) devBanner.style.display = 'block';
-                    if (codeInput) codeInput.value = data.devOtp;
-                }
-
                 if (codeInput) {
-                    if (!data.devOtp) codeInput.value = '';
+                    codeInput.value = '';
                     codeInput.focus();
                 }
 
