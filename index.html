@@ -16,7 +16,7 @@
     <meta name="theme-color" content="#6366f1">
     <link rel="manifest" href="manifest.json">
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="styles.css?v=34.0">
+    <link rel="stylesheet" href="styles.css?v=35.0">
     <script>
         // Purga preventiva de Service Workers antiguos en caché
         if ('serviceWorker' in navigator) {
@@ -285,9 +285,6 @@
                         <div class="toolbar-top-actions">
                             <button type="button" id="btn-toggle-filters-mobile" class="btn btn-secondary btn-sm mobile-filter-btn" title="Mostrar/Ocultar filtros avanzados">
                                 <i class="fa-solid fa-sliders"></i> <span class="mobile-filter-text">Filtros</span> <span id="mobile-filter-badge" class="filter-count-badge" style="display: none;">0</span>
-                            </button>
-                            <button type="button" id="btn-verify-all-links" class="btn btn-secondary btn-sm" title="Comprobar si los anuncios siguen activos o fueron dados de baja">
-                                <i class="fa-solid fa-link-slash text-indigo"></i> <span class="hide-mobile">Verificar Enlaces</span>
                             </button>
                             <div class="filter-item sort-item">
                                 <select id="sort-by">
@@ -948,7 +945,6 @@
             <div class="modal-header detail-sheet-header">
                 <div class="detail-header-info">
                     <div class="detail-header-badges">
-                        <span id="detail-status-badge" class="badge badge-status-active"><i class="fa-solid fa-circle-check"></i> Anuncio Activo</span>
                         <span id="detail-type-badge" class="badge badge-type">Segunda Mano</span>
                         <span id="detail-rating-badge" class="badge badge-dark"><i class="fa-solid fa-star text-amber"></i> <span id="detail-rating-val">4.0</span>/5</span>
                     </div>
@@ -1055,9 +1051,6 @@
             <!-- Modal Footer -->
             <div class="modal-footer detail-sheet-footer">
                 <div class="detail-footer-left">
-                    <button type="button" class="btn btn-secondary btn-sm" id="btn-verify-detail-link">
-                        <i class="fa-solid fa-shield-halved text-indigo"></i> Verificar Disponibilidad
-                    </button>
                     <button type="button" class="btn btn-secondary btn-sm" id="btn-expenses-from-detail">
                         <i class="fa-solid fa-calculator text-emerald"></i> Desglose de Gastos
                     </button>
@@ -1115,6 +1108,6 @@
     <div id="toast" class="toast hidden"></div>
     <!-- Leaflet Map JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-    <script src="app.js?v=34.0"></script>
+    <script src="app.js?v=35.0"></script>
 </body>
 </html>

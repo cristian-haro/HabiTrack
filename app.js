@@ -1271,20 +1271,6 @@ function openPropertyDetailSheet(propertyId, initialPhotoIdx = 0) {
     document.getElementById('detail-zone-text').textContent = prop.zone || 'Zona no especificada';
     document.getElementById('detail-ccaa-text').textContent = prop.ccaa || 'España';
 
-    const statusBadge = document.getElementById('detail-status-badge');
-    if (statusBadge) {
-        if (prop.status === 'inactive') {
-            statusBadge.className = 'badge badge-status-inactive';
-            statusBadge.innerHTML = '<i class="fa-solid fa-circle-xmark"></i> Anuncio Dado de Baja';
-        } else if (prop.status === 'active') {
-            statusBadge.className = 'badge badge-status-active';
-            statusBadge.innerHTML = '<i class="fa-solid fa-circle-check"></i> Anuncio Activo';
-        } else {
-            statusBadge.className = 'badge badge-status-unknown';
-            statusBadge.innerHTML = '<i class="fa-solid fa-circle-question"></i> Estado Desconocido';
-        }
-    }
-
     const typeBadge = document.getElementById('detail-type-badge');
     if (typeBadge) {
         typeBadge.textContent = isSecondHand ? 'Segunda Mano' : 'Obra Nueva';
@@ -1370,26 +1356,6 @@ function openPropertyDetailSheet(propertyId, initialPhotoIdx = 0) {
         btnExpenses.onclick = () => {
             showExpensesBreakdownModal(prop);
         };
-    }
-
-    const btnVerify = document.getElementById('btn-verify-detail-link');
-    if (btnVerify) {
-        if (prop.url) {
-            btnVerify.style.display = 'inline-flex';
-            btnVerify.onclick = async () => {
-                btnVerify.disabled = true;
-                btnVerify.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Comprobando...';
-                const result = await verifySinglePropertyLink(prop.id);
-                btnVerify.disabled = false;
-                btnVerify.innerHTML = '<i class="fa-solid fa-shield-halved text-indigo"></i> Verificar Disponibilidad';
-                const freshProp = (typeof result === 'object' && result) ? result : properties.find(p => p.id == prop.id);
-                if (freshProp) {
-                    openPropertyDetailSheet(freshProp.id, activeDetailPhotoIdx);
-                }
-            };
-        } else {
-            btnVerify.style.display = 'none';
-        }
     }
 
     modal.classList.add('active');
@@ -1517,99 +1483,7 @@ function initDetailMiniMap(prop) {
     L.marker([prop.latitude, prop.longitude], { icon: pinIcon }).addTo(detailMiniMapInstance);
 }
 
-// ==========================================================================
-// SERVICIO DE VERIFICACIÓN DE ESTADO DE ENLACES
-// ==========================================================================
 
-async function verifySinglePropertyLink(propertyId) {
-    if (!propertyId) {
-        showToast('ID de propiedad no válido para verificar.', 'error');
-        return false;
-    }
-    try {
-        const authToken = token || localStorage.getItem('token') || '';
-        const response = await fetch(`/api/propiedades/${propertyId}/verificar`, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${authToken}`
-            }
-        });
-
-        const data = await response.json();
-        if (response.ok && data.success) {
-            const idx = properties.findIndex(p => p.id == propertyId);
-            if (idx !== -1 && data.property) {
-                properties[idx] = data.property;
-            }
-            renderDashboard();
-            renderListings();
-
-            if (data.status === 'active') {
-                showToast(`🟢 Anuncio verificado: Sigue activo en el portal.`, 'success');
-            } else if (data.status === 'inactive') {
-                showToast(`🔴 Atención: El portal indica que el anuncio ha sido dado de baja o retirado.`, 'error');
-            } else {
-                showToast(`🟡 Estado comprobado: ${data.message || 'Disponible'}`, 'info');
-            }
-            return data.property || true;
-        } else {
-            showToast(data.error || 'No se pudo verificar el enlace.', 'error');
-            return false;
-        }
-    } catch (err) {
-        console.error('Error al verificar enlace:', err);
-        showToast('Error de conexión al verificar enlace.', 'error');
-        return false;
-    }
-}
-
-async function verifyAllPropertiesLinks() {
-    const btn = document.getElementById('btn-verify-all-links');
-    if (btn) {
-        btn.disabled = true;
-        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Verificando...';
-    }
-
-    showToast('Comprobando la disponibilidad de todos los enlaces...', 'info');
-
-    try {
-        const authToken = token || localStorage.getItem('token') || '';
-        const response = await fetch('/api/propiedades/verificar-todos', {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${authToken}`
-            }
-        });
-
-        const data = await response.json();
-        if (response.ok && data.success) {
-            if (data.properties) {
-                properties = data.properties;
-                renderDashboard();
-                renderListings();
-            }
-
-            const inactives = (data.results || []).filter(r => r.status === 'inactive').length;
-            const actives = (data.results || []).filter(r => r.status === 'active').length;
-
-            if (inactives > 0) {
-                showToast(`Verificación completa: ${actives} activos, ${inactives} dados de baja.`, 'warning');
-            } else {
-                showToast(`¡Excelente! Todos los anuncios comprobados (${actives}) siguen activos.`, 'success');
-            }
-        } else {
-            showToast(data.error || 'Error al verificar enlaces.', 'error');
-        }
-    } catch (err) {
-        console.error('Error al verificar todos los enlaces:', err);
-        showToast('Error de conexión al verificar todos los enlaces.', 'error');
-    } finally {
-        if (btn) {
-            btn.disabled = false;
-            btn.innerHTML = '<i class="fa-solid fa-link-slash text-indigo"></i> <span class="hide-mobile">Verificar Enlaces</span>';
-        }
-    }
-}
 
 function renderListings() {
     const gridViewContainer = document.getElementById('listings-grid-view');

@@ -118,33 +118,7 @@ describe('API Integration Tests', () => {
             expect(data.some(p => p.id === createdPropertyId)).toBe(true);
         });
 
-        it('verifies a single property link and returns verification status', async () => {
-            // Update created property with a mock URL
-            const db = await getDB();
-            await db.run('UPDATE properties SET url = ? WHERE id = ?', ['https://example.com/property/123', createdPropertyId]);
 
-            const res = await fetch(`${baseUrl}/api/propiedades/${createdPropertyId}/verificar`, {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${authToken}` }
-            });
-
-            expect(res.status).toBe(200);
-            const data = await res.json();
-            expect(data.success).toBe(true);
-            expect(data.status).toBeDefined();
-        });
-
-        it('verifies all user properties links', async () => {
-            const res = await fetch(`${baseUrl}/api/propiedades/verificar-todos`, {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${authToken}` }
-            });
-
-            expect(res.status).toBe(200);
-            const data = await res.json();
-            expect(data.success).toBe(true);
-            expect(Array.isArray(data.results)).toBe(true);
-        });
 
         it('deletes the property successfully', async () => {
             const res = await fetch(`${baseUrl}/api/propiedades/${createdPropertyId}`, {
