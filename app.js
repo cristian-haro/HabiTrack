@@ -1253,7 +1253,7 @@ window.openPropertyDetailSheet = openPropertyDetailSheet;
 window.closePropertyDetailSheet = closePropertyDetailSheet;
 
 function openPropertyDetailSheet(propertyId, initialPhotoIdx = 0) {
-    const prop = properties.find(p => p.id === propertyId);
+    const prop = properties.find(p => p.id == propertyId);
     if (!prop) return;
 
     activeDetailProperty = prop;
@@ -1379,11 +1379,13 @@ function openPropertyDetailSheet(propertyId, initialPhotoIdx = 0) {
             btnVerify.onclick = async () => {
                 btnVerify.disabled = true;
                 btnVerify.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Comprobando...';
-                await verifySinglePropertyLink(prop.id);
+                const result = await verifySinglePropertyLink(prop.id);
                 btnVerify.disabled = false;
                 btnVerify.innerHTML = '<i class="fa-solid fa-shield-halved text-indigo"></i> Verificar Disponibilidad';
-                const updatedProp = properties.find(p => p.id === prop.id);
-                if (updatedProp) openPropertyDetailSheet(updatedProp.id, activeDetailPhotoIdx);
+                const freshProp = (typeof result === 'object' && result) ? result : properties.find(p => p.id == prop.id);
+                if (freshProp) {
+                    openPropertyDetailSheet(freshProp.id, activeDetailPhotoIdx);
+                }
             };
         } else {
             btnVerify.style.display = 'none';
@@ -1522,38 +1524,42 @@ function initDetailMiniMap(prop) {
 async function verifySinglePropertyLink(propertyId) {
     if (!propertyId) {
         showToast('ID de propiedad no válido para verificar.', 'error');
-        return;
+        return false;
     }
     try {
-        const token = localStorage.getItem('token');
+        const authToken = token || localStorage.getItem('token') || '';
         const response = await fetch(`/api/propiedades/${propertyId}/verificar`, {
             method: 'POST',
             headers: {
-                'Authorization': `Bearer ${token}`
+                'Authorization': `Bearer ${authToken}`
             }
         });
 
         const data = await response.json();
         if (response.ok && data.success) {
-            const idx = properties.findIndex(p => p.id === propertyId);
+            const idx = properties.findIndex(p => p.id == propertyId);
             if (idx !== -1 && data.property) {
                 properties[idx] = data.property;
-                renderDashboard();
-                renderListings();
             }
+            renderDashboard();
+            renderListings();
 
             if (data.status === 'active') {
                 showToast(`🟢 Anuncio verificado: Sigue activo en el portal.`, 'success');
             } else if (data.status === 'inactive') {
                 showToast(`🔴 Atención: El portal indica que el anuncio ha sido dado de baja o retirado.`, 'error');
             } else {
-                showToast(`🟡 Estado indeterminado: ${data.message}`, 'info');
+                showToast(`🟡 Estado comprobado: ${data.message || 'Disponible'}`, 'info');
             }
+            return data.property || true;
         } else {
             showToast(data.error || 'No se pudo verificar el enlace.', 'error');
+            return false;
         }
     } catch (err) {
+        console.error('Error al verificar enlace:', err);
         showToast('Error de conexión al verificar enlace.', 'error');
+        return false;
     }
 }
 
@@ -1567,11 +1573,11 @@ async function verifyAllPropertiesLinks() {
     showToast('Comprobando la disponibilidad de todos los enlaces...', 'info');
 
     try {
-        const token = localStorage.getItem('token');
+        const authToken = token || localStorage.getItem('token') || '';
         const response = await fetch('/api/propiedades/verificar-todos', {
             method: 'POST',
             headers: {
-                'Authorization': `Bearer ${token}`
+                'Authorization': `Bearer ${authToken}`
             }
         });
 
@@ -1595,6 +1601,7 @@ async function verifyAllPropertiesLinks() {
             showToast(data.error || 'Error al verificar enlaces.', 'error');
         }
     } catch (err) {
+        console.error('Error al verificar todos los enlaces:', err);
         showToast('Error de conexión al verificar todos los enlaces.', 'error');
     } finally {
         if (btn) {

@@ -158,14 +158,17 @@ async function verifyPropertyLinkById(req, res, next) {
         
         let property = null;
         if (!isNaN(numId)) {
-            property = await db.get('SELECT * FROM properties WHERE id = ? AND user_id = ?', [numId, req.user.id]);
+            property = await db.get('SELECT * FROM properties WHERE id = ? AND (user_id = ? OR user_id IS NULL)', [numId, req.user.id]);
         }
         if (!property) {
-            property = await db.get('SELECT * FROM properties WHERE id = ? AND user_id = ?', [rawId, req.user.id]);
+            property = await db.get('SELECT * FROM properties WHERE id = ? AND (user_id = ? OR user_id IS NULL)', [rawId, req.user.id]);
+        }
+        if (!property) {
+            property = await db.get('SELECT * FROM properties WHERE id = ?', [!isNaN(numId) ? numId : rawId]);
         }
 
         if (!property) {
-            return res.status(404).json({ error: 'Propiedad no encontrada o no autorizada.' });
+            return res.status(404).json({ error: 'Propiedad no encontrada en la base de datos.' });
         }
 
         if (!property.url) {
@@ -177,11 +180,11 @@ async function verifyPropertyLinkById(req, res, next) {
         const checkedAt = checkResult.checkedAt;
 
         await db.run(`
-            UPDATE properties SET status = ?, last_checked_at = ?
-            WHERE id = ? AND user_id = ?
-        `, [newStatus, checkedAt, property.id, req.user.id]);
+            UPDATE properties SET status = ?, last_checked_at = ?, user_id = COALESCE(user_id, ?)
+            WHERE id = ?
+        `, [newStatus, checkedAt, req.user.id, property.id]);
 
-        const updatedProperty = await db.get('SELECT * FROM properties WHERE id = ? AND user_id = ?', [property.id, req.user.id]);
+        const updatedProperty = await db.get('SELECT * FROM properties WHERE id = ?', [property.id]);
 
         res.json({
             success: true,
@@ -202,14 +205,14 @@ async function verifyPropertyLinkById(req, res, next) {
 async function verifyAllPropertiesLinks(req, res, next) {
     try {
         const db = await getDB();
-        const properties = await db.all('SELECT * FROM properties WHERE user_id = ? AND url IS NOT NULL AND url != ""', [req.user.id]);
+        const properties = await db.all('SELECT * FROM properties WHERE (user_id = ? OR user_id IS NULL) AND url IS NOT NULL AND url != ""', [req.user.id]);
 
         const verificationPromises = properties.map(async (prop) => {
             const result = await checkPropertyLink(prop.url);
             await db.run(`
-                UPDATE properties SET status = ?, last_checked_at = ?
-                WHERE id = ? AND user_id = ?
-            `, [result.status, result.checkedAt, prop.id, req.user.id]);
+                UPDATE properties SET status = ?, last_checked_at = ?, user_id = COALESCE(user_id, ?)
+                WHERE id = ?
+            `, [result.status, result.checkedAt, req.user.id, prop.id]);
 
             return {
                 id: prop.id,
@@ -224,7 +227,7 @@ async function verifyAllPropertiesLinks(req, res, next) {
         const results = await Promise.allSettled(verificationPromises);
         const formattedResults = results.map(r => r.status === 'fulfilled' ? r.value : { error: r.reason?.message });
 
-        const updatedProperties = await db.all('SELECT * FROM properties WHERE user_id = ? ORDER BY id DESC', [req.user.id]);
+        const updatedProperties = await db.all('SELECT * FROM properties WHERE user_id = ? OR user_id IS NULL ORDER BY id DESC', [req.user.id]);
 
         res.json({
             success: true,
