@@ -1604,7 +1604,35 @@ a:hover {
 .toolbar-top-actions {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
+    gap: 0.65rem;
+}
+
+.mobile-filter-btn {
+    display: none;
+    align-items: center;
+    gap: 0.4rem;
+    position: relative;
+    font-weight: 600;
+}
+
+.mobile-filter-btn.active {
+    background: var(--primary);
+    color: #ffffff;
+    border-color: var(--primary);
+}
+
+.filter-count-badge {
+    background: var(--primary);
+    color: #ffffff;
+    border-radius: 9999px;
+    padding: 0.1rem 0.45rem;
+    font-size: 0.7rem;
+    font-weight: 700;
+}
+
+.mobile-filter-btn.active .filter-count-badge {
+    background: #ffffff;
+    color: var(--primary);
 }
 
 .toolbar-top-actions .sort-item select {
@@ -1620,12 +1648,13 @@ a:hover {
 
 .toolbar-filters {
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
+    grid-template-columns: repeat(5, 1fr) auto;
     gap: 0.85rem;
     align-items: flex-end;
     padding-top: 0.85rem;
     border-top: 1px solid var(--border-subtle);
     width: 100%;
+    transition: all 0.3s ease;
 }
 
 .filter-item {
@@ -2326,7 +2355,13 @@ code {
     .toolbar-top-actions {
         display: flex;
         justify-content: space-between;
+        align-items: center;
         width: 100%;
+        gap: 0.5rem;
+    }
+    
+    .mobile-filter-btn {
+        display: inline-flex !important;
     }
     
     .toolbar-top-actions .sort-item {
@@ -2334,8 +2369,19 @@ code {
     }
     
     .toolbar-filters {
+        display: none;
         grid-template-columns: 1fr 1fr;
         gap: 0.65rem;
+        background: #f8fafc;
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-md);
+        padding: 0.85rem;
+        margin-top: 0.35rem;
+    }
+    
+    .toolbar-filters.active-mobile-panel {
+        display: grid !important;
+        animation: fadeIn 0.2s ease-in-out;
     }
     
     .filter-reset-item {
@@ -2383,15 +2429,6 @@ code {
         gap: 0.75rem;
     }
     
-    .toolbar-filters {
-        grid-template-columns: 1fr 1fr;
-        gap: 0.5rem;
-    }
-    
-    .filter-reset-item {
-        grid-column: span 2;
-    }
-    
     .form-grid {
         grid-template-columns: 1fr !important;
         gap: 0.75rem;
@@ -2402,7 +2439,93 @@ code {
     }
     
     .modal {
-        padding: 0.5rem;
+        padding: 0.35rem;
+    }
+    
+    /* Detailed Property Modal Full Responsive Sheet */
+    #property-detail-modal.modal {
+        padding: 0 !important;
+        align-items: flex-end;
+    }
+    
+    #property-detail-modal .property-detail-container {
+        width: 100vw !important;
+        max-width: 100vw !important;
+        height: 100vh !important;
+        max-height: 100vh !important;
+        border-radius: 0 !important;
+    }
+    
+    #property-detail-modal .detail-sheet-header {
+        padding: 0.75rem 1rem;
+    }
+    
+    #property-detail-modal .detail-header-info h2 {
+        font-size: 1.1rem;
+        margin-bottom: 0.15rem;
+    }
+    
+    #property-detail-modal .detail-sheet-body {
+        padding: 0.75rem 1rem;
+        gap: 0.85rem;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    #property-detail-modal .detail-sheet-grid {
+        grid-template-columns: 1fr;
+        gap: 0.85rem;
+    }
+    
+    #property-detail-modal .detail-main-photo-wrap {
+        height: 190px;
+    }
+    
+    #property-detail-modal .detail-kpis-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 0.45rem;
+    }
+    
+    #property-detail-modal .detail-kpi-card {
+        padding: 0.6rem 0.75rem;
+    }
+    
+    #property-detail-modal .detail-kpi-val {
+        font-size: 1.05rem;
+    }
+    
+    #property-detail-modal .detail-specs-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 0.45rem;
+    }
+    
+    #property-detail-modal .detail-spec-item {
+        padding: 0.5rem 0.6rem;
+        gap: 0.5rem;
+    }
+    
+    #property-detail-modal .detail-minimap-container {
+        height: 140px;
+    }
+    
+    #property-detail-modal .detail-sheet-footer {
+        padding: 0.65rem 1rem;
+        flex-direction: column;
+        gap: 0.4rem;
+    }
+    
+    #property-detail-modal .detail-footer-left,
+    #property-detail-modal .detail-footer-right {
+        width: 100%;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.4rem;
+    }
+    
+    #property-detail-modal .detail-sheet-footer .btn {
+        width: 100%;
+        justify-content: center;
+        padding: 0.45rem 0.2rem;
+        font-size: 0.75rem;
     }
     
     .modal-content {

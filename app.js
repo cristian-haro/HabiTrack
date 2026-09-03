@@ -1520,6 +1520,10 @@ function initDetailMiniMap(prop) {
 // ==========================================================================
 
 async function verifySinglePropertyLink(propertyId) {
+    if (!propertyId) {
+        showToast('ID de propiedad no válido para verificar.', 'error');
+        return;
+    }
     try {
         const token = localStorage.getItem('token');
         const response = await fetch(`/api/propiedades/${propertyId}/verificar`, {
@@ -1793,6 +1797,33 @@ function applyFilters(propsList) {
     });
 
     return result;
+}
+
+function updateMobileFilterBadge() {
+    const searchVal = document.getElementById('filter-search')?.value.trim() || '';
+    const priceMaxVal = document.getElementById('filter-price-max')?.value.trim() || '';
+    const savingsMaxVal = document.getElementById('filter-savings-max')?.value.trim() || '';
+    const roomsVal = document.getElementById('filter-rooms')?.value || '';
+    const garageVal = document.getElementById('filter-garage')?.value || '';
+    const statusVal = document.getElementById('filter-status')?.value || '';
+
+    let count = 0;
+    if (searchVal) count++;
+    if (priceMaxVal) count++;
+    if (savingsMaxVal) count++;
+    if (roomsVal) count++;
+    if (garageVal) count++;
+    if (statusVal) count++;
+
+    const badge = document.getElementById('mobile-filter-badge');
+    if (badge) {
+        if (count > 0) {
+            badge.textContent = count;
+            badge.style.display = 'inline-block';
+        } else {
+            badge.style.display = 'none';
+        }
+    }
 }
 
 function renderSettingsForm() {
@@ -2279,9 +2310,19 @@ function setupEventHandlers() {
     const filterStatus = document.getElementById('filter-status');
     const sortBy = document.getElementById('sort-by');
     const btnVerifyAllLinks = document.getElementById('btn-verify-all-links');
+    const btnToggleFiltersMobile = document.getElementById('btn-toggle-filters-mobile');
+    const toolbarFilters = document.getElementById('toolbar-filters');
+
+    if (btnToggleFiltersMobile && toolbarFilters) {
+        btnToggleFiltersMobile.addEventListener('click', () => {
+            const isActive = toolbarFilters.classList.toggle('active-mobile-panel');
+            btnToggleFiltersMobile.classList.toggle('active', isActive);
+        });
+    }
 
     const filterTrigger = () => {
         currentPage = 1;
+        updateMobileFilterBadge();
         renderListings();
     };
 

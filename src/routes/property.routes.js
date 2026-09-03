@@ -18,9 +18,16 @@ const router = Router();
 // URL analyzer
 router.get('/analizar', authenticateToken, validate(queryUrlSchema, 'query'), analyzeUrl);
 
-// Property link verification
+// Property link verification (and aliases)
 router.post('/propiedades/verificar-todos', authenticateToken, verifyAllPropertiesLinks);
+router.post('/propiedades/verify-all', authenticateToken, verifyAllPropertiesLinks);
 router.post('/propiedades/:id/verificar', authenticateToken, verifyPropertyLinkById);
+router.post('/propiedades/:id/verify', authenticateToken, verifyPropertyLinkById);
+
+router.post('/casas/verificar-todos', authenticateToken, verifyAllPropertiesLinks);
+router.post('/casas/verify-all', authenticateToken, verifyAllPropertiesLinks);
+router.post('/casas/:id/verificar', authenticateToken, verifyPropertyLinkById);
+router.post('/casas/:id/verify', authenticateToken, verifyPropertyLinkById);
 
 // Property CRUD endpoints
 router.get('/propiedades', authenticateToken, getAllProperties);

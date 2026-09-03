@@ -153,7 +153,16 @@ async function deleteProperty(req, res, next) {
 async function verifyPropertyLinkById(req, res, next) {
     try {
         const db = await getDB();
-        const property = await db.get('SELECT * FROM properties WHERE id = ? AND user_id = ?', [req.params.id, req.user.id]);
+        const rawId = req.params.id;
+        const numId = parseInt(rawId, 10);
+        
+        let property = null;
+        if (!isNaN(numId)) {
+            property = await db.get('SELECT * FROM properties WHERE id = ? AND user_id = ?', [numId, req.user.id]);
+        }
+        if (!property) {
+            property = await db.get('SELECT * FROM properties WHERE id = ? AND user_id = ?', [rawId, req.user.id]);
+        }
 
         if (!property) {
             return res.status(404).json({ error: 'Propiedad no encontrada o no autorizada.' });

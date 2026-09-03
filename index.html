@@ -16,7 +16,7 @@
     <meta name="theme-color" content="#6366f1">
     <link rel="manifest" href="manifest.json">
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="styles.css?v=30.0">
+    <link rel="stylesheet" href="styles.css?v=31.0">
     <script>
         // Purga preventiva de Service Workers antiguos en caché
         if ('serviceWorker' in navigator) {
@@ -283,6 +283,9 @@
                             <input type="text" id="filter-search" placeholder="Buscar por zona, nombre, comentarios...">
                         </div>
                         <div class="toolbar-top-actions">
+                            <button type="button" id="btn-toggle-filters-mobile" class="btn btn-secondary btn-sm mobile-filter-btn" title="Mostrar/Ocultar filtros avanzados">
+                                <i class="fa-solid fa-sliders"></i> <span class="mobile-filter-text">Filtros</span> <span id="mobile-filter-badge" class="filter-count-badge" style="display: none;">0</span>
+                            </button>
                             <button type="button" id="btn-verify-all-links" class="btn btn-secondary btn-sm" title="Comprobar si los anuncios siguen activos o fueron dados de baja">
                                 <i class="fa-solid fa-link-slash text-indigo"></i> <span class="hide-mobile">Verificar Enlaces</span>
                             </button>
@@ -1118,6 +1121,6 @@
     <div id="toast" class="toast hidden"></div>
     <!-- Leaflet Map JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-    <script src="app.js?v=30.0"></script>
+    <script src="app.js?v=31.0"></script>
 </body>
 </html>
