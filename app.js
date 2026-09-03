@@ -986,7 +986,7 @@ function createPropertyCardDOM(prop) {
         (prop.status === 'active' ? '<span class="badge badge-status-active" title="Anuncio activo y publicado"><i class="fa-solid fa-circle-check"></i> Activo</span>' : '');
 
     const mapButton = (prop.latitude && prop.longitude) ? 
-        `<a href="https://www.google.com/maps/search/?api=1&query=${prop.latitude},${prop.longitude}" target="_blank" class="btn btn-secondary btn-sm btn-icon" title="Ver en Google Maps"><i class="fa-solid fa-map-location-dot"></i></a>` : '';
+        `<a href="https://www.google.com/maps/search/?api=1&query=${prop.latitude},${prop.longitude}" target="_blank" class="card-action-btn-sm" title="Ver en Google Maps"><i class="fa-solid fa-map-location-dot text-indigo"></i> <span>Mapa</span></a>` : '';
 
     card.innerHTML = `
         <div class="card-img-container" title="${photoList.length > 0 ? 'Ver galería de fotos a pantalla completa' : ''}">
@@ -1052,18 +1052,20 @@ function createPropertyCardDOM(prop) {
                 </div>
             </div>
 
-            <div class="card-actions">
-                <button class="btn btn-indigo btn-sm btn-view-detail" data-id="${prop.id}" title="Ver Ficha Completa">
-                    <i class="fa-solid fa-id-card"></i> Ficha
-                </button>
-                <button class="btn btn-secondary btn-sm btn-view-expenses" data-id="${prop.id}" title="Desglose de Gastos">
-                    <i class="fa-solid fa-calculator text-emerald"></i> Gastos
-                </button>
-                <div class="card-actions-icons">
-                    <button class="btn btn-secondary btn-sm btn-icon btn-edit-prop" data-id="${prop.id}" title="Editar"><i class="fa-solid fa-pen"></i></button>
-                    <button class="btn btn-danger btn-sm btn-icon btn-delete-prop" data-id="${prop.id}" title="Eliminar"><i class="fa-solid fa-trash"></i></button>
+            <div class="card-actions-container">
+                <div class="card-actions-primary">
+                    <button type="button" class="btn btn-indigo btn-sm btn-view-detail" data-id="${prop.id}" title="Ver Ficha Completa">
+                        <i class="fa-solid fa-id-card"></i> Ver Ficha
+                    </button>
+                    <button type="button" class="btn btn-secondary btn-sm btn-view-expenses" data-id="${prop.id}" title="Desglose Detallado de Gastos">
+                        <i class="fa-solid fa-calculator text-emerald"></i> Ver Gastos
+                    </button>
+                </div>
+                <div class="card-actions-secondary">
+                    ${prop.url ? `<a href="${prop.url}" target="_blank" class="card-action-btn-sm" title="Abrir Anuncio Original"><i class="fa-solid fa-arrow-up-right-from-square"></i> <span>Anuncio</span></a>` : ''}
                     ${mapButton}
-                    ${prop.url ? `<a href="${prop.url}" target="_blank" class="btn btn-secondary btn-sm btn-icon" title="Abrir Anuncio Original"><i class="fa-solid fa-arrow-up-right-from-square"></i></a>` : ''}
+                    <button type="button" class="card-action-btn-sm btn-edit-prop" data-id="${prop.id}" title="Editar Propiedad"><i class="fa-solid fa-pen text-indigo"></i> <span>Editar</span></button>
+                    <button type="button" class="card-action-btn-sm card-btn-delete btn-delete-prop" data-id="${prop.id}" title="Eliminar Propiedad"><i class="fa-solid fa-trash text-rose"></i> <span>Eliminar</span></button>
                 </div>
             </div>
         </div>
