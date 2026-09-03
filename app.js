@@ -2377,6 +2377,30 @@ function setupEventHandlers() {
         btnExportPdfSummary.addEventListener('click', exportPortfolioSummaryPDF);
     }
 
+    // --- 8c. CONTROLADORES DEL MAPA INTERACTIVO ---
+    const btnMapRecenter = document.getElementById('btn-map-recenter');
+    const btnMapFullscreen = document.getElementById('btn-map-fullscreen');
+    const mapCardWrapper = document.getElementById('map-card-wrapper');
+
+    if (btnMapRecenter) {
+        btnMapRecenter.addEventListener('click', () => {
+            recenterMap();
+            showToast('Vista del mapa re-centrada.', 'info');
+        });
+    }
+
+    if (btnMapFullscreen && mapCardWrapper) {
+        btnMapFullscreen.addEventListener('click', () => {
+            const isFull = mapCardWrapper.classList.toggle('map-fullscreen-mode');
+            btnMapFullscreen.innerHTML = isFull ?
+                '<i class="fa-solid fa-compress text-indigo"></i> <span class="hide-mobile">Reducir</span>' :
+                '<i class="fa-solid fa-expand text-secondary"></i> <span class="hide-mobile">Ampliar</span>';
+            if (mapInstance) {
+                setTimeout(() => { mapInstance.invalidateSize(); }, 150);
+            }
+        });
+    }
+
     // --- 9. IMPORTACIÓN / EXPORTACIÓN JSON ---
     const btnExport = document.getElementById('btn-export');
     const btnImportTrigger = document.getElementById('btn-import-trigger');
@@ -3260,14 +3284,18 @@ function exportPropertyDetailPDF(propertyId) {
 }
 
 // ==========================================================================
-// INTEGRACIÓN DE MAPA INTERACTIVO (LEAFLET)
+// INTEGRACIÓN DE MAPA INTERACTIVO, CLUSTERING Y ANÁLISIS DE ZONAS (FASE 3)
 // ==========================================================================
+
+let markerClusterGroup = null;
+let baseLayersControl = null;
+let activeMapZone = null;
 
 function renderMap() {
     const mapContainer = document.getElementById('interactive-map');
     if (!mapContainer) return;
 
-    const propertiesWithCoords = properties.filter(p => p.latitude !== null && p.longitude !== null);
+    const propertiesWithCoords = properties.filter(p => p.latitude !== null && p.longitude !== null && !isNaN(p.latitude) && !isNaN(p.longitude));
     
     // Actualizar contador en cabecera
     const counterEl = document.getElementById('map-counter');
@@ -3275,39 +3303,76 @@ function renderMap() {
         counterEl.textContent = `${propertiesWithCoords.length} ubicadas`;
     }
 
-    const satelliteLayerUrl = 'https://{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}';
-    const satelliteOptions = {
+    // Renderizar analítica y pastillas de zona
+    renderMapZoneAnalytics(propertiesWithCoords);
+
+    // Definición de Capas Base Cartográficas
+    const streetsLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+        maxZoom: 19,
+        attribution: '&copy; CARTO Voyager'
+    });
+
+    const satelliteLayer = L.tileLayer('https://{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
         subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
         maxZoom: 20,
         attribution: '&copy; Google Maps Satélite'
+    });
+
+    const darkLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        maxZoom: 19,
+        attribution: '&copy; CARTO Dark'
+    });
+
+    const baseMaps = {
+        "🗺️ Calles / Urbano": streetsLayer,
+        "🛰️ Satélite Híbrido": satelliteLayer,
+        "🌙 Modo Noche": darkLayer
     };
 
-    if (propertiesWithCoords.length === 0) {
-        if (!mapInstance) {
-            mapInstance = L.map('interactive-map', { zoomControl: false }).setView([40.4167, -3.7037], 6);
-            L.tileLayer(satelliteLayerUrl, satelliteOptions).addTo(mapInstance);
-        }
-        return;
-    }
-
     if (!mapInstance) {
-        mapInstance = L.map('interactive-map').setView([40.4167, -3.7037], 6);
-        L.tileLayer(satelliteLayerUrl, satelliteOptions).addTo(mapInstance);
+        mapInstance = L.map('interactive-map', {
+            center: [40.4167, -3.7037],
+            zoom: 6,
+            layers: [satelliteLayer]
+        });
+        baseLayersControl = L.control.layers(baseMaps, null, { position: 'topright' }).addTo(mapInstance);
     }
 
-    // Limpiar marcadores existentes
+    // Limpiar marcadores y cluster existentes
+    if (markerClusterGroup) {
+        mapInstance.removeLayer(markerClusterGroup);
+        markerClusterGroup = null;
+    }
     mapMarkers.forEach(marker => mapInstance.removeLayer(marker));
     mapMarkers = [];
 
-    // Añadir marcadores de pisos con pines satelitales estilizados
+    if (propertiesWithCoords.length === 0) {
+        mapInstance.setView([40.4167, -3.7037], 6);
+        return;
+    }
+
+    // Crear grupo de clusters si la librería MarkerCluster está disponible
+    const useCluster = typeof L.markerClusterGroup === 'function';
+    if (useCluster) {
+        markerClusterGroup = L.markerClusterGroup({
+            showCoverageOnHover: false,
+            maxClusterRadius: 45,
+            spiderfyOnMaxZoom: true,
+            animate: true,
+            disableClusteringAtZoom: 17
+        });
+    }
+
     propertiesWithCoords.forEach(p => {
         const calc = calculateExpenses(p.price, p.ccaa, p.estate_type);
+        const isSecondHand = p.estate_type === 'secondhand';
+        const priceM2 = p.m2 && p.m2 > 0 ? `${formatCurrency(Math.round(p.price / p.m2))}/m²` : '';
         
         let photoHTML = '';
         if (p.photos) {
             const firstPhoto = p.photos.split(',')[0].trim();
             if (firstPhoto) {
-                photoHTML = `<img src="${firstPhoto}" referrerpolicy="no-referrer" loading="lazy" style="width: 100%; height: 85px; object-fit: cover; border-radius: 6px; margin-bottom: 0.45rem; cursor: pointer;" title="Ver fotos a pantalla completa" onclick="openGalleryModal(${p.id})" alt="${p.title}">`;
+                photoHTML = `<img src="${firstPhoto}" referrerpolicy="no-referrer" loading="lazy" style="width: 100%; height: 95px; object-fit: cover; border-radius: 6px; margin-bottom: 0.45rem; cursor: pointer;" title="Ver fotos a pantalla completa" onclick="openGalleryModal(${p.id})" alt="${p.title}">`;
             }
         }
 
@@ -3315,35 +3380,115 @@ function renderMap() {
             <div class="map-popup-card">
                 ${photoHTML}
                 <div class="map-popup-title">${p.title}</div>
-                <div class="map-popup-price">${formatCurrency(p.price)}</div>
+                <div class="map-popup-zone"><i class="fa-solid fa-location-dot text-indigo"></i> ${p.zone || 'Sin zona'} · <span style="color:#047857; font-weight: 600;">${isSecondHand ? '2ª Mano' : 'Obra Nueva'}</span></div>
+                <div class="map-popup-price">${formatCurrency(p.price)} ${priceM2 ? `<small style="font-size:0.75rem; color:#64748b; font-weight:600;">(${priceM2})</small>` : ''}</div>
                 <div class="map-popup-detail"><i class="fa-solid fa-calculator text-indigo"></i> Hipoteca: <strong>${formatCurrency(calc.mortgageMonthlyPayment)}/mes</strong></div>
                 <div class="map-popup-detail"><i class="fa-solid fa-wallet text-amber"></i> Ahorro Firma: <strong>${formatCurrency(calc.totalRequiredBudget)}</strong></div>
-                <div class="map-popup-button" onclick="showExpensesModalFromMap(${p.id})"><i class="fa-solid fa-calculator"></i> Ver Desglose Completo</div>
+                <div class="map-popup-actions">
+                    <div class="map-popup-btn map-popup-btn-primary" onclick="openPropertyDetailSheet(${p.id})"><i class="fa-solid fa-id-card"></i> Ver Ficha</div>
+                    <div class="map-popup-btn map-popup-btn-secondary" onclick="showExpensesBreakdownModalFromMap(${p.id})"><i class="fa-solid fa-calculator text-emerald"></i> Gastos</div>
+                </div>
             </div>
         `;
 
         const pinIcon = L.divIcon({
             className: 'custom-map-marker',
-            html: `<div class="map-marker-pin"><i class="fa-solid fa-house"></i> <span>${formatCurrency(p.price)}</span></div>`,
+            html: `<div class="map-marker-pin" data-prop-id="${p.id}"><i class="fa-solid fa-house"></i> <span>${formatCurrency(p.price)}</span></div>`,
             iconSize: [85, 30],
             iconAnchor: [42, 30],
             popupAnchor: [0, -32]
         });
 
-        const marker = L.marker([p.latitude, p.longitude], { icon: pinIcon }).addTo(mapInstance);
-        marker.bindPopup(popupContent);
+        const marker = L.marker([p.latitude, p.longitude], { icon: pinIcon });
+        marker.bindPopup(popupContent, { maxWidth: 280 });
+        marker.propData = p;
+
+        if (useCluster && markerClusterGroup) {
+            markerClusterGroup.addLayer(marker);
+        } else {
+            marker.addTo(mapInstance);
+        }
         mapMarkers.push(marker);
     });
 
-    // Auto-ajustar mapa para englobar todos los marcadores
-    if (mapMarkers.length > 0) {
-        const group = new L.featureGroup(mapMarkers);
-        mapInstance.fitBounds(group.getBounds().pad(0.15));
+    if (useCluster && markerClusterGroup) {
+        mapInstance.addLayer(markerClusterGroup);
     }
+
+    recenterMap();
 }
 
-// Ventana global de desglose llamada desde popup del mapa
-window.showExpensesModalFromMap = function(id) {
+function recenterMap(zoneFilter = null) {
+    if (!mapInstance || mapMarkers.length === 0) return;
+
+    let targetMarkers = mapMarkers;
+    if (zoneFilter) {
+        targetMarkers = mapMarkers.filter(m => m.propData && m.propData.zone && m.propData.zone.toLowerCase().trim() === zoneFilter.toLowerCase().trim());
+        if (targetMarkers.length === 0) targetMarkers = mapMarkers;
+    }
+
+    const group = new L.featureGroup(targetMarkers);
+    mapInstance.fitBounds(group.getBounds().pad(0.18), { maxZoom: 16, animate: true });
+}
+
+function renderMapZoneAnalytics(propertiesWithCoords) {
+    const bar = document.getElementById('map-zones-analytics');
+    if (!bar) return;
+
+    if (propertiesWithCoords.length === 0) {
+        bar.style.display = 'none';
+        bar.innerHTML = '';
+        return;
+    }
+
+    // Agrupar por zona
+    const zoneMap = {};
+    propertiesWithCoords.forEach(p => {
+        const zoneName = p.zone ? p.zone.trim() : 'Sin zona';
+        if (!zoneMap[zoneName]) {
+            zoneMap[zoneName] = { name: zoneName, count: 0, sumPrice: 0, sumM2: 0 };
+        }
+        zoneMap[zoneName].count++;
+        zoneMap[zoneName].sumPrice += p.price;
+        if (p.m2 && p.m2 > 0) {
+            zoneMap[zoneName].sumM2 += p.m2;
+        }
+    });
+
+    const zoneList = Object.values(zoneMap).sort((a, b) => b.count - a.count);
+
+    bar.innerHTML = `
+        <div class="zone-chip ${!activeMapZone ? 'active' : ''}" onclick="filterMapByZone(null)">
+            <i class="fa-solid fa-globe"></i>
+            <span>Todas (${propertiesWithCoords.length})</span>
+        </div>
+        ${zoneList.map(z => {
+            const avgM2Price = z.sumM2 > 0 ? Math.round(z.sumPrice / z.sumM2) : null;
+            const priceTag = avgM2Price ? `<span class="zone-price-sub">${formatCurrency(avgM2Price)}/m²</span>` : '';
+            return `
+                <div class="zone-chip ${activeMapZone === z.name ? 'active' : ''}" onclick="filterMapByZone('${z.name.replace(/'/g, "\\'")}')" title="${z.count} pisos en ${z.name}">
+                    <i class="fa-solid fa-location-dot text-indigo"></i>
+                    <span>${z.name} <strong>(${z.count})</strong></span>
+                    ${priceTag}
+                </div>
+            `;
+        }).join('')}
+    `;
+
+    bar.style.display = 'flex';
+}
+
+window.filterMapByZone = function(zoneName) {
+    activeMapZone = zoneName;
+    const propertiesWithCoords = properties.filter(p => p.latitude !== null && p.longitude !== null);
+    renderMapZoneAnalytics(propertiesWithCoords);
+    recenterMap(zoneName);
+    if (zoneName) {
+        showToast(`📍 Enfocando zona: ${zoneName}`, 'info');
+    }
+};
+
+window.showExpensesBreakdownModalFromMap = function(id) {
     const prop = properties.find(p => p.id === id);
     if (prop) {
         showExpensesBreakdownModal(prop);

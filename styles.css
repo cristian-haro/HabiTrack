@@ -1879,16 +1879,121 @@ a:hover {
 }
 
 /* ==========================================================================
-   INTERACTIVE SATELLITE MAP & PIN MARKERS
+   INTERACTIVE MAP, MARKER CLUSTERING & ZONE ANALYTICS
    ========================================================================== */
+.map-card-container {
+    transition: all 0.3s ease;
+}
+
+.map-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.map-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+}
+
+.badge-map-count {
+    background: rgba(99, 102, 241, 0.12);
+    color: var(--primary);
+    border: 1px solid rgba(99, 102, 241, 0.25);
+    padding: 0.35rem 0.65rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+/* Zone Analytics Quick Filter Strip */
+.map-zones-bar {
+    display: flex;
+    gap: 0.45rem;
+    padding: 0.65rem 1.25rem;
+    background: #f8fafc;
+    border-bottom: 1px solid var(--border-color);
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    align-items: center;
+}
+
+.zone-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    background: #ffffff;
+    border: 1px solid var(--border-color);
+    padding: 0.3rem 0.65rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+    flex-shrink: 0;
+}
+
+.zone-chip:hover {
+    background: #f1f5f9;
+    border-color: #cbd5e1;
+    color: var(--text-main);
+    transform: translateY(-1px);
+}
+
+.zone-chip.active {
+    background: var(--primary);
+    color: #ffffff;
+    border-color: var(--primary);
+    box-shadow: 0 2px 8px rgba(79, 70, 229, 0.3);
+}
+
+.zone-chip.active .zone-price-sub {
+    color: rgba(255, 255, 255, 0.85);
+}
+
+.zone-price-sub {
+    font-size: 0.7rem;
+    color: #059669;
+    font-weight: 700;
+}
+
 #interactive-map {
     width: 100%;
-    height: 380px;
-    border-radius: var(--radius-lg);
+    height: 420px;
+    border-radius: 0 0 var(--radius-lg) var(--radius-lg);
     overflow: hidden;
     z-index: 1;
 }
 
+/* Fullscreen Map Mode */
+.map-card-container.map-fullscreen-mode {
+    position: fixed !important;
+    inset: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    max-width: 100vw !important;
+    max-height: 100vh !important;
+    z-index: 99999 !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    background: #ffffff !important;
+}
+
+.map-card-container.map-fullscreen-mode #interactive-map {
+    height: 100% !important;
+    flex: 1 !important;
+    border-radius: 0 !important;
+}
+
+/* Custom Marker Styling */
 .custom-map-marker {
     background: transparent;
     border: none;
@@ -1907,7 +2012,7 @@ a:hover {
     box-shadow: 0 4px 12px rgba(15, 23, 42, 0.4), 0 0 0 2px #ffffff;
     cursor: pointer;
     white-space: nowrap;
-    transition: var(--transition);
+    transition: all 0.2s ease;
     transform-origin: center bottom;
 }
 
@@ -1922,52 +2027,117 @@ a:hover {
     color: #a5b4fc;
 }
 
+/* Custom Leaflet MarkerCluster Styling */
+.marker-cluster-small {
+    background-color: rgba(99, 102, 241, 0.25) !important;
+}
+
+.marker-cluster-small div {
+    background-color: #4f46e5 !important;
+    color: #ffffff !important;
+    font-weight: 800 !important;
+    font-family: var(--font-heading) !important;
+}
+
+.marker-cluster-medium {
+    background-color: rgba(79, 70, 229, 0.35) !important;
+}
+
+.marker-cluster-medium div {
+    background-color: #4338ca !important;
+    color: #ffffff !important;
+    font-weight: 800 !important;
+}
+
+.marker-cluster-large {
+    background-color: rgba(67, 56, 202, 0.45) !important;
+}
+
+.marker-cluster-large div {
+    background-color: #3730a3 !important;
+    color: #ffffff !important;
+    font-weight: 800 !important;
+}
+
+/* Rich Map Popup Card */
 .map-popup-card {
-    min-width: 220px;
-    max-width: 260px;
+    min-width: 230px;
+    max-width: 270px;
     font-family: var(--font-body);
 }
 
 .map-popup-title {
     font-weight: 700;
-    font-size: 0.9rem;
+    font-size: 0.925rem;
     color: var(--text-main);
-    margin-bottom: 0.25rem;
+    margin-bottom: 0.2rem;
     line-height: 1.3;
+}
+
+.map-popup-zone {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-bottom: 0.4rem;
 }
 
 .map-popup-price {
     font-family: var(--font-heading);
-    font-size: 1.1rem;
+    font-size: 1.15rem;
     font-weight: 800;
     color: #059669;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.45rem;
 }
 
 .map-popup-detail {
     font-size: 0.775rem;
     color: var(--text-secondary);
-    margin-bottom: 0.25rem;
+    margin-bottom: 0.2rem;
     display: flex;
     align-items: center;
     gap: 0.35rem;
 }
 
-.map-popup-button {
-    margin-top: 0.75rem;
-    padding: 0.45rem 0.75rem;
-    background: var(--primary);
-    color: #ffffff;
+.map-popup-actions {
+    display: grid;
+    grid-template-columns: 1.15fr 1fr;
+    gap: 0.4rem;
+    margin-top: 0.65rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--border-color);
+}
+
+.map-popup-btn {
+    padding: 0.4rem 0.5rem;
     font-size: 0.75rem;
     font-weight: 600;
     text-align: center;
     border-radius: var(--radius-sm);
     cursor: pointer;
     transition: var(--transition);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.3rem;
 }
 
-.map-popup-button:hover {
+.map-popup-btn-primary {
+    background: var(--primary);
+    color: #ffffff;
+}
+
+.map-popup-btn-primary:hover {
     background: var(--primary-hover);
+}
+
+.map-popup-btn-secondary {
+    background: #f1f5f9;
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
+}
+
+.map-popup-btn-secondary:hover {
+    background: #e2e8f0;
+    color: var(--text-main);
 }
 
 /* ==========================================================================

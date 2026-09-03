@@ -13,10 +13,12 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Leaflet Map CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
     <meta name="theme-color" content="#6366f1">
     <link rel="manifest" href="manifest.json">
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="styles.css?v=39.0">
+    <link rel="stylesheet" href="styles.css?v=40.0">
     <script>
         // Purga preventiva de Service Workers antiguos en caché
         if ('serviceWorker' in navigator) {
@@ -244,17 +246,29 @@
                     </div>
                 </div>
 
-                <!-- Map Card -->
-                <div class="card glass shadow-sm mt-4" style="margin-top: 1.5rem;">
-                    <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+                <!-- Map Card with Enhanced Controls & Zone Analytics -->
+                <div class="card glass shadow-sm mt-4 map-card-container" id="map-card-wrapper" style="margin-top: 1.5rem;">
+                    <div class="card-header map-card-header">
                         <div>
-                            <h3><i class="fa-solid fa-map-location-dot text-indigo"></i> Mapa de Viviendas Guardadas</h3>
-                            <p class="subtitle">Visualización geográfica de tus pisos favoritos que cuentan con coordenadas.</p>
+                            <h3><i class="fa-solid fa-map-location-dot text-indigo"></i> Mapa Interactivo y Análisis por Zonas</h3>
+                            <p class="subtitle">Exploración geográfica con agrupación inteligente, capas cartográficas y métricas de precio por zona.</p>
                         </div>
-                        <span class="badge" id="map-counter" style="background: rgba(99, 102, 241, 0.15); color: #a5b4fc; padding: 0.35rem 0.65rem; border-radius: 6px; font-size: 0.75rem; font-weight: 600; border: 1px solid rgba(99, 102, 241, 0.25);">0 ubicadas</span>
+                        <div class="map-header-actions">
+                            <span class="badge badge-map-count" id="map-counter">0 ubicadas</span>
+                            <button type="button" class="btn btn-secondary btn-xs" id="btn-map-recenter" title="Re-centrar y enfocar todos los inmuebles">
+                                <i class="fa-solid fa-crosshairs text-indigo"></i> <span class="hide-mobile">Centrar</span>
+                            </button>
+                            <button type="button" class="btn btn-secondary btn-xs" id="btn-map-fullscreen" title="Alternar modo expandido">
+                                <i class="fa-solid fa-expand text-secondary"></i> <span class="hide-mobile">Ampliar</span>
+                            </button>
+                        </div>
                     </div>
-                    <div class="card-body" style="padding: 0;">
-                        <div id="interactive-map" style="height: 380px; width: 100%; border-radius: 0 0 var(--radius-md) var(--radius-md); z-index: 1;"></div>
+                    <!-- Zone Chips & Price/m2 Analytics Bar -->
+                    <div class="map-zones-bar" id="map-zones-analytics" style="display: none;">
+                        <!-- Injected dynamically via JS -->
+                    </div>
+                    <div class="card-body" style="padding: 0; position: relative;">
+                        <div id="interactive-map" style="height: 420px; width: 100%; border-radius: 0 0 var(--radius-md) var(--radius-md); z-index: 1;"></div>
                     </div>
                 </div>
 
@@ -1117,8 +1131,9 @@
 
     <!-- Toast Notification -->
     <div id="toast" class="toast hidden"></div>
-    <!-- Leaflet Map JS -->
+    <!-- Leaflet Map JS & MarkerCluster -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-    <script src="app.js?v=39.0"></script>
+    <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+    <script src="app.js?v=40.0"></script>
 </body>
 </html>
