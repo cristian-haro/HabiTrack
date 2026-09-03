@@ -44,10 +44,12 @@
             const scripts = document.querySelectorAll('script[type="application/ld+json"]');
             for (const script of scripts) {
                 try {
-                    const parsed = JSON.parse(script.innerText);
+                    const text = script.innerText || script.textContent || '';
+                    if (!text) continue;
+                    const parsed = JSON.parse(text);
                     const items = Array.isArray(parsed) ? parsed : [parsed];
                     for (const item of items) {
-                        if (item['@type'] === 'Product' || item['@type'] === 'RealEstateAgent' || item['@type'] === 'SingleFamilyResidence' || item['@type'] === 'Apartment' || item['@type'] === 'Offer' || item.offers || item.price) {
+                        if (item['@type'] === 'Product' || item['@type'] === 'RealEstateAgent' || item['@type'] === 'SingleFamilyResidence' || item['@type'] === 'Apartment' || item['@type'] === 'Offer' || item['@type'] === 'Place' || item.offers || item.price) {
                             if (item.name) data.title = item.name;
                             if (item.description) data.comments = item.description;
                             if (item.image) {
@@ -63,6 +65,10 @@
                                 data.latitude = parseFloat(item.geo.latitude) || null;
                                 data.longitude = parseFloat(item.geo.longitude) || null;
                             }
+                            if (item.address && typeof item.address === 'object') {
+                                if (item.address.addressLocality) data.zone = item.address.addressLocality;
+                                if (item.address.addressRegion) data.ccaa = item.address.addressRegion;
+                            }
                             break;
                         }
                     }
@@ -70,7 +76,63 @@
             }
         } catch (e) {}
 
-        // 2. PARSERS ESPECÍFICOS POR PORTAL
+        // 2. INTENTO VÍA NEXT.JS __NEXT_DATA__ (Fotocasa, Habitaclia, etc.)
+        try {
+            const nextDataEl = document.getElementById('__NEXT_DATA__');
+            if (nextDataEl) {
+                const nextJson = JSON.parse(nextDataEl.innerText || nextDataEl.textContent || '{}');
+                const pageProps = nextJson.props && nextJson.props.pageProps;
+                if (pageProps) {
+                    // Fotocasa property structure
+                    const propDetail = pageProps.property || pageProps.detail || (pageProps.initialState && pageProps.initialState.realEstate && pageProps.initialState.realEstate.detail);
+                    if (propDetail) {
+                        if (propDetail.heading || propDetail.title) data.title = propDetail.heading || propDetail.title;
+                        if (propDetail.price && propDetail.price.amount) data.price = propDetail.price.amount;
+                        else if (typeof propDetail.price === 'number') data.price = propDetail.price;
+                        if (propDetail.surface || propDetail.m2) data.m2 = propDetail.surface || propDetail.m2;
+                        if (propDetail.rooms) data.rooms = propDetail.rooms;
+                        if (propDetail.bathrooms) data.baths = propDetail.bathrooms;
+                        if (propDetail.description) data.comments = propDetail.description;
+                        if (propDetail.location) {
+                            if (propDetail.location.coordinates) {
+                                data.latitude = propDetail.location.coordinates.latitude || null;
+                                data.longitude = propDetail.location.coordinates.longitude || null;
+                            }
+                            if (propDetail.location.municipality) data.zone = propDetail.location.municipality;
+                        }
+                        if (propDetail.multimedia && Array.isArray(propDetail.multimedia)) {
+                            const pUrls = propDetail.multimedia.map(m => m.src || m.url).filter(Boolean);
+                            if (pUrls.length > 0) data.photos = pUrls.slice(0, 10).join(', ');
+                        }
+                    }
+                }
+            }
+        } catch (e) {}
+
+        // 3. INTENTO VÍA OPEN GRAPH META TAGS
+        try {
+            const ogTitle = document.querySelector('meta[property="og:title"]');
+            if (ogTitle && ogTitle.content && (!data.title || data.title === 'Inmueble Detectado')) {
+                data.title = ogTitle.content.split(' | ')[0].split(' - ')[0];
+            }
+
+            const ogImage = document.querySelector('meta[property="og:image"]');
+            if (ogImage && ogImage.content && !data.photos) {
+                data.photos = ogImage.content;
+            }
+
+            const ogDesc = document.querySelector('meta[property="og:description"]');
+            if (ogDesc && ogDesc.content && !data.comments) {
+                data.comments = ogDesc.content;
+            }
+
+            const ogPrice = document.querySelector('meta[property="product:price:amount"], meta[property="og:price:amount"]');
+            if (ogPrice && ogPrice.content && !data.price) {
+                data.price = cleanPrice(ogPrice.content);
+            }
+        } catch (e) {}
+
+        // 4. PARSERS ESPECÍFICOS POR PORTAL
 
         // --- IDEALISTA ---
         if (url.includes('idealista.com')) {
@@ -78,7 +140,7 @@
             if (h1 && h1.innerText) data.title = h1.innerText.trim();
 
             const priceEl = document.querySelector('.info-data-price, .price-features__current-price, .info-data-price .txt-bold');
-            if (priceEl) data.price = cleanPrice(priceEl.innerText);
+            if (priceEl && !data.price) data.price = cleanPrice(priceEl.innerText);
 
             const details = Array.from(document.querySelectorAll('.info-features span, .details-property-feature-one, .details-property_features li'));
             details.forEach(d => {
@@ -96,7 +158,7 @@
             if (zoneEl) data.zone = zoneEl.innerText.replace('en venta en', '').replace('en', '').trim();
 
             const descEl = document.querySelector('.comment p, .comment .adCommentsLanguage');
-            if (descEl) data.comments = descEl.innerText.trim();
+            if (descEl && !data.comments) data.comments = descEl.innerText.trim();
 
             const imgEls = document.querySelectorAll('#main-multimedia img, .detail-image img, picture img');
             const photosArr = [];
@@ -106,21 +168,25 @@
                     photosArr.push(src);
                 }
             });
-            if (photosArr.length > 0) data.photos = photosArr.slice(0, 10).join(', ');
+            if (photosArr.length > 0 && !data.photos) data.photos = photosArr.slice(0, 10).join(', ');
         }
 
         // --- FOTOCASA ---
         else if (url.includes('fotocasa.es')) {
-            const titleEl = document.querySelector('h1.re-DetailHeader-propertyTitle, h1');
-            if (titleEl) data.title = titleEl.innerText.trim();
+            const titleEl = document.querySelector('h1.re-DetailHeader-propertyTitle, h1.re-DetailHeader-title, h1[class*="DetailHeader"], h1[class*="title"], h1[class*="Title"], h1');
+            if (titleEl && (!data.title || data.title === 'Inmueble Detectado')) {
+                data.title = titleEl.innerText.trim();
+            }
 
-            const priceEl = document.querySelector('.re-DetailHeader-price, .re-DetailPrice');
-            if (priceEl) data.price = cleanPrice(priceEl.innerText);
+            const priceEl = document.querySelector('.re-DetailHeader-price, .re-DetailPrice, span[class*="DetailHeader-price"], span[class*="Price"], div[class*="Price"]');
+            if (priceEl && !data.price) {
+                data.price = cleanPrice(priceEl.innerText);
+            }
 
-            const features = Array.from(document.querySelectorAll('.re-DetailFeaturesList-feature, .re-DetailHeader-featuresItem'));
+            const features = Array.from(document.querySelectorAll('.re-DetailFeaturesList-feature, .re-DetailHeader-featuresItem, li[class*="Feature"], div[class*="Feature"], span[class*="Feature"], ul[class*="Features"] li'));
             features.forEach(f => {
                 const text = f.innerText.toLowerCase();
-                if (text.includes('m²') && !data.m2) data.m2 = cleanNum(text);
+                if ((text.includes('m²') || text.includes('m2')) && !data.m2) data.m2 = cleanNum(text);
                 if ((text.includes('hab') || text.includes('dorm')) && !data.rooms) data.rooms = cleanNum(text);
                 if (text.includes('baño') && !data.baths) data.baths = cleanNum(text);
                 if (text.includes('garaje') || text.includes('parking')) data.garage = 'si';
@@ -128,40 +194,54 @@
                 if (text.includes('obra nueva')) data.estate_type = 'new';
             });
 
-            const descEl = document.querySelector('.fc-DetailDescription, .re-DetailDescription');
-            if (descEl) data.comments = descEl.innerText.trim();
+            const descEl = document.querySelector('.fc-DetailDescription, .re-DetailDescription, div[class*="Description"], p[class*="Description"]');
+            if (descEl && !data.comments) data.comments = descEl.innerText.trim();
 
-            const imgEls = document.querySelectorAll('.re-DetailMosaicPhoto img, .re-DetailGallery img, img.re-DetailMosaic-img');
+            const imgEls = document.querySelectorAll('.re-DetailMosaicPhoto img, .re-DetailGallery img, img.re-DetailMosaic-img, img[class*="Mosaic"], img[class*="Gallery"], picture img');
             const photosArr = [];
             imgEls.forEach(img => {
                 const src = img.src || img.getAttribute('data-src');
-                if (src && !src.includes('logo') && !photosArr.includes(src)) {
+                if (src && !src.includes('logo') && !src.includes('icon') && !photosArr.includes(src)) {
                     photosArr.push(src);
                 }
             });
-            if (photosArr.length > 0) data.photos = photosArr.slice(0, 10).join(', ');
+            if (photosArr.length > 0 && !data.photos) data.photos = photosArr.slice(0, 10).join(', ');
         }
 
         // --- HABITACLIA ---
         else if (url.includes('habitaclia.com')) {
-            const titleEl = document.querySelector('h1.summary-title, h1');
-            if (titleEl) data.title = titleEl.innerText.trim();
+            const titleEl = document.querySelector('h1.summary-title, h1[class*="title"], h1');
+            if (titleEl && (!data.title || data.title === 'Inmueble Detectado')) data.title = titleEl.innerText.trim();
 
-            const priceEl = document.querySelector('.price span, .summary-price');
-            if (priceEl) data.price = cleanPrice(priceEl.innerText);
+            const priceEl = document.querySelector('.price span, .summary-price, span[class*="price"]');
+            if (priceEl && !data.price) data.price = cleanPrice(priceEl.innerText);
 
-            const features = Array.from(document.querySelectorAll('.feature, .summary-features li, ul.features li'));
+            const features = Array.from(document.querySelectorAll('.feature, .summary-features li, ul.features li, li[class*="feature"]'));
             features.forEach(f => {
                 const text = f.innerText.toLowerCase();
-                if (text.includes('m2') || text.includes('m²')) data.m2 = cleanNum(text);
-                if (text.includes('hab')) data.rooms = cleanNum(text);
-                if (text.includes('baño')) data.baths = cleanNum(text);
+                if ((text.includes('m2') || text.includes('m²')) && !data.m2) data.m2 = cleanNum(text);
+                if (text.includes('hab') && !data.rooms) data.rooms = cleanNum(text);
+                if (text.includes('baño') && !data.baths) data.baths = cleanNum(text);
                 if (text.includes('garaje') || text.includes('parking')) data.garage = 'si';
                 if (text.includes('ascensor')) data.elevator = 'si';
             });
 
             const descEl = document.querySelector('.description, #js-detail-description');
-            if (descEl) data.comments = descEl.innerText.trim();
+            if (descEl && !data.comments) data.comments = descEl.innerText.trim();
+        }
+
+        // 5. FALLBACK GENERAL DE PRECIO SI AÚN NO SE HA DETECTADO
+        if (!data.price) {
+            const priceCandidates = Array.from(document.querySelectorAll('span, div, p, strong, h2, h3'));
+            for (const el of priceCandidates) {
+                if (el.children.length === 0 && el.innerText && el.innerText.includes('€') && el.innerText.length < 25) {
+                    const candidate = cleanPrice(el.innerText);
+                    if (candidate && candidate >= 10000 && candidate <= 50000000) {
+                        data.price = candidate;
+                        break;
+                    }
+                }
+            }
         }
 
         // 3. INFERIR CCAA DE LA ZONA / TÍTULO
@@ -324,10 +404,36 @@
         }
     });
 
-    // Inyectar cuando el DOM esté listo
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', injectFloatingWidget);
-    } else {
-        setTimeout(injectFloatingWidget, 1000);
+    // Inyectar con reintentos para soportar frameworks SPA (React/Next.js en Fotocasa)
+    function attemptInject() {
+        injectFloatingWidget();
+        // Si no se pudo detectar el precio aún (por hidratación de React diferida), reintentar 2 veces
+        let attempts = 0;
+        const interval = setInterval(() => {
+            attempts++;
+            const btn = document.getElementById('habitrack-floating-btn');
+            if (btn || attempts >= 4) {
+                clearInterval(interval);
+            } else {
+                injectFloatingWidget();
+            }
+        }, 1200);
     }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', attemptInject);
+    } else {
+        setTimeout(attemptInject, 500);
+    }
+
+    // Observador de cambios de URL (SPA / Next.js client-side navigation)
+    let currentUrl = window.location.href;
+    setInterval(() => {
+        if (window.location.href !== currentUrl) {
+            currentUrl = window.location.href;
+            const existingBtn = document.getElementById('habitrack-floating-btn');
+            if (existingBtn) existingBtn.remove();
+            setTimeout(attemptInject, 800);
+        }
+    }, 1000);
 })();
