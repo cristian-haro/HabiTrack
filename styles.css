@@ -1963,6 +1963,137 @@ a:hover {
     font-weight: 700;
 }
 
+/* POI Toolbar & Services Chips */
+.map-poi-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.55rem 1.25rem;
+    background: #f1f5f9;
+    border-bottom: 1px solid var(--border-color);
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.poi-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--text-secondary);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    white-space: nowrap;
+    margin-right: 0.2rem;
+}
+
+.poi-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    background: #ffffff;
+    border: 1px solid var(--border-color);
+    padding: 0.28rem 0.6rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+    flex-shrink: 0;
+}
+
+.poi-chip:hover {
+    background: #ffffff;
+    border-color: #cbd5e1;
+    color: var(--text-main);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.06);
+}
+
+.poi-chip.active {
+    background: #0f172a;
+    color: #ffffff;
+    border-color: #0f172a;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.3);
+}
+
+.poi-chip.active i {
+    color: #38bdf8 !important;
+}
+
+.poi-chip.loading {
+    opacity: 0.7;
+    pointer-events: none;
+}
+
+.poi-results-preview {
+    padding: 0.6rem 1rem;
+    background: #f8fafc;
+    border: 1px dashed var(--border-color);
+    border-radius: var(--radius-sm);
+    margin-bottom: 0.75rem;
+    font-size: 0.775rem;
+    max-height: 120px;
+    overflow-y: auto;
+}
+
+.poi-item-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.25rem 0;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.poi-item-row:last-child {
+    border-bottom: none;
+}
+
+.poi-item-title {
+    font-weight: 600;
+    color: var(--text-main);
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.poi-item-dist {
+    font-weight: 700;
+    color: #4f46e5;
+    background: #eef2ff;
+    padding: 0.15rem 0.4rem;
+    border-radius: 9999px;
+    font-size: 0.7rem;
+}
+
+/* Specific POI Markers */
+.poi-marker-pin {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 9999px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: #ffffff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35), 0 0 0 1.5px #ffffff;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: transform 0.15s ease;
+}
+
+.poi-marker-pin:hover {
+    transform: scale(1.1);
+}
+
+.poi-pin-supermarket { background: #059669; }
+.poi-pin-crossfit { background: #7c3aed; }
+.poi-pin-fuel { background: #d97706; }
+.poi-pin-transport { background: #2563eb; }
+.poi-pin-pharmacy { background: #e11d48; }
+
 #interactive-map {
     width: 100%;
     height: 420px;

@@ -1457,6 +1457,9 @@ window.setDetailPhotoIdx = function(idx) {
     }
 };
 
+let activeDetailPoiType = null;
+let detailPoiMarkersGroup = null;
+
 function initDetailMiniMap(prop) {
     const mapEl = document.getElementById('detail-minimap');
     if (!mapEl || !prop.latitude || !prop.longitude) return;
@@ -1489,7 +1492,115 @@ function initDetailMiniMap(prop) {
         extLink.href = `https://www.google.com/maps/search/?api=1&query=${prop.latitude},${prop.longitude}`;
     }
 
-    L.marker([prop.latitude, prop.longitude], { icon: pinIcon }).addTo(detailMiniMapInstance);
+    const propMarker = L.marker([prop.latitude, prop.longitude], { icon: pinIcon }).addTo(detailMiniMapInstance);
+
+    // Reset POI Toolbar in Detail Modal
+    activeDetailPoiType = null;
+    const detailPoiChips = document.querySelectorAll('#detail-poi-toolbar .poi-chip');
+    const resultsContainer = document.getElementById('detail-poi-results-container');
+    if (resultsContainer) {
+        resultsContainer.style.display = 'none';
+        resultsContainer.innerHTML = '';
+    }
+
+    detailPoiChips.forEach(chip => {
+        chip.classList.remove('active', 'loading');
+        chip.onclick = async (e) => {
+            e.stopPropagation();
+            const poiType = chip.getAttribute('data-poi');
+            
+            if (activeDetailPoiType === poiType) {
+                // Desactivar
+                activeDetailPoiType = null;
+                chip.classList.remove('active');
+                if (detailPoiMarkersGroup) {
+                    detailMiniMapInstance.removeLayer(detailPoiMarkersGroup);
+                    detailPoiMarkersGroup = null;
+                }
+                if (resultsContainer) {
+                    resultsContainer.style.display = 'none';
+                    resultsContainer.innerHTML = '';
+                }
+                detailMiniMapInstance.setView([prop.latitude, prop.longitude], 15);
+                return;
+            }
+
+            // Activar nuevo tipo de POI
+            detailPoiChips.forEach(c => c.classList.remove('active'));
+            chip.classList.add('active', 'loading');
+            activeDetailPoiType = poiType;
+
+            if (resultsContainer) {
+                resultsContainer.style.display = 'block';
+                resultsContainer.innerHTML = `<div style="color:#64748b;"><i class="fa-solid fa-spinner fa-spin"></i> Buscando ${POI_CONFIGS[poiType].label.toLowerCase()} cercanos...</div>`;
+            }
+
+            const pois = await fetchPOIsAround(poiType, prop.latitude, prop.longitude);
+            chip.classList.remove('loading');
+
+            if (detailPoiMarkersGroup) {
+                detailMiniMapInstance.removeLayer(detailPoiMarkersGroup);
+                detailPoiMarkersGroup = null;
+            }
+
+            if (!pois || pois.length === 0) {
+                if (resultsContainer) {
+                    const gmapsSearchUrl = `https://www.google.com/maps/search/${encodeURIComponent(POI_CONFIGS[poiType].label)}/@${prop.latitude},${prop.longitude},15z`;
+                    resultsContainer.innerHTML = `
+                        <div style="color:#64748b; font-size:0.75rem;">
+                            No se encontraron ${POI_CONFIGS[poiType].label.toLowerCase()} en OpenStreetMap en un radio de 1.5-2km.
+                            <a href="${gmapsSearchUrl}" target="_blank" style="color:#4f46e5; font-weight:700; text-decoration:underline; margin-left:4px;">
+                                <i class="fa-solid fa-arrow-up-right-from-square"></i> Buscar en Google Maps
+                            </a>
+                        </div>
+                    `;
+                }
+                return;
+            }
+
+            detailPoiMarkersGroup = L.featureGroup();
+            const cfg = POI_CONFIGS[poiType];
+
+            pois.forEach(p => {
+                const poiIcon = L.divIcon({
+                    className: 'custom-map-marker',
+                    html: `<div class="poi-marker-pin ${cfg.pinClass}"><i class="fa-solid ${cfg.icon}"></i> <span>${p.name.substring(0, 18)}</span></div>`,
+                    iconSize: [80, 24],
+                    iconAnchor: [40, 24]
+                });
+
+                const poiMarker = L.marker([p.lat, p.lon], { icon: poiIcon });
+                poiMarker.bindPopup(`
+                    <div style="font-family:var(--font-body); font-size:0.8rem;">
+                        <strong>${p.name}</strong><br>
+                        <span style="color:#64748b;"><i class="fa-solid fa-location-arrow"></i> A ${p.distance} metros</span><br>
+                        <a href="https://www.google.com/maps/search/?api=1&query=${p.lat},${p.lon}" target="_blank" style="color:#4f46e5; font-weight:600; font-size:0.75rem;">Cómo llegar &rarr;</a>
+                    </div>
+                `);
+                detailPoiMarkersGroup.addLayer(poiMarker);
+            });
+
+            detailPoiMarkersGroup.addLayer(propMarker);
+            detailMiniMapInstance.addLayer(detailPoiMarkersGroup);
+            detailMiniMapInstance.fitBounds(detailPoiMarkersGroup.getBounds().pad(0.2));
+
+            // Renderizar lista previa en el panel
+            if (resultsContainer) {
+                resultsContainer.innerHTML = `
+                    <div style="font-weight:700; margin-bottom:0.35rem; color:#1e293b; display:flex; justify-content:space-between;">
+                        <span><i class="fa-solid ${cfg.icon}"></i> ${cfg.label} más cercanos (${pois.length}):</span>
+                        <a href="https://www.google.com/maps/search/${encodeURIComponent(cfg.label)}/@${prop.latitude},${prop.longitude},15z" target="_blank" style="color:#4f46e5; font-size:0.7rem;">Ver en Google Maps &rarr;</a>
+                    </div>
+                    ${pois.slice(0, 5).map(p => `
+                        <div class="poi-item-row">
+                            <span class="poi-item-title"><i class="fa-solid fa-location-dot" style="color:#64748b; font-size:0.65rem;"></i> ${p.name}</span>
+                            <span class="poi-item-dist">${p.distance < 1000 ? p.distance + ' m' : (p.distance / 1000).toFixed(1) + ' km'}</span>
+                        </div>
+                    `).join('')}
+                `;
+            }
+        };
+    });
 }
 
 
@@ -2401,6 +2512,73 @@ function setupEventHandlers() {
         });
     }
 
+    // --- 8d. SERVICIOS CERCANOS EN MAPA PRINCIPAL (DASHBOARD POI) ---
+    const dashboardPoiChips = document.querySelectorAll('#dashboard-poi-toolbar .poi-chip');
+    dashboardPoiChips.forEach(chip => {
+        chip.addEventListener('click', async () => {
+            const poiType = chip.getAttribute('data-poi');
+
+            if (activeDashboardPoiType === poiType) {
+                // Desactivar
+                activeDashboardPoiType = null;
+                chip.classList.remove('active');
+                if (dashboardPoiMarkersGroup) {
+                    mapInstance.removeLayer(dashboardPoiMarkersGroup);
+                    dashboardPoiMarkersGroup = null;
+                }
+                showToast('Capa de servicios ocultada.', 'info');
+                return;
+            }
+
+            // Activar nuevo tipo de POI
+            dashboardPoiChips.forEach(c => c.classList.remove('active'));
+            chip.classList.add('active', 'loading');
+            activeDashboardPoiType = poiType;
+
+            const center = mapInstance.getCenter();
+            showToast(`Buscando ${POI_CONFIGS[poiType].label.toLowerCase()} en el área visible...`, 'info');
+            const pois = await fetchPOIsAround(poiType, center.lat, center.lng);
+            chip.classList.remove('loading');
+
+            if (dashboardPoiMarkersGroup) {
+                mapInstance.removeLayer(dashboardPoiMarkersGroup);
+                dashboardPoiMarkersGroup = null;
+            }
+
+            if (!pois || pois.length === 0) {
+                showToast(`No se encontraron ${POI_CONFIGS[poiType].label.toLowerCase()} cercanos en esta zona.`, 'warning');
+                return;
+            }
+
+            dashboardPoiMarkersGroup = L.featureGroup();
+            const cfg = POI_CONFIGS[poiType];
+
+            pois.forEach(p => {
+                const poiIcon = L.divIcon({
+                    className: 'custom-map-marker',
+                    html: `<div class="poi-marker-pin ${cfg.pinClass}"><i class="fa-solid ${cfg.icon}"></i> <span>${p.name.substring(0, 18)}</span></div>`,
+                    iconSize: [80, 24],
+                    iconAnchor: [40, 24]
+                });
+
+                const poiMarker = L.marker([p.lat, p.lon], { icon: poiIcon });
+                poiMarker.bindPopup(`
+                    <div style="font-family:var(--font-body); font-size:0.825rem; min-width:180px;">
+                        <strong><i class="fa-solid ${cfg.icon}"></i> ${p.name}</strong><br>
+                        <span style="color:#64748b; font-size:0.75rem;">Servicio: ${cfg.label}</span><br>
+                        <a href="https://www.google.com/maps/search/?api=1&query=${p.lat},${p.lon}" target="_blank" style="color:#4f46e5; font-weight:600; font-size:0.75rem; display:inline-block; margin-top:4px;">
+                            <i class="fa-solid fa-location-arrow"></i> Ver en Google Maps &rarr;
+                        </a>
+                    </div>
+                `);
+                dashboardPoiMarkersGroup.addLayer(poiMarker);
+            });
+
+            mapInstance.addLayer(dashboardPoiMarkersGroup);
+            showToast(`📍 Se encontraron ${pois.length} ${cfg.label.toLowerCase()} en el mapa.`, 'success');
+        });
+    });
+
     // --- 9. IMPORTACIÓN / EXPORTACIÓN JSON ---
     const btnExport = document.getElementById('btn-export');
     const btnImportTrigger = document.getElementById('btn-import-trigger');
@@ -3284,12 +3462,125 @@ function exportPropertyDetailPDF(propertyId) {
 }
 
 // ==========================================================================
-// INTEGRACIÓN DE MAPA INTERACTIVO, CLUSTERING Y ANÁLISIS DE ZONAS (FASE 3)
+// INTEGRACIÓN DE MAPA INTERACTIVO, CLUSTERING Y SERVICIOS CERCANOS (FASE 3)
 // ==========================================================================
 
 let markerClusterGroup = null;
 let baseLayersControl = null;
 let activeMapZone = null;
+let activeDashboardPoiType = null;
+let dashboardPoiMarkersGroup = null;
+
+// --- CONFIGURACIÓN DE PUNTOS DE INTERÉS Y SERVICIOS CERCANOS ---
+const POI_CONFIGS = {
+    supermarket: {
+        label: 'Supermercados',
+        icon: 'fa-cart-shopping',
+        pinClass: 'poi-pin-supermarket',
+        radius: 1500,
+        query: (lat, lng, radius) => `[out:json][timeout:8];(node["shop"="supermarket"](around:${radius},${lat},${lng});way["shop"="supermarket"](around:${radius},${lat},${lng});node["shop"="convenience"](around:${radius},${lat},${lng}););out center 20;`
+    },
+    crossfit: {
+        label: 'CrossFit / Gimnasio',
+        icon: 'fa-dumbbell',
+        pinClass: 'poi-pin-crossfit',
+        radius: 2000,
+        query: (lat, lng, radius) => `[out:json][timeout:8];(node["leisure"="fitness_centre"](around:${radius},${lat},${lng});node["sport"~"crossfit|fitness"](around:${radius},${lat},${lng});node["name"~"crossfit|cross training|box|gimnasio|gym|fitness" i](around:${radius},${lat},${lng});way["leisure"="fitness_centre"](around:${radius},${lat},${lng}););out center 20;`
+    },
+    fuel: {
+        label: 'Gasolineras',
+        icon: 'fa-gas-pump',
+        pinClass: 'poi-pin-fuel',
+        radius: 2500,
+        query: (lat, lng, radius) => `[out:json][timeout:8];(node["amenity"="fuel"](around:${radius},${lat},${lng});way["amenity"="fuel"](around:${radius},${lat},${lng}););out center 20;`
+    },
+    transport: {
+        label: 'Metro / Tren / Bus',
+        icon: 'fa-train-subway',
+        pinClass: 'poi-pin-transport',
+        radius: 1500,
+        query: (lat, lng, radius) => `[out:json][timeout:8];(node["railway"="station"](around:${radius},${lat},${lng});node["railway"="subway_entrance"](around:${radius},${lat},${lng});node["station"="subway"](around:${radius},${lat},${lng});node["public_transport"="station"](around:${radius},${lat},${lng}););out center 20;`
+    },
+    pharmacy: {
+        label: 'Farmacias',
+        icon: 'fa-prescription-bottle-medical',
+        pinClass: 'poi-pin-pharmacy',
+        radius: 1200,
+        query: (lat, lng, radius) => `[out:json][timeout:8];(node["amenity"="pharmacy"](around:${radius},${lat},${lng});way["amenity"="pharmacy"](around:${radius},${lat},${lng}););out center 20;`
+    }
+};
+
+const poiCache = new Map();
+
+function calculateDistanceMeters(lat1, lon1, lat2, lon2) {
+    const R = 6371e3; // metros
+    const φ1 = lat1 * Math.PI / 180;
+    const φ2 = lat2 * Math.PI / 180;
+    const Δφ = (lat2 - lat1) * Math.PI / 180;
+    const Δλ = (lon2 - lon1) * Math.PI / 180;
+
+    const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+              Math.cos(φ1) * Math.cos(φ2) *
+              Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+    return Math.round(R * c);
+}
+
+async function fetchPOIsAround(type, lat, lng) {
+    const cfg = POI_CONFIGS[type];
+    if (!cfg || !lat || !lng) return [];
+
+    const cacheKey = `${type}_${Number(lat).toFixed(3)}_${Number(lng).toFixed(3)}`;
+    if (poiCache.has(cacheKey)) {
+        return poiCache.get(cacheKey);
+    }
+
+    const overpassQuery = cfg.query(lat, lng, cfg.radius);
+    const url = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(overpassQuery)}`;
+
+    try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 7000);
+
+        const res = await fetch(url, { signal: controller.signal });
+        clearTimeout(timeoutId);
+
+        if (!res.ok) throw new Error(`Overpass error: ${res.status}`);
+        const data = await res.json();
+
+        if (!data.elements || !Array.isArray(data.elements)) return [];
+
+        const pois = data.elements.map(el => {
+            const pLat = el.lat || (el.center && el.center.lat);
+            const pLon = el.lon || (el.center && el.center.lon);
+            if (!pLat || !pLon) return null;
+
+            const tags = el.tags || {};
+            const name = tags.name || tags.brand || tags.operator || cfg.label;
+            const dist = calculateDistanceMeters(lat, lng, pLat, pLon);
+
+            return {
+                id: el.id,
+                name,
+                brand: tags.brand || '',
+                type,
+                lat: pLat,
+                lon: pLon,
+                distance: dist
+            };
+        }).filter(Boolean);
+
+        // Ordenar de más cercano a más lejano
+        pois.sort((a, b) => a.distance - b.distance);
+
+        poiCache.set(cacheKey, pois);
+        return pois;
+    } catch (err) {
+        console.warn('Overpass POI query notice:', err.message);
+        return [];
+    }
+}
 
 function renderMap() {
     const mapContainer = document.getElementById('interactive-map');

@@ -18,7 +18,7 @@
     <meta name="theme-color" content="#6366f1">
     <link rel="manifest" href="manifest.json">
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="styles.css?v=40.0">
+    <link rel="stylesheet" href="styles.css?v=41.0">
     <script>
         // Purga preventiva de Service Workers antiguos en caché
         if ('serviceWorker' in navigator) {
@@ -266,6 +266,15 @@
                     <!-- Zone Chips & Price/m2 Analytics Bar -->
                     <div class="map-zones-bar" id="map-zones-analytics" style="display: none;">
                         <!-- Injected dynamically via JS -->
+                    </div>
+                    <!-- POI Services Filter Bar -->
+                    <div class="map-poi-toolbar" id="dashboard-poi-toolbar">
+                        <span class="poi-label"><i class="fa-solid fa-layer-group"></i> Servicios:</span>
+                        <button type="button" class="poi-chip" data-poi="supermarket" title="Buscar supermercados cercanos (1.5km)"><i class="fa-solid fa-cart-shopping text-emerald"></i> Supermercados</button>
+                        <button type="button" class="poi-chip" data-poi="crossfit" title="Buscar boxes de CrossFit y gimnasios (1.5km)"><i class="fa-solid fa-dumbbell text-purple"></i> CrossFit / Gym</button>
+                        <button type="button" class="poi-chip" data-poi="fuel" title="Buscar gasolineras cercanas (2km)"><i class="fa-solid fa-gas-pump text-amber"></i> Gasolineras</button>
+                        <button type="button" class="poi-chip" data-poi="transport" title="Buscar estaciones de metro y transporte"><i class="fa-solid fa-train-subway text-indigo"></i> Transporte</button>
+                        <button type="button" class="poi-chip" data-poi="pharmacy" title="Buscar farmacias cercanas"><i class="fa-solid fa-prescription-bottle-medical text-rose"></i> Farmacias</button>
                     </div>
                     <div class="card-body" style="padding: 0; position: relative;">
                         <div id="interactive-map" style="height: 420px; width: 100%; border-radius: 0 0 var(--radius-md) var(--radius-md); z-index: 1;"></div>
@@ -1060,13 +1069,25 @@
                     </div>
                 </div>
 
-                <!-- Ubicación Geográfica (Mapa Debajo de Notas) -->
+                <!-- Ubicación Geográfica y Servicios Cercanos -->
                 <div class="detail-section-block" id="detail-map-section" style="display: none;">
                     <div class="detail-section-header-row">
-                        <h3 class="detail-section-title"><i class="fa-solid fa-map-location-dot text-indigo"></i> Ubicación Geográfica</h3>
+                        <h3 class="detail-section-title"><i class="fa-solid fa-map-location-dot text-indigo"></i> Ubicación y Servicios Cercanos</h3>
                         <a href="#" target="_blank" id="detail-map-ext-link" class="detail-ext-link"><i class="fa-solid fa-location-arrow"></i> Google Maps</a>
                     </div>
-                    <div id="detail-minimap" class="detail-minimap-container" style="height: 240px; min-height: 240px;"></div>
+                    <!-- POI Filter Chips for Specific Property -->
+                    <div class="map-poi-toolbar mb-2" id="detail-poi-toolbar">
+                        <span class="poi-label"><i class="fa-solid fa-bullseye text-indigo"></i> Radio 1.5km:</span>
+                        <button type="button" class="poi-chip" data-poi="supermarket"><i class="fa-solid fa-cart-shopping text-emerald"></i> Supermercados</button>
+                        <button type="button" class="poi-chip" data-poi="crossfit"><i class="fa-solid fa-dumbbell text-purple"></i> CrossFit / Gym</button>
+                        <button type="button" class="poi-chip" data-poi="fuel"><i class="fa-solid fa-gas-pump text-amber"></i> Gasolineras</button>
+                        <button type="button" class="poi-chip" data-poi="transport"><i class="fa-solid fa-train-subway text-indigo"></i> Metro / Bus</button>
+                        <button type="button" class="poi-chip" data-poi="pharmacy"><i class="fa-solid fa-prescription-bottle-medical text-rose"></i> Farmacias</button>
+                    </div>
+                    <div id="detail-poi-results-container" class="poi-results-preview" style="display: none;">
+                        <!-- Injected dynamically via JS -->
+                    </div>
+                    <div id="detail-minimap" class="detail-minimap-container" style="height: 250px; min-height: 250px; border-radius: var(--radius-md);"></div>
                 </div>
             </div>
 
@@ -1134,6 +1155,6 @@
     <!-- Leaflet Map JS & MarkerCluster -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
-    <script src="app.js?v=40.0"></script>
+    <script src="app.js?v=41.0"></script>
 </body>
 </html>
