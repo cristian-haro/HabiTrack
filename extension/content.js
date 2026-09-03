@@ -160,17 +160,48 @@
             const descEl = document.querySelector('.comment p, .comment .adCommentsLanguage');
             if (descEl && !data.comments) data.comments = descEl.innerText.trim();
 
-            // Extracción avanzada de fotos en alta resolución de Idealista
+            // Extracción avanzada y desduplicación de fotos en alta resolución de Idealista
             const idealistaPhotos = [];
+            const seenPhotoIds = new Set();
 
-            // 1. Meta og:image (hero image nítida)
-            const ogImg = document.querySelector('meta[property="og:image"]');
-            if (ogImg && ogImg.content && ogImg.content.startsWith('http') && !ogImg.content.includes('blank') && !ogImg.content.includes('static/common')) {
-                idealistaPhotos.push(ogImg.content);
+            function addIdealistaPhoto(rawUrl) {
+                if (!rawUrl || typeof rawUrl !== 'string' || !rawUrl.startsWith('http')) return;
+                if (rawUrl.includes('blank') || rawUrl.includes('static/common') || rawUrl.includes('logo') || rawUrl.includes('icon') || rawUrl.includes('map')) return;
+
+                // Extraer el nombre de archivo / ID único de la foto (ej: 111111111.jpg)
+                const filename = rawUrl.split('/').pop().split('?')[0].toLowerCase();
+                if (!filename || seenPhotoIds.has(filename)) return;
+
+                seenPhotoIds.add(filename);
+
+                // Normalizar a la máxima resolución disponible
+                let highRes = rawUrl.replace(/\/blur\/[^\/]+\//, '/blur/WEB_DETAIL_TOP-L-L/');
+                idealistaPhotos.push(highRes);
             }
 
-            // 2. Elementos multimedia y de galería
-            const imgEls = Array.from(document.querySelectorAll('#main-multimedia img, #main-multimedia source, .detail-image img, .detail-image source, .gallery-fallback img, picture img, picture source, [data-service="gallery"] img, [data-service="gallery"] source, ul.grid-images img, .slideshow img'));
+            // 1. Meta og:image (foto principal)
+            const ogImg = document.querySelector('meta[property="og:image"]');
+            if (ogImg && ogImg.content) {
+                addIdealistaPhoto(ogImg.content);
+            }
+
+            // 2. Extraer TODA la galería completa desde los scripts internos de Idealista (fullScreenGalleryPhotos)
+            try {
+                const scripts = document.querySelectorAll('script');
+                for (const s of scripts) {
+                    const txt = s.innerText || s.textContent || '';
+                    if (txt.includes('fullScreenGalleryPhotos') || txt.includes('galleryPhotos') || txt.includes('ad_images')) {
+                        // Buscar todas las URLs de imágenes de Idealista en el script
+                        const matches = txt.match(/https?:\/\/[a-z0-9.]*idealista\.com\/[^\s"'\\]+\.jpg/gi);
+                        if (matches) {
+                            matches.forEach(u => addIdealistaPhoto(u));
+                        }
+                    }
+                }
+            } catch (e) {}
+
+            // 3. Elementos multimedia y de galería del DOM
+            const imgEls = Array.from(document.querySelectorAll('#main-multimedia img, #main-multimedia source, .detail-image img, .detail-image source, .gallery-fallback img, picture img, picture source, [data-service="gallery"] img, [data-service="gallery"] source, ul.grid-images img, .slideshow img, .thumbnail-image img'));
             imgEls.forEach(el => {
                 let candidate = el.getAttribute('data-ondemand-img') || 
                                 el.getAttribute('data-src') || 
@@ -180,7 +211,6 @@
 
                 if (!candidate) return;
 
-                // Si es un srcset ("url 1x, url2 2x") obtener la mayor resolución
                 if (candidate.includes(',')) {
                     const parts = candidate.split(',');
                     const last = parts[parts.length - 1].trim();
@@ -189,41 +219,11 @@
                     candidate = candidate.split(' ')[0].trim();
                 }
 
-                if (
-                    candidate && 
-                    candidate.startsWith('http') &&
-                    !candidate.includes('data:image') &&
-                    !candidate.includes('blank.gif') &&
-                    !candidate.includes('map') &&
-                    !candidate.includes('static/common') &&
-                    !candidate.includes('logo') &&
-                    !candidate.includes('icon') &&
-                    !idealistaPhotos.includes(candidate)
-                ) {
-                    idealistaPhotos.push(candidate);
-                }
+                addIdealistaPhoto(candidate);
             });
 
-            // 3. Variables de scripts incrustados de Idealista
-            try {
-                const scripts = document.querySelectorAll('script');
-                for (const s of scripts) {
-                    const txt = s.innerText || '';
-                    if (txt.includes('fullScreenGalleryPhotos') || txt.includes('galleryPhotos')) {
-                        const matches = txt.match(/https?:\/\/img\d?\.idealista\.com\/[^\s"'\\]+\.jpg/gi);
-                        if (matches) {
-                            matches.forEach(u => {
-                                if (!idealistaPhotos.includes(u) && !u.includes('blank')) {
-                                    idealistaPhotos.push(u);
-                                }
-                            });
-                        }
-                    }
-                }
-            } catch (e) {}
-
             if (idealistaPhotos.length > 0) {
-                data.photos = idealistaPhotos.slice(0, 12).join(', ');
+                data.photos = idealistaPhotos.slice(0, 15).join(', ');
             }
         }
 
