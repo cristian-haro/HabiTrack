@@ -954,6 +954,321 @@ a:hover {
     border: 1px solid #c7d2fe;
 }
 
+.badge-status-active {
+    background: #ecfdf5;
+    color: #047857;
+    border: 1px solid #a7f3d0;
+}
+
+.badge-status-inactive {
+    background: #fff1f2;
+    color: #be123c;
+    border: 1px solid #fecdd3;
+}
+
+.badge-status-unknown {
+    background: #f8fafc;
+    color: var(--text-muted);
+    border: 1px solid var(--border-color);
+}
+
+/* ==========================================================================
+   DETAILED PROPERTY SHEET (FICHA DETALLADA)
+   ========================================================================== */
+.max-w-4xl {
+    max-width: 880px;
+    width: 95%;
+}
+
+.property-detail-container {
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    padding: 0;
+}
+
+.detail-sheet-header {
+    padding: 1.5rem 1.75rem;
+    border-bottom: 1px solid var(--border-color);
+    background: #ffffff;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.detail-header-badges {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.detail-header-info h2 {
+    font-size: 1.45rem;
+    color: var(--text-main);
+    line-height: 1.3;
+    margin-bottom: 0.25rem;
+}
+
+.detail-header-info p {
+    font-size: 0.875rem;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.detail-sheet-body {
+    padding: 1.5rem 1.75rem;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.detail-gallery-block {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.detail-main-photo-wrap {
+    position: relative;
+    width: 100%;
+    height: 340px;
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    background: #0f172a;
+    cursor: pointer;
+}
+
+.detail-main-photo-wrap img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease, opacity 0.2s ease;
+}
+
+.detail-main-photo-wrap:hover img {
+    transform: scale(1.02);
+}
+
+.detail-photo-badges {
+    position: absolute;
+    bottom: 1rem;
+    left: 1rem;
+    z-index: 5;
+    pointer-events: none;
+}
+
+.detail-fullscreen-btn {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: rgba(15, 23, 42, 0.75);
+    backdrop-filter: blur(4px);
+    color: #ffffff;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 5;
+    transition: var(--transition);
+}
+
+.detail-fullscreen-btn:hover {
+    background: var(--primary);
+    transform: scale(1.1);
+}
+
+.detail-carousel-prev {
+    left: 1rem;
+}
+
+.detail-carousel-next {
+    right: 1rem;
+}
+
+.detail-main-photo-wrap:hover .card-carousel-btn {
+    opacity: 1;
+}
+
+.detail-thumbnails-row {
+    display: flex;
+    gap: 0.5rem;
+    overflow-x: auto;
+    padding-bottom: 0.25rem;
+}
+
+.detail-thumb-item {
+    width: 68px;
+    height: 50px;
+    border-radius: var(--radius-sm);
+    object-fit: cover;
+    cursor: pointer;
+    border: 2px solid transparent;
+    opacity: 0.6;
+    flex-shrink: 0;
+    transition: all 0.2s ease;
+}
+
+.detail-thumb-item:hover {
+    opacity: 0.9;
+}
+
+.detail-thumb-item.active {
+    border-color: var(--primary);
+    opacity: 1;
+    transform: scale(1.04);
+}
+
+/* KPI Cards in Detail Sheet */
+.detail-kpis-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+}
+
+.detail-kpi-card {
+    background: #f8fafc;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 1rem 1.15rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.detail-kpi-card.highlight-budget {
+    background: rgba(99, 102, 241, 0.05);
+    border-color: rgba(99, 102, 241, 0.25);
+}
+
+.detail-kpi-lbl {
+    font-size: 0.775rem;
+    color: var(--text-muted);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.detail-kpi-val {
+    font-size: 1.35rem;
+    font-weight: 800;
+    font-family: var(--font-heading);
+}
+
+.detail-kpi-card small {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
+/* Section Blocks in Detail Sheet */
+.detail-section-block {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.detail-section-title {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--text-main);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.detail-specs-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.85rem;
+}
+
+.detail-spec-item {
+    background: #ffffff;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 0.85rem 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+}
+
+.detail-spec-item i {
+    font-size: 1.35rem;
+    width: 28px;
+    text-align: center;
+}
+
+.detail-spec-item div {
+    display: flex;
+    flex-direction: column;
+}
+
+.detail-spec-item span {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.detail-spec-item strong {
+    font-size: 0.95rem;
+    color: var(--text-main);
+}
+
+.detail-comments-box {
+    background: #f8fafc;
+    border: 1px dashed var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 1rem 1.25rem;
+    font-size: 0.9rem;
+    color: var(--text-main);
+    line-height: 1.6;
+}
+
+.detail-minimap-container {
+    width: 100%;
+    height: 200px;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+}
+
+.detail-sheet-footer {
+    padding: 1.25rem 1.75rem;
+    border-top: 1px solid var(--border-color);
+    background: #ffffff;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.detail-footer-left, .detail-footer-right {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+@media (max-width: 768px) {
+    .detail-kpis-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+    .detail-specs-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+    .detail-main-photo-wrap {
+        height: 220px;
+    }
+}
+
 .card-content {
     padding: 1.35rem;
     display: flex;

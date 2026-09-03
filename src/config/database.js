@@ -201,6 +201,8 @@ async function initDB() {
         await safeAlter(db, "ALTER TABLE users ADD COLUMN IF NOT EXISTS otp_code VARCHAR(10)");
         await safeAlter(db, "ALTER TABLE users ADD COLUMN IF NOT EXISTS otp_expires_at TIMESTAMPTZ");
         await safeAlter(db, "ALTER TABLE users ALTER COLUMN otp_expires_at TYPE TIMESTAMPTZ");
+        await safeAlter(db, "ALTER TABLE properties ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'active'");
+        await safeAlter(db, "ALTER TABLE properties ADD COLUMN IF NOT EXISTS last_checked_at TIMESTAMPTZ");
     } else {
         await db.exec(`
             CREATE TABLE IF NOT EXISTS users (
@@ -231,6 +233,8 @@ async function initDB() {
                 rating INTEGER DEFAULT 0,
                 latitude REAL,
                 longitude REAL,
+                status TEXT DEFAULT 'active',
+                last_checked_at DATETIME,
                 user_id INTEGER REFERENCES users(id),
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP
             );
@@ -250,6 +254,8 @@ async function initDB() {
         await safeAlter(db, "ALTER TABLE properties ADD COLUMN latitude REAL");
         await safeAlter(db, "ALTER TABLE properties ADD COLUMN longitude REAL");
         await safeAlter(db, "ALTER TABLE properties ADD COLUMN user_id INTEGER");
+        await safeAlter(db, "ALTER TABLE properties ADD COLUMN status TEXT DEFAULT 'active'");
+        await safeAlter(db, "ALTER TABLE properties ADD COLUMN last_checked_at DATETIME");
     }
 
     console.log("Base de datos inicializada correctamente.");

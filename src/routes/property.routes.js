@@ -5,6 +5,8 @@ const {
     createProperty,
     updateProperty,
     deleteProperty,
+    verifyPropertyLinkById,
+    verifyAllPropertiesLinks,
     analyzeUrl
 } = require('../controllers/property.controller');
 const { authenticateToken } = require('../middlewares/auth.middleware');
@@ -15,6 +17,10 @@ const router = Router();
 
 // URL analyzer
 router.get('/analizar', authenticateToken, validate(queryUrlSchema, 'query'), analyzeUrl);
+
+// Property link verification
+router.post('/propiedades/verificar-todos', authenticateToken, verifyAllPropertiesLinks);
+router.post('/propiedades/:id/verificar', authenticateToken, verifyPropertyLinkById);
 
 // Property CRUD endpoints
 router.get('/propiedades', authenticateToken, getAllProperties);

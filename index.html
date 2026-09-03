@@ -16,7 +16,7 @@
     <meta name="theme-color" content="#6366f1">
     <link rel="manifest" href="manifest.json">
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="styles.css?v=28.0">
+    <link rel="stylesheet" href="styles.css?v=29.0">
     <script>
         // Purga preventiva de Service Workers antiguos en caché
         if ('serviceWorker' in navigator) {
@@ -283,6 +283,9 @@
                             <input type="text" id="filter-search" placeholder="Buscar por zona, nombre, comentarios...">
                         </div>
                         <div class="toolbar-top-actions">
+                            <button type="button" id="btn-verify-all-links" class="btn btn-secondary btn-sm" title="Comprobar si los anuncios siguen activos o fueron dados de baja">
+                                <i class="fa-solid fa-link-slash text-indigo"></i> <span class="hide-mobile">Verificar Enlaces</span>
+                            </button>
                             <div class="filter-item sort-item">
                                 <select id="sort-by">
                                     <option value="date-desc">Nuevos primero</option>
@@ -334,6 +337,14 @@
                                 <option value="no">No tiene/Indiferente</option>
                             </select>
                         </div>
+                        <div class="filter-item">
+                            <label><i class="fa-solid fa-circle-dot text-indigo"></i> Estado</label>
+                            <select id="filter-status">
+                                <option value="">Todos</option>
+                                <option value="active">🟢 Solo Activos</option>
+                                <option value="inactive">🔴 Dados de baja</option>
+                            </select>
+                        </div>
                         <div class="filter-item filter-reset-item">
                             <button type="button" id="btn-clear-filters" class="btn btn-secondary btn-sm block">
                                 <i class="fa-solid fa-rotate-left"></i> Limpiar
@@ -352,6 +363,7 @@
                         <thead>
                             <tr>
                                 <th>Propiedad</th>
+                                <th class="text-center">Estado</th>
                                 <th>Zona</th>
                                 <th class="text-right">Precio</th>
                                 <th class="text-center">Habs.</th>
@@ -926,6 +938,130 @@
         </div>
     </div>
 
+    <!-- MODAL: DETAILED PROPERTY SHEET (FICHA DETALLADA) -->
+    <div id="property-detail-modal" class="modal">
+        <div class="modal-content glass max-w-4xl property-detail-container">
+            <div class="modal-header detail-sheet-header">
+                <div class="detail-header-info">
+                    <div class="detail-header-badges">
+                        <span id="detail-status-badge" class="badge badge-status-active"><i class="fa-solid fa-circle-check"></i> Anuncio Activo</span>
+                        <span id="detail-type-badge" class="badge badge-type">Segunda Mano</span>
+                        <span id="detail-rating-badge" class="badge badge-dark"><i class="fa-solid fa-star text-amber"></i> <span id="detail-rating-val">4.0</span>/5</span>
+                    </div>
+                    <h2 id="detail-title">Cargando datos del inmueble...</h2>
+                    <p id="detail-location"><i class="fa-solid fa-location-dot text-indigo"></i> <span id="detail-zone-text">Zona</span> • <span id="detail-ccaa-text">CCAA</span></p>
+                </div>
+                <button class="btn-close-modal" id="btn-close-detail-modal" title="Cerrar (Esc)"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <div class="modal-body detail-sheet-body">
+                <!-- Media Gallery Section -->
+                <div class="detail-gallery-block">
+                    <div class="detail-main-photo-wrap" id="detail-main-photo-wrap" title="Clic para ampliar a pantalla completa">
+                        <img id="detail-main-photo" src="" alt="Foto principal del inmueble" referrerpolicy="no-referrer">
+                        <div class="detail-photo-badges">
+                            <span class="badge badge-price" id="detail-price-badge">-- €</span>
+                        </div>
+                        <button type="button" class="card-carousel-btn detail-carousel-prev" id="detail-btn-prev-photo"><i class="fa-solid fa-chevron-left"></i></button>
+                        <button type="button" class="card-carousel-btn detail-carousel-next" id="detail-btn-next-photo"><i class="fa-solid fa-chevron-right"></i></button>
+                        <button type="button" class="detail-fullscreen-btn" id="detail-btn-fullscreen" title="Ver galería a pantalla completa"><i class="fa-solid fa-expand"></i></button>
+                    </div>
+                    <div class="detail-thumbnails-row" id="detail-thumbnails-row">
+                        <!-- Populated dynamically via JS -->
+                    </div>
+                </div>
+
+                <!-- Financial KPI Cards -->
+                <div class="detail-kpis-grid">
+                    <div class="detail-kpi-card">
+                        <span class="detail-kpi-lbl"><i class="fa-solid fa-tag text-emerald"></i> Precio de Venta</span>
+                        <strong class="detail-kpi-val text-emerald" id="detail-kpi-price">-- €</strong>
+                        <small id="detail-kpi-m2-price">-- €/m²</small>
+                    </div>
+                    <div class="detail-kpi-card highlight-budget">
+                        <span class="detail-kpi-lbl"><i class="fa-solid fa-wallet text-amber"></i> Ahorro para Firma</span>
+                        <strong class="detail-kpi-val text-indigo" id="detail-kpi-budget">-- €</strong>
+                        <small id="detail-kpi-budget-sub">Entrada (20%) + Gastos CCAA</small>
+                    </div>
+                    <div class="detail-kpi-card">
+                        <span class="detail-kpi-lbl"><i class="fa-solid fa-calculator text-indigo"></i> Hipoteca Est. / Mes</span>
+                        <strong class="detail-kpi-val text-primary" id="detail-kpi-mortgage">-- €/mes</strong>
+                        <small id="detail-kpi-mortgage-sub">Al 2.9% a 30 años</small>
+                    </div>
+                    <div class="detail-kpi-card">
+                        <span class="detail-kpi-lbl"><i class="fa-solid fa-landmark text-secondary"></i> Impuestos Estimados</span>
+                        <strong class="detail-kpi-val" id="detail-kpi-taxes">-- €</strong>
+                        <small id="detail-kpi-taxes-sub">Según CCAA</small>
+                    </div>
+                </div>
+
+                <!-- Technical Specs Grid -->
+                <div class="detail-section-block">
+                    <h3 class="detail-section-title"><i class="fa-solid fa-list-check text-indigo"></i> Características Técnicas</h3>
+                    <div class="detail-specs-grid">
+                        <div class="detail-spec-item">
+                            <i class="fa-solid fa-bed text-indigo"></i>
+                            <div><span>Habitaciones</span><strong id="detail-spec-rooms">--</strong></div>
+                        </div>
+                        <div class="detail-spec-item">
+                            <i class="fa-solid fa-bath text-indigo"></i>
+                            <div><span>Baños</span><strong id="detail-spec-baths">--</strong></div>
+                        </div>
+                        <div class="detail-spec-item">
+                            <i class="fa-solid fa-ruler-combined text-indigo"></i>
+                            <div><span>Superficie</span><strong id="detail-spec-m2">-- m²</strong></div>
+                        </div>
+                        <div class="detail-spec-item">
+                            <i class="fa-solid fa-building text-indigo"></i>
+                            <div><span>Tipo de Vivienda</span><strong id="detail-spec-estate-type">--</strong></div>
+                        </div>
+                        <div class="detail-spec-item">
+                            <i class="fa-solid fa-car text-indigo"></i>
+                            <div><span>Garaje</span><strong id="detail-spec-garage">--</strong></div>
+                        </div>
+                        <div class="detail-spec-item">
+                            <i class="fa-solid fa-elevator text-indigo"></i>
+                            <div><span>Ascensor</span><strong id="detail-spec-elevator">--</strong></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Visit Notes & Comments -->
+                <div class="detail-section-block">
+                    <h3 class="detail-section-title"><i class="fa-solid fa-clipboard-check text-indigo"></i> Notas y Observaciones de Visita</h3>
+                    <div class="detail-comments-box">
+                        <p id="detail-comments-text">Sin notas adicionales registradas.</p>
+                    </div>
+                </div>
+
+                <!-- Mini Map Section -->
+                <div class="detail-section-block" id="detail-map-section" style="display: none;">
+                    <h3 class="detail-section-title"><i class="fa-solid fa-map-location-dot text-indigo"></i> Ubicación Geográfica</h3>
+                    <div id="detail-minimap" class="detail-minimap-container"></div>
+                </div>
+            </div>
+
+            <div class="modal-footer detail-sheet-footer">
+                <div class="detail-footer-left">
+                    <button type="button" class="btn btn-secondary btn-sm" id="btn-verify-detail-link">
+                        <i class="fa-solid fa-shield-halved text-indigo"></i> Verificar Disponibilidad
+                    </button>
+                    <button type="button" class="btn btn-secondary btn-sm" id="btn-expenses-from-detail">
+                        <i class="fa-solid fa-calculator text-emerald"></i> Desglose de Gastos
+                    </button>
+                </div>
+                <div class="detail-footer-right">
+                    <a href="#" target="_blank" class="btn btn-secondary btn-sm" id="btn-open-url-detail">
+                        <i class="fa-solid fa-arrow-up-right-from-square"></i> Ver Anuncio Original
+                    </a>
+                    <button type="button" class="btn btn-indigo btn-sm" id="btn-edit-from-detail">
+                        <i class="fa-solid fa-pen"></i> Editar Ficha
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- MODAL: EXPENSES BREAKDOWN DETAILS -->
     <div id="expenses-modal" class="modal">
         <div class="modal-content glass max-w-md">
@@ -966,6 +1102,6 @@
     <div id="toast" class="toast hidden"></div>
     <!-- Leaflet Map JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-    <script src="app.js?v=28.0"></script>
+    <script src="app.js?v=29.0"></script>
 </body>
 </html>

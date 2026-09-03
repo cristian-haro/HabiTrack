@@ -1,5 +1,6 @@
 const { getDB } = require('../config/database');
 const { scrapePropertyUrl } = require('../services/scraper.service');
+const { checkPropertyLink } = require('../services/link-checker.service');
 
 /**
  * Get all properties belonging to the authenticated user
@@ -147,6 +148,87 @@ async function deleteProperty(req, res, next) {
 }
 
 /**
+ * Verify a single property's link status
+ */
+async function verifyPropertyLinkById(req, res, next) {
+    try {
+        const db = await getDB();
+        const property = await db.get('SELECT * FROM properties WHERE id = ? AND user_id = ?', [req.params.id, req.user.id]);
+
+        if (!property) {
+            return res.status(404).json({ error: 'Propiedad no encontrada o no autorizada.' });
+        }
+
+        if (!property.url) {
+            return res.status(400).json({ error: 'La propiedad no tiene un enlace URL asignado.' });
+        }
+
+        const checkResult = await checkPropertyLink(property.url);
+        const newStatus = checkResult.status;
+        const checkedAt = checkResult.checkedAt;
+
+        await db.run(`
+            UPDATE properties SET status = ?, last_checked_at = ?
+            WHERE id = ? AND user_id = ?
+        `, [newStatus, checkedAt, property.id, req.user.id]);
+
+        const updatedProperty = await db.get('SELECT * FROM properties WHERE id = ? AND user_id = ?', [property.id, req.user.id]);
+
+        res.json({
+            success: true,
+            status: newStatus,
+            message: checkResult.message,
+            httpCode: checkResult.httpCode,
+            last_checked_at: checkedAt,
+            property: updatedProperty
+        });
+    } catch (err) {
+        next(err);
+    }
+}
+
+/**
+ * Verify all user's properties links concurrently
+ */
+async function verifyAllPropertiesLinks(req, res, next) {
+    try {
+        const db = await getDB();
+        const properties = await db.all('SELECT * FROM properties WHERE user_id = ? AND url IS NOT NULL AND url != ""', [req.user.id]);
+
+        const verificationPromises = properties.map(async (prop) => {
+            const result = await checkPropertyLink(prop.url);
+            await db.run(`
+                UPDATE properties SET status = ?, last_checked_at = ?
+                WHERE id = ? AND user_id = ?
+            `, [result.status, result.checkedAt, prop.id, req.user.id]);
+
+            return {
+                id: prop.id,
+                title: prop.title,
+                url: prop.url,
+                status: result.status,
+                message: result.message,
+                httpCode: result.httpCode
+            };
+        });
+
+        const results = await Promise.allSettled(verificationPromises);
+        const formattedResults = results.map(r => r.status === 'fulfilled' ? r.value : { error: r.reason?.message });
+
+        const updatedProperties = await db.all('SELECT * FROM properties WHERE user_id = ? ORDER BY id DESC', [req.user.id]);
+
+        res.json({
+            success: true,
+            totalChecked: properties.length,
+            results: formattedResults,
+            properties: updatedProperties
+        });
+    } catch (err) {
+        next(err);
+    }
+}
+
+/**
  * Scrape and analyze real estate URL
  */
 async function analyzeUrl(req, res, next) {
@@ -165,5 +247,8 @@ module.exports = {
     createProperty,
     updateProperty,
     deleteProperty,
+    verifyPropertyLinkById,
+    verifyAllPropertiesLinks,
     analyzeUrl
 };
+

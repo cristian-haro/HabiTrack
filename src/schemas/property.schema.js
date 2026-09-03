@@ -22,7 +22,9 @@ const propertySchema = z.object({
     comments: z.string().nullable().optional(),
     rating: z.coerce.number().int().min(0).max(5).default(0).optional(),
     latitude: z.coerce.number().nullable().optional(),
-    longitude: z.coerce.number().nullable().optional()
+    longitude: z.coerce.number().nullable().optional(),
+    status: z.enum(['active', 'inactive', 'unknown']).default('active').optional(),
+    last_checked_at: z.string().nullable().optional()
 });
 
 const queryUrlSchema = z.object({
