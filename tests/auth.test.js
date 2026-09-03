@@ -47,12 +47,12 @@ describe('Auth & OTP Cross-Platform Integration Tests', () => {
             const data = await res.json();
             expect(data.success).toBe(true);
             expect(data.email).toBe(testEmail);
-            expect(data.devOtp).toMatch(/^\d{6}$/);
+            expect(data.devOtp).toBeUndefined();
 
             const db = await getDB();
             const user = await db.get('SELECT * FROM users WHERE email = ?', [testEmail]);
             expect(user).toBeDefined();
-            expect(user.otp_code).toBe(data.devOtp);
+            expect(user.otp_code).toMatch(/^\d{6}$/);
         });
     });
 
@@ -67,7 +67,11 @@ describe('Auth & OTP Cross-Platform Integration Tests', () => {
                 body: JSON.stringify({ email: verifyEmail })
             });
             const data = await res.json();
-            generatedOtp = data.devOtp;
+            expect(data.devOtp).toBeUndefined();
+
+            const db = await getDB();
+            const user = await db.get('SELECT otp_code FROM users WHERE email = ?', [verifyEmail]);
+            generatedOtp = user.otp_code;
         });
 
         it('rejects invalid or wrong OTP code', async () => {
@@ -121,11 +125,15 @@ describe('Auth & OTP Cross-Platform Integration Tests', () => {
                 body: JSON.stringify({ email: meEmail })
             });
             const sendData = await sendRes.json();
+            expect(sendData.devOtp).toBeUndefined();
+
+            const db = await getDB();
+            const user = await db.get('SELECT otp_code FROM users WHERE email = ?', [meEmail]);
 
             const verifyRes = await fetch(`${baseUrl}/api/auth/verify-otp`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email: meEmail, code: sendData.devOtp })
+                body: JSON.stringify({ email: meEmail, code: user.otp_code })
             });
             const verifyData = await verifyRes.json();
             validToken = verifyData.token;

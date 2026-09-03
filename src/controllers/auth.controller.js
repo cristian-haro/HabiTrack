@@ -37,7 +37,7 @@ async function sendOtp(req, res, next) {
             }
         }
 
-        console.log(`🔑 [OTP GENERADO] Para: ${cleanEmail} -> Código: ${otpCode}`);
+        console.log(`🔑 [OTP SOLICITADO] Para: ${cleanEmail}`);
 
         const emailResult = await sendOTPEmail(cleanEmail, otpCode);
 
@@ -46,10 +46,6 @@ async function sendOtp(req, res, next) {
             message: `Código de acceso enviado a tu correo (${cleanEmail}).`,
             email: cleanEmail
         };
-
-        if (process.env.NODE_ENV === 'test') {
-            responseData.devOtp = otpCode;
-        }
 
         res.json(responseData);
     } catch (err) {

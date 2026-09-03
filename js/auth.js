@@ -97,7 +97,7 @@ export function setupAuthHandlers(onLoginSuccess) {
 
                 const codeInput = document.getElementById('otp-code');
                 if (codeInput) {
-                    codeInput.value = data.devOtp || '';
+                    codeInput.value = '';
                     codeInput.focus();
                 }
             } else {
