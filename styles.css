@@ -2493,7 +2493,8 @@ code {
         justify-content: space-between;
         align-items: center;
         width: 100%;
-        gap: 0.5rem;
+        gap: 0.4rem;
+        flex-wrap: wrap;
     }
     
     .mobile-filter-btn {
@@ -2502,6 +2503,17 @@ code {
     
     .toolbar-top-actions .sort-item {
         flex: 1;
+        min-width: 130px;
+    }
+
+    .toolbar-export-group {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+    }
+
+    .toolbar-export-group .btn-export {
+        padding: 0.45rem 0.65rem;
     }
     
     .toolbar-filters {
@@ -3204,6 +3216,50 @@ code {
     width: 100%;
     height: 100%;
     object-fit: cover;
+}
+
+/* ==========================================================================
+   EXPORT ACTIONS & PRINT / PDF STYLES
+   ========================================================================== */
+.toolbar-export-group {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.toolbar-export-group .btn-export {
+    font-weight: 600;
+}
+
+@media (max-width: 640px) {
+    .hide-mobile {
+        display: none !important;
+    }
+    .hide-mobile-xs {
+        display: none !important;
+    }
+}
+
+@media print {
+    body {
+        background: #ffffff !important;
+        color: #0f172a !important;
+        font-size: 11pt;
+    }
+
+    .sidebar, .toolbar, .view-toggle, .btn, button, .modal-footer, .pagination-container, #toast {
+        display: none !important;
+    }
+
+    .app-container, .main-content, .modal-content, .property-detail-container {
+        display: block !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        border: none !important;
+        box-shadow: none !important;
+    }
 }
 
 

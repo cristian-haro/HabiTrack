@@ -16,7 +16,7 @@
     <meta name="theme-color" content="#6366f1">
     <link rel="manifest" href="manifest.json">
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="styles.css?v=38.0">
+    <link rel="stylesheet" href="styles.css?v=39.0">
     <script>
         // Purga preventiva de Service Workers antiguos en caché
         if ('serviceWorker' in navigator) {
@@ -295,6 +295,14 @@
                                     <option value="m2-desc">Superficie: Mayor a Menor</option>
                                     <option value="rating-desc">Puntuación: Mayor a Menor</option>
                                 </select>
+                            </div>
+                            <div class="toolbar-export-group">
+                                <button type="button" id="btn-export-excel" class="btn btn-secondary btn-sm btn-export" title="Exportar listado a Excel (.csv)">
+                                    <i class="fa-solid fa-file-excel text-emerald"></i> <span class="hide-mobile">Excel</span>
+                                </button>
+                                <button type="button" id="btn-export-pdf-summary" class="btn btn-secondary btn-sm btn-export" title="Generar Informe Comparativo en PDF">
+                                    <i class="fa-solid fa-file-pdf text-rose"></i> <span class="hide-mobile">PDF</span>
+                                </button>
                             </div>
                             <div class="view-toggle">
                                 <button id="btn-view-grid" class="btn-toggle active" title="Vista Cuadrícula"><i class="fa-solid fa-grip"></i></button>
@@ -1051,13 +1059,16 @@
             <!-- Modal Footer -->
             <div class="modal-footer detail-sheet-footer">
                 <div class="detail-footer-left">
+                    <button type="button" class="btn btn-secondary btn-sm" id="btn-pdf-detail">
+                        <i class="fa-solid fa-file-pdf text-rose"></i> <span class="hide-mobile-xs">Descargar</span> PDF
+                    </button>
                     <button type="button" class="btn btn-secondary btn-sm" id="btn-expenses-from-detail">
-                        <i class="fa-solid fa-calculator text-emerald"></i> Desglose de Gastos
+                        <i class="fa-solid fa-calculator text-emerald"></i> <span class="hide-mobile-xs">Desglose</span> Gastos
                     </button>
                 </div>
                 <div class="detail-footer-right">
                     <a href="#" target="_blank" class="btn btn-secondary btn-sm" id="btn-open-url-detail">
-                        <i class="fa-solid fa-arrow-up-right-from-square"></i> Ver Anuncio Original
+                        <i class="fa-solid fa-arrow-up-right-from-square"></i> <span class="hide-mobile-xs">Ver</span> Anuncio
                     </a>
                     <button type="button" class="btn btn-indigo btn-sm" id="btn-edit-from-detail">
                         <i class="fa-solid fa-pen"></i> Editar Ficha
@@ -1108,6 +1119,6 @@
     <div id="toast" class="toast hidden"></div>
     <!-- Leaflet Map JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-    <script src="app.js?v=38.0"></script>
+    <script src="app.js?v=39.0"></script>
 </body>
 </html>
