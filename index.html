@@ -16,7 +16,7 @@
     <meta name="theme-color" content="#6366f1">
     <link rel="manifest" href="manifest.json">
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="styles.css?v=33.0">
+    <link rel="stylesheet" href="styles.css?v=34.0">
     <script>
         // Purga preventiva de Service Workers antiguos en caché
         if ('serviceWorker' in navigator) {
@@ -1003,60 +1003,52 @@
                     </div>
                 </div>
 
-                <!-- Content Columns: Left (Specs & Notes) / Right (Map Location) -->
-                <div class="detail-content-columns">
-                    <!-- Left: Characteristics & Notes -->
-                    <div class="detail-content-col-left">
-                        <!-- Características Técnicas -->
-                        <div class="detail-section-block">
-                            <h3 class="detail-section-title"><i class="fa-solid fa-list-check text-indigo"></i> Características Técnicas</h3>
-                            <div class="detail-specs-grid">
-                                <div class="detail-spec-item">
-                                    <i class="fa-solid fa-bed text-indigo"></i>
-                                    <div><span>Habitaciones</span><strong id="detail-spec-rooms">--</strong></div>
-                                </div>
-                                <div class="detail-spec-item">
-                                    <i class="fa-solid fa-bath text-indigo"></i>
-                                    <div><span>Baños</span><strong id="detail-spec-baths">--</strong></div>
-                                </div>
-                                <div class="detail-spec-item">
-                                    <i class="fa-solid fa-ruler-combined text-indigo"></i>
-                                    <div><span>Superficie</span><strong id="detail-spec-m2">-- m²</strong></div>
-                                </div>
-                                <div class="detail-spec-item">
-                                    <i class="fa-solid fa-building text-indigo"></i>
-                                    <div><span>Tipología</span><strong id="detail-spec-estate-type">--</strong></div>
-                                </div>
-                                <div class="detail-spec-item">
-                                    <i class="fa-solid fa-car text-indigo"></i>
-                                    <div><span>Garaje</span><strong id="detail-spec-garage">--</strong></div>
-                                </div>
-                                <div class="detail-spec-item">
-                                    <i class="fa-solid fa-elevator text-indigo"></i>
-                                    <div><span>Ascensor</span><strong id="detail-spec-elevator">--</strong></div>
-                                </div>
-                            </div>
+                <!-- Características Técnicas -->
+                <div class="detail-section-block">
+                    <h3 class="detail-section-title"><i class="fa-solid fa-list-check text-indigo"></i> Características Técnicas</h3>
+                    <div class="detail-specs-grid">
+                        <div class="detail-spec-item">
+                            <i class="fa-solid fa-bed text-indigo"></i>
+                            <div><span>Habitaciones</span><strong id="detail-spec-rooms">--</strong></div>
                         </div>
-
-                        <!-- Notas y Observaciones de Visita -->
-                        <div class="detail-section-block">
-                            <h3 class="detail-section-title"><i class="fa-solid fa-clipboard-check text-indigo"></i> Notas y Observaciones</h3>
-                            <div class="detail-comments-box">
-                                <p id="detail-comments-text">Sin notas adicionales registradas.</p>
-                            </div>
+                        <div class="detail-spec-item">
+                            <i class="fa-solid fa-bath text-indigo"></i>
+                            <div><span>Baños</span><strong id="detail-spec-baths">--</strong></div>
+                        </div>
+                        <div class="detail-spec-item">
+                            <i class="fa-solid fa-ruler-combined text-indigo"></i>
+                            <div><span>Superficie</span><strong id="detail-spec-m2">-- m²</strong></div>
+                        </div>
+                        <div class="detail-spec-item">
+                            <i class="fa-solid fa-building text-indigo"></i>
+                            <div><span>Tipología</span><strong id="detail-spec-estate-type">--</strong></div>
+                        </div>
+                        <div class="detail-spec-item">
+                            <i class="fa-solid fa-car text-indigo"></i>
+                            <div><span>Garaje</span><strong id="detail-spec-garage">--</strong></div>
+                        </div>
+                        <div class="detail-spec-item">
+                            <i class="fa-solid fa-elevator text-indigo"></i>
+                            <div><span>Ascensor</span><strong id="detail-spec-elevator">--</strong></div>
                         </div>
                     </div>
+                </div>
 
-                    <!-- Right: Mini Map Ubicación -->
-                    <div class="detail-content-col-right" id="detail-map-section" style="display: none;">
-                        <div class="detail-section-block" style="height: 100%; display: flex; flex-direction: column;">
-                            <div class="detail-section-header-row">
-                                <h3 class="detail-section-title"><i class="fa-solid fa-map-location-dot text-indigo"></i> Ubicación Geográfica</h3>
-                                <a href="#" target="_blank" id="detail-map-ext-link" class="detail-ext-link"><i class="fa-solid fa-location-arrow"></i> Google Maps</a>
-                            </div>
-                            <div id="detail-minimap" class="detail-minimap-container" style="flex: 1; min-height: 220px;"></div>
-                        </div>
+                <!-- Notas y Observaciones de Visita -->
+                <div class="detail-section-block">
+                    <h3 class="detail-section-title"><i class="fa-solid fa-clipboard-check text-indigo"></i> Notas y Observaciones</h3>
+                    <div class="detail-comments-box">
+                        <p id="detail-comments-text">Sin notas adicionales registradas.</p>
                     </div>
+                </div>
+
+                <!-- Ubicación Geográfica (Mapa Debajo de Notas) -->
+                <div class="detail-section-block" id="detail-map-section" style="display: none;">
+                    <div class="detail-section-header-row">
+                        <h3 class="detail-section-title"><i class="fa-solid fa-map-location-dot text-indigo"></i> Ubicación Geográfica</h3>
+                        <a href="#" target="_blank" id="detail-map-ext-link" class="detail-ext-link"><i class="fa-solid fa-location-arrow"></i> Google Maps</a>
+                    </div>
+                    <div id="detail-minimap" class="detail-minimap-container" style="height: 240px; min-height: 240px;"></div>
                 </div>
             </div>
 
@@ -1123,6 +1115,6 @@
     <div id="toast" class="toast hidden"></div>
     <!-- Leaflet Map JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-    <script src="app.js?v=33.0"></script>
+    <script src="app.js?v=34.0"></script>
 </body>
 </html>
