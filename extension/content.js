@@ -229,17 +229,41 @@
 
         // --- FOTOCASA ---
         else if (url.includes('fotocasa.es')) {
+            // 1. Título desde DOM o Document Title
             const titleEl = document.querySelector('h1.re-DetailHeader-propertyTitle, h1.re-DetailHeader-title, h1[class*="DetailHeader"], h1[class*="title"], h1[class*="Title"], h1');
-            if (titleEl && (!data.title || data.title === 'Inmueble Detectado')) {
+            if (titleEl && titleEl.innerText) {
                 data.title = titleEl.innerText.trim();
+            } else if (document.title) {
+                data.title = document.title.split(' - Fotocasa')[0].split(' | Fotocasa')[0].trim();
             }
 
-            const priceEl = document.querySelector('.re-DetailHeader-price, .re-DetailPrice, span[class*="DetailHeader-price"], span[class*="Price"], div[class*="Price"]');
-            if (priceEl && !data.price) {
+            // 2. Precio desde DOM, Data-TestId, Document Title o Meta Description
+            const priceEl = document.querySelector('[data-testid*="price"], [data-testid*="Price"], .re-DetailHeader-price, .re-DetailPrice, span[class*="DetailHeader-price"], span[class*="Price"], div[class*="Price"], span[class*="price"]');
+            if (priceEl && priceEl.innerText) {
                 data.price = cleanPrice(priceEl.innerText);
             }
 
-            const features = Array.from(document.querySelectorAll('.re-DetailFeaturesList-feature, .re-DetailHeader-featuresItem, li[class*="Feature"], div[class*="Feature"], span[class*="Feature"], ul[class*="Features"] li'));
+            // Fallback de precio desde document.title (ej: "Piso en venta en Madrid, 250.000 €...")
+            if (!data.price && document.title) {
+                const titlePriceMatch = document.title.match(/(\d{1,3}(?:[.,]\d{3})+|\d+)\s*€/);
+                if (titlePriceMatch) {
+                    data.price = cleanPrice(titlePriceMatch[1]);
+                }
+            }
+
+            // Fallback de precio desde meta description
+            if (!data.price) {
+                const metaDesc = document.querySelector('meta[name="description"], meta[property="og:description"]');
+                if (metaDesc && metaDesc.content) {
+                    const descPriceMatch = metaDesc.content.match(/(\d{1,3}(?:[.,]\d{3})+|\d+)\s*€/);
+                    if (descPriceMatch) {
+                        data.price = cleanPrice(descPriceMatch[1]);
+                    }
+                }
+            }
+
+            // 3. Características (m², habitaciones, baños, ascensor, garaje)
+            const features = Array.from(document.querySelectorAll('[data-testid*="feature"], .re-DetailFeaturesList-feature, .re-DetailHeader-featuresItem, li[class*="Feature"], div[class*="Feature"], span[class*="Feature"], ul[class*="Features"] li, .re-DetailFeaturesList li'));
             features.forEach(f => {
                 const text = f.innerText.toLowerCase();
                 if ((text.includes('m²') || text.includes('m2')) && !data.m2) data.m2 = cleanNum(text);
@@ -250,18 +274,57 @@
                 if (text.includes('obra nueva')) data.estate_type = 'new';
             });
 
-            const descEl = document.querySelector('.fc-DetailDescription, .re-DetailDescription, div[class*="Description"], p[class*="Description"]');
-            if (descEl && !data.comments) data.comments = descEl.innerText.trim();
-
-            const imgEls = document.querySelectorAll('.re-DetailMosaicPhoto img, .re-DetailGallery img, img.re-DetailMosaic-img, img[class*="Mosaic"], img[class*="Gallery"], picture img');
-            const photosArr = [];
-            imgEls.forEach(img => {
-                const src = img.src || img.getAttribute('data-src');
-                if (src && !src.includes('logo') && !src.includes('icon') && !photosArr.includes(src)) {
-                    photosArr.push(src);
+            // Extraer m² y habitaciones de meta description si faltan
+            const metaDesc = document.querySelector('meta[name="description"], meta[property="og:description"]');
+            if (metaDesc && metaDesc.content) {
+                const content = metaDesc.content.toLowerCase();
+                if (!data.m2) {
+                    const m2Match = content.match(/(\d+)\s*(?:m²|m2)/);
+                    if (m2Match) data.m2 = parseInt(m2Match[1], 10);
                 }
+                if (!data.rooms) {
+                    const roomsMatch = content.match(/(\d+)\s*(?:hab|dorm|habitaciones|dormitorios)/);
+                    if (roomsMatch) data.rooms = parseInt(roomsMatch[1], 10);
+                }
+                if (!data.baths) {
+                    const bathsMatch = content.match(/(\d+)\s*(?:baño|baños|bñ)/);
+                    if (bathsMatch) data.baths = parseInt(bathsMatch[1], 10);
+                }
+                if (!data.comments) {
+                    data.comments = metaDesc.content.trim();
+                }
+            }
+
+            const descEl = document.querySelector('.fc-DetailDescription, .re-DetailDescription, div[class*="Description"], p[class*="Description"]');
+            if (descEl && descEl.innerText) data.comments = descEl.innerText.trim();
+
+            // 4. Fotos de Fotocasa
+            const fotocasaPhotos = [];
+            const seenFotoIds = new Set();
+
+            function addFotocasaPhoto(rawUrl) {
+                if (!rawUrl || typeof rawUrl !== 'string' || !rawUrl.startsWith('http')) return;
+                if (rawUrl.includes('logo') || rawUrl.includes('icon') || rawUrl.includes('blank') || rawUrl.includes('avatar')) return;
+
+                const filename = rawUrl.split('/').pop().split('?')[0].toLowerCase();
+                if (!filename || seenFotoIds.has(filename)) return;
+
+                seenFotoIds.add(filename);
+                fotocasaPhotos.push(rawUrl);
+            }
+
+            const ogImage = document.querySelector('meta[property="og:image"]');
+            if (ogImage && ogImage.content) addFotocasaPhoto(ogImage.content);
+
+            const imgEls = document.querySelectorAll('.re-DetailMosaicPhoto img, .re-DetailGallery img, img.re-DetailMosaic-img, img[class*="Mosaic"], img[class*="Gallery"], picture img, [data-testid*="gallery"] img, [data-testid*="image"] img');
+            imgEls.forEach(img => {
+                const src = img.getAttribute('data-src') || img.src;
+                addFotocasaPhoto(src);
             });
-            if (photosArr.length > 0 && !data.photos) data.photos = photosArr.slice(0, 10).join(', ');
+
+            if (fotocasaPhotos.length > 0) {
+                data.photos = fotocasaPhotos.slice(0, 12).join(', ');
+            }
         }
 
         // --- HABITACLIA ---
