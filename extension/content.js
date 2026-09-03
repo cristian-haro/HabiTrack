@@ -1,10 +1,6 @@
 // HabiTrack Chrome Extension - Content Script Scraper & Floating UI
 
 (function() {
-    // Evitar inyección múltiple
-    if (window.__habitrack_injected__) return;
-    window.__habitrack_injected__ = true;
-
     // Helper sanitizers
     function cleanPrice(str) {
         if (!str) return null;
@@ -23,7 +19,7 @@
         const url = window.location.href;
         const data = {
             url: url,
-            title: document.title.split(' | ')[0].split(' - ')[0] || 'Inmueble Detectado',
+            title: (document.title || 'Inmueble Detectado').split(' | ')[0].split(' - ')[0].trim(),
             price: null,
             m2: null,
             rooms: 0,
@@ -39,108 +35,94 @@
             longitude: null
         };
 
-        // 1. INTENTO VÍA JSON-LD (Schema.org)
-        try {
-            const scripts = document.querySelectorAll('script[type="application/ld+json"]');
-            for (const script of scripts) {
-                try {
-                    const text = script.innerText || script.textContent || '';
-                    if (!text) continue;
-                    const parsed = JSON.parse(text);
-                    const items = Array.isArray(parsed) ? parsed : [parsed];
-                    for (const item of items) {
-                        if (item['@type'] === 'Product' || item['@type'] === 'RealEstateAgent' || item['@type'] === 'SingleFamilyResidence' || item['@type'] === 'Apartment' || item['@type'] === 'Offer' || item['@type'] === 'Place' || item.offers || item.price) {
-                            if (item.name) data.title = item.name;
-                            if (item.description) data.comments = item.description;
-                            if (item.image) {
-                                data.photos = Array.isArray(item.image) ? item.image.join(', ') : item.image;
-                            }
-                            if (item.offers) {
-                                const offers = Array.isArray(item.offers) ? item.offers[0] : item.offers;
-                                if (offers.price) data.price = cleanPrice(String(offers.price));
-                            } else if (item.price) {
-                                data.price = cleanPrice(String(item.price));
-                            }
-                            if (item.geo) {
-                                data.latitude = parseFloat(item.geo.latitude) || null;
-                                data.longitude = parseFloat(item.geo.longitude) || null;
-                            }
-                            if (item.address && typeof item.address === 'object') {
-                                if (item.address.addressLocality) data.zone = item.address.addressLocality;
-                                if (item.address.addressRegion) data.ccaa = item.address.addressRegion;
-                            }
-                            break;
+        // -------------------------------------------------------------
+        // 1. FOTOCASA (Extracción nativa vía __initial_props__ y DOM)
+        // -------------------------------------------------------------
+        if (url.includes('fotocasa.es')) {
+            try {
+                const propsScript = document.getElementById('__initial_props__');
+                if (propsScript && propsScript.innerText) {
+                    const props = JSON.parse(propsScript.innerText);
+                    const entity = props.realEstateAdDetailEntityV2 || props.realEstate || {};
+
+                    if (props.propertyTitle) data.title = props.propertyTitle;
+                    if (entity.price && entity.price.amount) data.price = entity.price.amount;
+                    if (entity.description) data.comments = entity.description;
+
+                    if (entity.address) {
+                        if (entity.address.autonomousCommunity) data.ccaa = entity.address.autonomousCommunity;
+                        if (entity.address.neighborhood || entity.address.municipality) {
+                            data.zone = [entity.address.neighborhood, entity.address.municipality].filter(Boolean).join(', ');
+                        }
+                        if (entity.address.coordinates) {
+                            data.latitude = entity.address.coordinates.lat || null;
+                            data.longitude = entity.address.coordinates.lng || null;
                         }
                     }
-                } catch (e) {}
-            }
-        } catch (e) {}
 
-        // 2. INTENTO VÍA NEXT.JS __NEXT_DATA__ (Fotocasa, Habitaclia, etc.)
-        try {
-            const nextDataEl = document.getElementById('__NEXT_DATA__');
-            if (nextDataEl) {
-                const nextJson = JSON.parse(nextDataEl.innerText || nextDataEl.textContent || '{}');
-                const pageProps = nextJson.props && nextJson.props.pageProps;
-                if (pageProps) {
-                    // Fotocasa property structure
-                    const propDetail = pageProps.property || pageProps.detail || (pageProps.initialState && pageProps.initialState.realEstate && pageProps.initialState.realEstate.detail);
-                    if (propDetail) {
-                        if (propDetail.heading || propDetail.title) data.title = propDetail.heading || propDetail.title;
-                        if (propDetail.price && propDetail.price.amount) data.price = propDetail.price.amount;
-                        else if (typeof propDetail.price === 'number') data.price = propDetail.price;
-                        if (propDetail.surface || propDetail.m2) data.m2 = propDetail.surface || propDetail.m2;
-                        if (propDetail.rooms) data.rooms = propDetail.rooms;
-                        if (propDetail.bathrooms) data.baths = propDetail.bathrooms;
-                        if (propDetail.description) data.comments = propDetail.description;
-                        if (propDetail.location) {
-                            if (propDetail.location.coordinates) {
-                                data.latitude = propDetail.location.coordinates.latitude || null;
-                                data.longitude = propDetail.location.coordinates.longitude || null;
-                            }
-                            if (propDetail.location.municipality) data.zone = propDetail.location.municipality;
-                        }
-                        if (propDetail.multimedia && Array.isArray(propDetail.multimedia)) {
-                            const pUrls = propDetail.multimedia.map(m => m.src || m.url).filter(Boolean);
-                            if (pUrls.length > 0) data.photos = pUrls.slice(0, 10).join(', ');
-                        }
+                    if (entity.extraFeatures && Array.isArray(entity.extraFeatures)) {
+                        const extraStr = entity.extraFeatures.join(' ').toLowerCase();
+                        if (extraStr.includes('ascensor')) data.elevator = 'si';
+                        if (extraStr.includes('parking') || extraStr.includes('garaje')) data.garage = 'si';
+                    }
+
+                    if (entity.features && Array.isArray(entity.features)) {
+                        entity.features.forEach(f => {
+                            if (f.type === 'ELEVATOR' && f.value === 'YES') data.elevator = 'si';
+                            if (f.type === 'PARKING' && f.value === 'YES') data.garage = 'si';
+                        });
+                    }
+
+                    if (entity.multimedias && Array.isArray(entity.multimedias)) {
+                        const fotoUrls = entity.multimedias
+                            .filter(m => m.type === 'image' && m.url)
+                            .map(m => m.url);
+                        if (fotoUrls.length > 0) data.photos = fotoUrls.slice(0, 15).join(', ');
                     }
                 }
-            }
-        } catch (e) {}
+            } catch (e) {}
 
-        // 3. INTENTO VÍA OPEN GRAPH META TAGS
-        try {
-            const ogTitle = document.querySelector('meta[property="og:title"]');
-            if (ogTitle && ogTitle.content && (!data.title || data.title === 'Inmueble Detectado')) {
-                data.title = ogTitle.content.split(' | ')[0].split(' - ')[0];
+            // Fallback de datos desde DOM de Fotocasa si hiciera falta
+            if (!data.price) {
+                const priceMatch = document.body.innerText.match(/(\d{1,3}(?:\.\d{3})+|\d+)\s*€/);
+                if (priceMatch) data.price = cleanPrice(priceMatch[1]);
             }
 
-            const ogImage = document.querySelector('meta[property="og:image"]');
-            if (ogImage && ogImage.content && !data.photos) {
-                data.photos = ogImage.content;
+            const h1 = document.querySelector('h1');
+            if (h1 && h1.innerText && (!data.title || data.title === 'Inmueble Detectado')) {
+                data.title = h1.innerText.trim();
             }
 
-            const ogDesc = document.querySelector('meta[property="og:description"]');
-            if (ogDesc && ogDesc.content && !data.comments) {
-                data.comments = ogDesc.content;
+            // Características desde DOM de Fotocasa
+            const allText = document.body.innerText.toLowerCase();
+            if (!data.m2) {
+                const m2m = allText.match(/(\d+)\s*(?:m²|m2)/);
+                if (m2m && parseInt(m2m[1], 10) > 10 && parseInt(m2m[1], 10) < 5000) data.m2 = parseInt(m2m[1], 10);
+            }
+            if (!data.rooms) {
+                const habm = allText.match(/(\d+)\s*(?:hab|habitaciones|dormitorios)/);
+                if (habm && parseInt(habm[1], 10) < 20) data.rooms = parseInt(habm[1], 10);
+            }
+            if (!data.baths) {
+                const banom = allText.match(/(\d+)\s*(?:baño|baños|bñ)/);
+                if (banom && parseInt(banom[1], 10) < 10) data.baths = parseInt(banom[1], 10);
             }
 
-            const ogPrice = document.querySelector('meta[property="product:price:amount"], meta[property="og:price:amount"]');
-            if (ogPrice && ogPrice.content && !data.price) {
-                data.price = cleanPrice(ogPrice.content);
+            if (!data.photos) {
+                const ogImg = document.querySelector('meta[property="og:image"]');
+                if (ogImg && ogImg.content) data.photos = ogImg.content;
             }
-        } catch (e) {}
+        }
 
-        // 4. PARSERS ESPECÍFICOS POR PORTAL
-
-        // --- IDEALISTA ---
-        if (url.includes('idealista.com')) {
-            const h1 = document.querySelector('.main-info__title-main');
+        // -------------------------------------------------------------
+        // 2. IDEALISTA (Extracción limpia con desduplicación de fotos)
+        // -------------------------------------------------------------
+        else if (url.includes('idealista.com')) {
+            const h1 = document.querySelector('.main-info__title-main, h1');
             if (h1 && h1.innerText) data.title = h1.innerText.trim();
 
             const priceEl = document.querySelector('.info-data-price, .price-features__current-price, .info-data-price .txt-bold');
-            if (priceEl && !data.price) data.price = cleanPrice(priceEl.innerText);
+            if (priceEl && priceEl.innerText) data.price = cleanPrice(priceEl.innerText);
 
             const details = Array.from(document.querySelectorAll('.info-features span, .details-property-feature-one, .details-property_features li'));
             details.forEach(d => {
@@ -155,53 +137,50 @@
             });
 
             const zoneEl = document.querySelector('.main-info__title-minor, #headerMap .map-header');
-            if (zoneEl) data.zone = zoneEl.innerText.replace('en venta en', '').replace('en', '').trim();
+            if (zoneEl && zoneEl.innerText) data.zone = zoneEl.innerText.replace('en venta en', '').replace('en', '').trim();
 
             const descEl = document.querySelector('.comment p, .comment .adCommentsLanguage');
-            if (descEl && !data.comments) data.comments = descEl.innerText.trim();
+            if (descEl && descEl.innerText) data.comments = descEl.innerText.trim();
 
-            // Extracción avanzada y desduplicación de fotos en alta resolución de Idealista
+            // Extracción de galería con desduplicación por hash de imagen
             const idealistaPhotos = [];
-            const seenPhotoIds = new Set();
+            const seenImageHashes = new Set();
 
-            function addIdealistaPhoto(rawUrl) {
+            function addPhotoCandidate(rawUrl) {
                 if (!rawUrl || typeof rawUrl !== 'string' || !rawUrl.startsWith('http')) return;
                 if (rawUrl.includes('blank') || rawUrl.includes('static/common') || rawUrl.includes('logo') || rawUrl.includes('icon') || rawUrl.includes('map')) return;
 
-                // Extraer el nombre de archivo / ID único de la foto (ej: 111111111.jpg)
-                const filename = rawUrl.split('/').pop().split('?')[0].toLowerCase();
-                if (!filename || seenPhotoIds.has(filename)) return;
+                // Extraer el hash único del archivo (ej: 111111111.jpg o uuid)
+                const parts = rawUrl.split('/');
+                const filename = parts[parts.length - 1].split('?')[0].toLowerCase();
+                if (!filename || seenImageHashes.has(filename)) return;
 
-                seenPhotoIds.add(filename);
-
-                // Normalizar a la máxima resolución disponible
-                let highRes = rawUrl.replace(/\/blur\/[^\/]+\//, '/blur/WEB_DETAIL_TOP-L-L/');
+                seenImageHashes.add(filename);
+                // Convertir al tamaño máximo de detalle
+                const highRes = rawUrl.replace(/\/blur\/[^\/]+\//, '/blur/WEB_DETAIL_TOP-L-L/');
                 idealistaPhotos.push(highRes);
             }
 
-            // 1. Meta og:image (foto principal)
+            // 1. Meta og:image
             const ogImg = document.querySelector('meta[property="og:image"]');
-            if (ogImg && ogImg.content) {
-                addIdealistaPhoto(ogImg.content);
-            }
+            if (ogImg && ogImg.content) addPhotoCandidate(ogImg.content);
 
-            // 2. Extraer TODA la galería completa desde los scripts internos de Idealista (fullScreenGalleryPhotos)
+            // 2. Extraer de scripts internos (fullScreenGalleryPhotos)
             try {
                 const scripts = document.querySelectorAll('script');
                 for (const s of scripts) {
                     const txt = s.innerText || s.textContent || '';
                     if (txt.includes('fullScreenGalleryPhotos') || txt.includes('galleryPhotos') || txt.includes('ad_images')) {
-                        // Buscar todas las URLs de imágenes de Idealista en el script
                         const matches = txt.match(/https?:\/\/[a-z0-9.]*idealista\.com\/[^\s"'\\]+\.jpg/gi);
                         if (matches) {
-                            matches.forEach(u => addIdealistaPhoto(u));
+                            matches.forEach(u => addPhotoCandidate(u));
                         }
                     }
                 }
             } catch (e) {}
 
-            // 3. Elementos multimedia y de galería del DOM
-            const imgEls = Array.from(document.querySelectorAll('#main-multimedia img, #main-multimedia source, .detail-image img, .detail-image source, .gallery-fallback img, picture img, picture source, [data-service="gallery"] img, [data-service="gallery"] source, ul.grid-images img, .slideshow img, .thumbnail-image img'));
+            // 3. Elementos multimedia en el DOM
+            const imgEls = Array.from(document.querySelectorAll('#main-multimedia img, #main-multimedia source, .detail-image img, .detail-image source, picture img, picture source, [data-service="gallery"] img, ul.grid-images img, .slideshow img, .thumbnail-image img'));
             imgEls.forEach(el => {
                 let candidate = el.getAttribute('data-ondemand-img') || 
                                 el.getAttribute('data-src') || 
@@ -219,7 +198,7 @@
                     candidate = candidate.split(' ')[0].trim();
                 }
 
-                addIdealistaPhoto(candidate);
+                addPhotoCandidate(candidate);
             });
 
             if (idealistaPhotos.length > 0) {
@@ -227,113 +206,15 @@
             }
         }
 
-        // --- FOTOCASA ---
-        else if (url.includes('fotocasa.es')) {
-            // 1. Título desde DOM o Document Title
-            const titleEl = document.querySelector('h1.re-DetailHeader-propertyTitle, h1.re-DetailHeader-title, h1[class*="DetailHeader"], h1[class*="title"], h1[class*="Title"], h1');
-            if (titleEl && titleEl.innerText) {
-                data.title = titleEl.innerText.trim();
-            } else if (document.title) {
-                data.title = document.title.split(' - Fotocasa')[0].split(' | Fotocasa')[0].trim();
-            }
-
-            // 2. Precio desde DOM, Data-TestId, Document Title o Meta Description
-            const priceEl = document.querySelector('[data-testid*="price"], [data-testid*="Price"], .re-DetailHeader-price, .re-DetailPrice, span[class*="DetailHeader-price"], span[class*="Price"], div[class*="Price"], span[class*="price"]');
-            if (priceEl && priceEl.innerText) {
-                data.price = cleanPrice(priceEl.innerText);
-            }
-
-            // Fallback de precio desde document.title (ej: "Piso en venta en Madrid, 250.000 €...")
-            if (!data.price && document.title) {
-                const titlePriceMatch = document.title.match(/(\d{1,3}(?:[.,]\d{3})+|\d+)\s*€/);
-                if (titlePriceMatch) {
-                    data.price = cleanPrice(titlePriceMatch[1]);
-                }
-            }
-
-            // Fallback de precio desde meta description
-            if (!data.price) {
-                const metaDesc = document.querySelector('meta[name="description"], meta[property="og:description"]');
-                if (metaDesc && metaDesc.content) {
-                    const descPriceMatch = metaDesc.content.match(/(\d{1,3}(?:[.,]\d{3})+|\d+)\s*€/);
-                    if (descPriceMatch) {
-                        data.price = cleanPrice(descPriceMatch[1]);
-                    }
-                }
-            }
-
-            // 3. Características (m², habitaciones, baños, ascensor, garaje)
-            const features = Array.from(document.querySelectorAll('[data-testid*="feature"], .re-DetailFeaturesList-feature, .re-DetailHeader-featuresItem, li[class*="Feature"], div[class*="Feature"], span[class*="Feature"], ul[class*="Features"] li, .re-DetailFeaturesList li'));
-            features.forEach(f => {
-                const text = f.innerText.toLowerCase();
-                if ((text.includes('m²') || text.includes('m2')) && !data.m2) data.m2 = cleanNum(text);
-                if ((text.includes('hab') || text.includes('dorm')) && !data.rooms) data.rooms = cleanNum(text);
-                if (text.includes('baño') && !data.baths) data.baths = cleanNum(text);
-                if (text.includes('garaje') || text.includes('parking')) data.garage = 'si';
-                if (text.includes('ascensor')) data.elevator = 'si';
-                if (text.includes('obra nueva')) data.estate_type = 'new';
-            });
-
-            // Extraer m² y habitaciones de meta description si faltan
-            const metaDesc = document.querySelector('meta[name="description"], meta[property="og:description"]');
-            if (metaDesc && metaDesc.content) {
-                const content = metaDesc.content.toLowerCase();
-                if (!data.m2) {
-                    const m2Match = content.match(/(\d+)\s*(?:m²|m2)/);
-                    if (m2Match) data.m2 = parseInt(m2Match[1], 10);
-                }
-                if (!data.rooms) {
-                    const roomsMatch = content.match(/(\d+)\s*(?:hab|dorm|habitaciones|dormitorios)/);
-                    if (roomsMatch) data.rooms = parseInt(roomsMatch[1], 10);
-                }
-                if (!data.baths) {
-                    const bathsMatch = content.match(/(\d+)\s*(?:baño|baños|bñ)/);
-                    if (bathsMatch) data.baths = parseInt(bathsMatch[1], 10);
-                }
-                if (!data.comments) {
-                    data.comments = metaDesc.content.trim();
-                }
-            }
-
-            const descEl = document.querySelector('.fc-DetailDescription, .re-DetailDescription, div[class*="Description"], p[class*="Description"]');
-            if (descEl && descEl.innerText) data.comments = descEl.innerText.trim();
-
-            // 4. Fotos de Fotocasa
-            const fotocasaPhotos = [];
-            const seenFotoIds = new Set();
-
-            function addFotocasaPhoto(rawUrl) {
-                if (!rawUrl || typeof rawUrl !== 'string' || !rawUrl.startsWith('http')) return;
-                if (rawUrl.includes('logo') || rawUrl.includes('icon') || rawUrl.includes('blank') || rawUrl.includes('avatar')) return;
-
-                const filename = rawUrl.split('/').pop().split('?')[0].toLowerCase();
-                if (!filename || seenFotoIds.has(filename)) return;
-
-                seenFotoIds.add(filename);
-                fotocasaPhotos.push(rawUrl);
-            }
-
-            const ogImage = document.querySelector('meta[property="og:image"]');
-            if (ogImage && ogImage.content) addFotocasaPhoto(ogImage.content);
-
-            const imgEls = document.querySelectorAll('.re-DetailMosaicPhoto img, .re-DetailGallery img, img.re-DetailMosaic-img, img[class*="Mosaic"], img[class*="Gallery"], picture img, [data-testid*="gallery"] img, [data-testid*="image"] img');
-            imgEls.forEach(img => {
-                const src = img.getAttribute('data-src') || img.src;
-                addFotocasaPhoto(src);
-            });
-
-            if (fotocasaPhotos.length > 0) {
-                data.photos = fotocasaPhotos.slice(0, 12).join(', ');
-            }
-        }
-
-        // --- HABITACLIA ---
+        // -------------------------------------------------------------
+        // 3. HABITACLIA
+        // -------------------------------------------------------------
         else if (url.includes('habitaclia.com')) {
-            const titleEl = document.querySelector('h1.summary-title, h1[class*="title"], h1');
-            if (titleEl && (!data.title || data.title === 'Inmueble Detectado')) data.title = titleEl.innerText.trim();
+            const titleEl = document.querySelector('h1.summary-title, h1');
+            if (titleEl) data.title = titleEl.innerText.trim();
 
             const priceEl = document.querySelector('.price span, .summary-price, span[class*="price"]');
-            if (priceEl && !data.price) data.price = cleanPrice(priceEl.innerText);
+            if (priceEl) data.price = cleanPrice(priceEl.innerText);
 
             const features = Array.from(document.querySelectorAll('.feature, .summary-features li, ul.features li, li[class*="feature"]'));
             features.forEach(f => {
@@ -346,27 +227,55 @@
             });
 
             const descEl = document.querySelector('.description, #js-detail-description');
-            if (descEl && !data.comments) data.comments = descEl.innerText.trim();
+            if (descEl) data.comments = descEl.innerText.trim();
+
+            const ogImg = document.querySelector('meta[property="og:image"]');
+            if (ogImg && ogImg.content) data.photos = ogImg.content;
         }
 
-        // 5. FALLBACK GENERAL DE PRECIO SI AÚN NO SE HA DETECTADO
-        if (!data.price) {
-            const priceCandidates = Array.from(document.querySelectorAll('span, div, p, strong, h2, h3'));
-            for (const el of priceCandidates) {
-                if (el.children.length === 0 && el.innerText && el.innerText.includes('€') && el.innerText.length < 25) {
-                    const candidate = cleanPrice(el.innerText);
-                    if (candidate && candidate >= 10000 && candidate <= 50000000) {
-                        data.price = candidate;
-                        break;
-                    }
+        // -------------------------------------------------------------
+        // 4. SCHEMA.ORG JSON-LD FALLBACK GENÉRICO
+        // -------------------------------------------------------------
+        if (!data.price || !data.photos) {
+            try {
+                const scripts = document.querySelectorAll('script[type="application/ld+json"]');
+                for (const script of scripts) {
+                    try {
+                        const text = script.innerText || script.textContent || '';
+                        if (!text) continue;
+                        const parsed = JSON.parse(text);
+                        const items = Array.isArray(parsed) ? parsed : [parsed];
+                        for (const item of items) {
+                            if (item['@type'] === 'Product' || item['@type'] === 'RealEstateAgent' || item['@type'] === 'SingleFamilyResidence' || item['@type'] === 'Apartment' || item['@type'] === 'Offer' || item['@type'] === 'Place' || item.offers || item.price) {
+                                if (item.name && (!data.title || data.title === 'Inmueble Detectado')) data.title = item.name;
+                                if (item.description && !data.comments) data.comments = item.description;
+                                if (item.image && !data.photos) {
+                                    data.photos = Array.isArray(item.image) ? item.image.join(', ') : item.image;
+                                }
+                                if (item.offers && !data.price) {
+                                    const offers = Array.isArray(item.offers) ? item.offers[0] : item.offers;
+                                    if (offers.price) data.price = cleanPrice(String(offers.price));
+                                } else if (item.price && !data.price) {
+                                    data.price = cleanPrice(String(item.price));
+                                }
+                                if (item.geo && !data.latitude) {
+                                    data.latitude = parseFloat(item.geo.latitude) || null;
+                                    data.longitude = parseFloat(item.geo.longitude) || null;
+                                }
+                                break;
+                            }
+                        }
+                    } catch (e) {}
                 }
-            }
+            } catch (e) {}
         }
 
-        // 3. INFERIR CCAA DE LA ZONA / TÍTULO
+        // -------------------------------------------------------------
+        // 5. INFERIR CCAA DE LA ZONA / TÍTULO
+        // -------------------------------------------------------------
         const textToAnalyze = (data.title + ' ' + data.zone + ' ' + data.comments).toLowerCase();
         const CCAA_KEYWORDS = {
-            'Madrid': ['madrid', 'alcalá', 'mostoles', 'leganes', 'fuenlabrada', 'getafe', 'alcobendas', 'pozuelo', 'las rozas'],
+            'Madrid': ['madrid', 'alcalá', 'mostoles', 'leganes', 'fuenlabrada', 'getafe', 'alcobendas', 'pozuelo', 'las rozas', 'carabanchel', 'comillas'],
             'Cataluña': ['barcelona', 'girona', 'gerona', 'lleida', 'lerida', 'tarragona', 'badalona', 'hospitalet', 'sabadell', 'terrassa'],
             'Andalucía': ['sevilla', 'málaga', 'malaga', 'marbella', 'granada', 'córdoba', 'cordoba', 'cádiz', 'cadiz', 'almería', 'almeria', 'huelva', 'jaén', 'jaen'],
             'Comunidad Valenciana': ['valencia', 'valència', 'alicante', 'alacant', 'castellón', 'castelló', 'elche', 'benidorm', 'torrevieja'],
@@ -394,7 +303,7 @@
         return data;
     }
 
-    // Calcular cuota rápida orientativa (20% entrada, 80% hipoteca al 3% a 30 años)
+    // Calcular cuota rápida orientativa
     function computeQuickMortgage(price) {
         if (!price || price <= 0) return null;
         const mortgageAmount = price * 0.8;
@@ -406,27 +315,35 @@
 
     // Inyectar widget flotante interactivo
     function injectFloatingWidget() {
-        if (document.getElementById('habitrack-floating-btn')) return;
-
         const propertyData = scrapePropertyData();
-        if (!propertyData.price) return; // No es una página de ficha de inmueble clara
+        
+        // Verificar si es un anuncio de inmueble válido
+        const isPropertyPage = propertyData.price || 
+                               window.location.href.includes('/inmueble/') || 
+                               window.location.href.includes('/vivienda/') ||
+                               window.location.href.match(/\/\d{6,12}\//);
+
+        if (!isPropertyPage) return;
 
         const monthlyEst = computeQuickMortgage(propertyData.price);
 
-        const widget = document.createElement('div');
-        widget.id = 'habitrack-floating-btn';
-        widget.className = 'habitrack-floating-container';
+        let widget = document.getElementById('habitrack-floating-btn');
+        if (!widget) {
+            widget = document.createElement('div');
+            widget.id = 'habitrack-floating-btn';
+            widget.className = 'habitrack-floating-container';
+            document.body.appendChild(widget);
+        }
+
         widget.innerHTML = `
             <div class="habitrack-floating-pill" id="habitrack-trigger-save" title="Guardar piso en HabiTrack">
                 <div class="habitrack-floating-logo">🏡</div>
                 <div class="habitrack-floating-text">
                     <div class="habitrack-floating-title">Guardar en HabiTrack</div>
-                    <div class="habitrack-floating-sub">${monthlyEst ? '~' + monthlyEst.toLocaleString('es-ES') + ' €/mes est.' : '1-Clic'}</div>
+                    <div class="habitrack-floating-sub">${monthlyEst ? '~' + monthlyEst.toLocaleString('es-ES') + ' €/mes est.' : (propertyData.price ? propertyData.price.toLocaleString('es-ES') + ' €' : '1-Clic')}</div>
                 </div>
             </div>
         `;
-
-        document.body.appendChild(widget);
 
         // Click event
         const trigger = document.getElementById('habitrack-trigger-save');
@@ -464,7 +381,7 @@
                             <div class="habitrack-floating-logo">✅</div>
                             <div class="habitrack-floating-text">
                                 <div class="habitrack-floating-title">¡Guardado en HabiTrack!</div>
-                                <div class="habitrack-floating-sub">${freshData.price.toLocaleString('es-ES')} €</div>
+                                <div class="habitrack-floating-sub">${freshData.price ? freshData.price.toLocaleString('es-ES') + ' €' : 'Completado'}</div>
                             </div>
                         `;
                         showFloatingToast(`🏡 Piso guardado en tu cartera de HabiTrack.`, 'success');
@@ -523,36 +440,29 @@
         }
     });
 
-    // Inyectar con reintentos para soportar frameworks SPA (React/Next.js en Fotocasa)
-    function attemptInject() {
-        injectFloatingWidget();
-        // Si no se pudo detectar el precio aún (por hidratación de React diferida), reintentar 2 veces
-        let attempts = 0;
-        const interval = setInterval(() => {
-            attempts++;
-            const btn = document.getElementById('habitrack-floating-btn');
-            if (btn || attempts >= 4) {
-                clearInterval(interval);
-            } else {
-                injectFloatingWidget();
-            }
-        }, 1200);
-    }
-
+    // Ejecutar inyección periódica e instantánea
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', attemptInject);
+        document.addEventListener('DOMContentLoaded', () => setTimeout(injectFloatingWidget, 500));
     } else {
-        setTimeout(attemptInject, 500);
+        setTimeout(injectFloatingWidget, 500);
     }
 
-    // Observador de cambios de URL (SPA / Next.js client-side navigation)
-    let currentUrl = window.location.href;
+    // Observador de cambios en SPA y navegación
+    let lastUrl = window.location.href;
     setInterval(() => {
-        if (window.location.href !== currentUrl) {
-            currentUrl = window.location.href;
+        if (window.location.href !== lastUrl) {
+            lastUrl = window.location.href;
             const existingBtn = document.getElementById('habitrack-floating-btn');
             if (existingBtn) existingBtn.remove();
-            setTimeout(attemptInject, 800);
+            setTimeout(injectFloatingWidget, 600);
+        } else {
+            // Si es página de detalle pero no tiene el botón todavía, inyectarlo
+            const isDetail = window.location.href.includes('/inmueble/') || 
+                             window.location.href.includes('/vivienda/') || 
+                             window.location.href.match(/\/\d{6,12}\//);
+            if (isDetail && !document.getElementById('habitrack-floating-btn')) {
+                injectFloatingWidget();
+            }
         }
-    }, 1000);
+    }, 1200);
 })();

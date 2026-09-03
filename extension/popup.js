@@ -213,11 +213,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         stateFound.style.display = 'block';
 
         // Set Text and Values
-        document.getElementById('prop-title').textContent = data.title;
+        document.getElementById('prop-title').textContent = data.title || 'Inmueble';
         document.getElementById('prop-zone').textContent = `📍 ${data.zone || 'Zona no especificada'} (${data.ccaa || 'España'})`;
-        document.getElementById('prop-price').textContent = `${data.price.toLocaleString('es-ES')} €`;
+        document.getElementById('prop-price').textContent = data.price ? `${data.price.toLocaleString('es-ES')} €` : '-- €';
 
-        const priceM2 = data.m2 && data.m2 > 0 ? `${Math.round(data.price / data.m2).toLocaleString('es-ES')} €/m²` : '';
+        const priceM2 = data.price && data.m2 && data.m2 > 0 ? `${Math.round(data.price / data.m2).toLocaleString('es-ES')} €/m²` : '';
         document.getElementById('prop-price-m2').textContent = priceM2;
 
         document.getElementById('prop-spec-m2').textContent = data.m2 ? `📐 ${data.m2} m²` : '📐 -- m²';
@@ -237,17 +237,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         // Quick Financial Calculations (20% Downpayment + ~10% Taxes & Expenses)
-        const downpayment = Math.round(data.price * 0.20);
-        const approxTaxesExpenses = Math.round(data.price * 0.10);
+        const priceVal = data.price || 0;
+        const downpayment = Math.round(priceVal * 0.20);
+        const approxTaxesExpenses = Math.round(priceVal * 0.10);
         const totalBudget = downpayment + approxTaxesExpenses;
 
-        const mortgageAmount = data.price * 0.80;
+        const mortgageAmount = priceVal * 0.80;
         const monthlyRate = 0.03 / 12;
         const numPayments = 30 * 12;
-        const monthlyPayment = Math.round((mortgageAmount * (monthlyRate * Math.pow(1 + monthlyRate, numPayments))) / (Math.pow(1 + monthlyRate, numPayments) - 1));
+        const monthlyPayment = priceVal > 0 ? Math.round((mortgageAmount * (monthlyRate * Math.pow(1 + monthlyRate, numPayments))) / (Math.pow(1 + monthlyRate, numPayments) - 1)) : 0;
 
-        document.getElementById('fin-total-budget').textContent = `${totalBudget.toLocaleString('es-ES')} €`;
-        document.getElementById('fin-mortgage-payment').textContent = `~${monthlyPayment.toLocaleString('es-ES')} €/mes`;
+        document.getElementById('fin-total-budget').textContent = totalBudget > 0 ? `${totalBudget.toLocaleString('es-ES')} €` : '-- €';
+        document.getElementById('fin-mortgage-payment').textContent = monthlyPayment > 0 ? `~${monthlyPayment.toLocaleString('es-ES')} €/mes` : '-- €/mes';
     }
 
     function showToast(message) {
