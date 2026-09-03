@@ -160,15 +160,71 @@
             const descEl = document.querySelector('.comment p, .comment .adCommentsLanguage');
             if (descEl && !data.comments) data.comments = descEl.innerText.trim();
 
-            const imgEls = document.querySelectorAll('#main-multimedia img, .detail-image img, picture img');
-            const photosArr = [];
-            imgEls.forEach(img => {
-                const src = img.src || img.getAttribute('data-src') || img.getAttribute('data-ondemand-img');
-                if (src && src.includes('idealista') && !src.includes('map') && !photosArr.includes(src)) {
-                    photosArr.push(src);
+            // Extracción avanzada de fotos en alta resolución de Idealista
+            const idealistaPhotos = [];
+
+            // 1. Meta og:image (hero image nítida)
+            const ogImg = document.querySelector('meta[property="og:image"]');
+            if (ogImg && ogImg.content && ogImg.content.startsWith('http') && !ogImg.content.includes('blank') && !ogImg.content.includes('static/common')) {
+                idealistaPhotos.push(ogImg.content);
+            }
+
+            // 2. Elementos multimedia y de galería
+            const imgEls = Array.from(document.querySelectorAll('#main-multimedia img, #main-multimedia source, .detail-image img, .detail-image source, .gallery-fallback img, picture img, picture source, [data-service="gallery"] img, [data-service="gallery"] source, ul.grid-images img, .slideshow img'));
+            imgEls.forEach(el => {
+                let candidate = el.getAttribute('data-ondemand-img') || 
+                                el.getAttribute('data-src') || 
+                                el.getAttribute('data-bg-src') ||
+                                el.getAttribute('srcset') ||
+                                el.getAttribute('src');
+
+                if (!candidate) return;
+
+                // Si es un srcset ("url 1x, url2 2x") obtener la mayor resolución
+                if (candidate.includes(',')) {
+                    const parts = candidate.split(',');
+                    const last = parts[parts.length - 1].trim();
+                    candidate = last.split(' ')[0].trim();
+                } else if (candidate.includes(' ')) {
+                    candidate = candidate.split(' ')[0].trim();
+                }
+
+                if (
+                    candidate && 
+                    candidate.startsWith('http') &&
+                    !candidate.includes('data:image') &&
+                    !candidate.includes('blank.gif') &&
+                    !candidate.includes('map') &&
+                    !candidate.includes('static/common') &&
+                    !candidate.includes('logo') &&
+                    !candidate.includes('icon') &&
+                    !idealistaPhotos.includes(candidate)
+                ) {
+                    idealistaPhotos.push(candidate);
                 }
             });
-            if (photosArr.length > 0 && !data.photos) data.photos = photosArr.slice(0, 10).join(', ');
+
+            // 3. Variables de scripts incrustados de Idealista
+            try {
+                const scripts = document.querySelectorAll('script');
+                for (const s of scripts) {
+                    const txt = s.innerText || '';
+                    if (txt.includes('fullScreenGalleryPhotos') || txt.includes('galleryPhotos')) {
+                        const matches = txt.match(/https?:\/\/img\d?\.idealista\.com\/[^\s"'\\]+\.jpg/gi);
+                        if (matches) {
+                            matches.forEach(u => {
+                                if (!idealistaPhotos.includes(u) && !u.includes('blank')) {
+                                    idealistaPhotos.push(u);
+                                }
+                            });
+                        }
+                    }
+                }
+            } catch (e) {}
+
+            if (idealistaPhotos.length > 0) {
+                data.photos = idealistaPhotos.slice(0, 12).join(', ');
+            }
         }
 
         // --- FOTOCASA ---
