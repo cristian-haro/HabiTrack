@@ -18,7 +18,7 @@
     <meta name="theme-color" content="#6366f1">
     <link rel="manifest" href="manifest.json">
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="styles.css?v=42.0">
+    <link rel="stylesheet" href="styles.css?v=43.0">
     <script>
         // Purga preventiva de Service Workers antiguos en caché
         if ('serviceWorker' in navigator) {
@@ -518,11 +518,42 @@
                         </div>
                     </div>
 
-                    <!-- Column 2: La Extensión Bookmarklet (Uso e Instalación) -->
+                    <!-- Column 2: Extensión de Navegador y Bookmarklet -->
                     <div class="settings-col-right">
+                        <!-- Extensión Oficial HabiTrack (Fase 4) -->
+                        <div class="card shadow-sm settings-card mb-4" style="background: linear-gradient(135deg, rgba(79, 70, 229, 0.05) 0%, rgba(99, 102, 241, 0.02) 100%); border: 1.5px solid #c7d2fe; margin-bottom: 1.5rem;">
+                            <div class="card-header" style="display:flex; justify-content:space-between; align-items:center;">
+                                <div>
+                                    <h3 style="color: #4f46e5;"><i class="fa-brands fa-chrome text-indigo"></i> Extensión de Navegador (1-Clic)</h3>
+                                    <p class="subtitle">Captura automática in-situ sin copiar ni pegar URLs en Idealista, Fotocasa, Habitaclia y más.</p>
+                                </div>
+                                <span class="badge" style="background: #e0e7ff; color: #4338ca; font-weight:700; font-size:0.75rem; border:1px solid #c7d2fe;">Fase 4 · V3</span>
+                            </div>
+                            <div class="card-body">
+                                <div style="display:flex; flex-direction:column; gap:0.6rem; font-size:0.825rem; color:var(--text-secondary); margin-bottom:1rem;">
+                                    <div style="display:flex; gap:0.5rem; align-items:center;">
+                                        <i class="fa-solid fa-circle-check text-emerald"></i>
+                                        <span><strong>Botón Flotante In-Situ:</strong> Aparece automáticamente dentro del anuncio del portal.</span>
+                                    </div>
+                                    <div style="display:flex; gap:0.5rem; align-items:center;">
+                                        <i class="fa-solid fa-circle-check text-emerald"></i>
+                                        <span><strong>Simulador Rápido:</strong> Muestra la cuota y el ahorro estimado directamente sobre la página.</span>
+                                    </div>
+                                </div>
+                                <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:var(--radius-md); padding:0.85rem; font-size:0.8rem; color:#475569;">
+                                    <strong>Para instalar en Chrome / Edge / Brave:</strong>
+                                    <ol style="margin-left:1.2rem; margin-top:0.35rem; line-height:1.5;">
+                                        <li>Abre <code>chrome://extensions</code> y activa el <strong>Modo de desarrollador</strong>.</li>
+                                        <li>Pulsa en <strong>"Cargar descomprimida"</strong>.</li>
+                                        <li>Selecciona la carpeta <code>extension</code> de tu proyecto HabiTrack.</li>
+                                    </ol>
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="card shadow-sm settings-card">
                             <div class="card-header">
-                                <h3><i class="fa-solid fa-bookmark text-indigo"></i> Instalar y Usar el Bookmarklet</h3>
+                                <h3><i class="fa-solid fa-bookmark text-indigo"></i> Instalar y Usar el Bookmarklet Alternativo</h3>
                                 <p class="subtitle">Guarda el botón en tus marcadores para extraer con 1 clic en cualquier portal.</p>
                             </div>
                             <div class="card-body">
@@ -1155,6 +1186,6 @@
     <!-- Leaflet Map JS & MarkerCluster -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
-    <script src="app.js?v=42.0"></script>
+    <script src="app.js?v=43.0"></script>
 </body>
 </html>

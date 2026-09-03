@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HabiTrack Extension</title>
+    <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+    <div class="popup-container">
+        <!-- Header -->
+        <header class="popup-header">
+            <div class="brand">
+                <span class="brand-icon">🏡</span>
+                <span class="brand-name">HabiTrack</span>
+            </div>
+            <div class="header-right">
+                <span class="status-indicator" id="server-status-pill">
+                    <span class="status-dot status-checking"></span>
+                    <span id="server-status-text">Comprobando...</span>
+                </span>
+                <button type="button" class="btn-icon-tab" id="btn-toggle-settings" title="Configurar Servidor">⚙️</button>
+            </div>
+        </header>
+
+        <!-- Main View: Property Detected -->
+        <main class="popup-body" id="view-capture">
+            <!-- Loading State -->
+            <div class="state-loading" id="state-loading">
+                <div class="spinner"></div>
+                <p>Analizando anuncio...</p>
+            </div>
+
+            <!-- Property Found State -->
+            <div class="property-preview" id="state-found" style="display: none;">
+                <div class="property-hero" id="prop-hero-container">
+                    <img id="prop-img" src="" alt="Foto inmueble">
+                    <span class="prop-badge" id="prop-estate-type">2ª Mano</span>
+                </div>
+
+                <div class="property-info">
+                    <h3 class="prop-title" id="prop-title">--</h3>
+                    <div class="prop-zone" id="prop-zone">📍 --</div>
+                    
+                    <div class="prop-price-row">
+                        <span class="prop-price" id="prop-price">-- €</span>
+                        <span class="prop-price-m2" id="prop-price-m2">-- €/m²</span>
+                    </div>
+
+                    <div class="prop-specs-tags">
+                        <span class="spec-tag" id="prop-spec-m2">📐 -- m²</span>
+                        <span class="spec-tag" id="prop-spec-rooms">🛏️ -- hab</span>
+                        <span class="spec-tag" id="prop-spec-baths">🚿 -- bñ</span>
+                        <span class="spec-tag" id="prop-spec-garage">🚗 Garaje</span>
+                    </div>
+
+                    <!-- Financial Summary Box -->
+                    <div class="financial-box">
+                        <div class="fin-row">
+                            <span class="fin-label">Ahorro Requerido (Entrada + Gastos):</span>
+                            <strong class="fin-val fin-amber" id="fin-total-budget">-- €</strong>
+                        </div>
+                        <div class="fin-row">
+                            <span class="fin-label">Cuota Hipoteca Est. (30 años):</span>
+                            <strong class="fin-val fin-indigo" id="fin-mortgage-payment">-- €/mes</strong>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <button type="button" class="btn-primary-action" id="btn-save-property">
+                        💾 Guardar Inmueble en HabiTrack
+                    </button>
+                </div>
+            </div>
+
+            <!-- Empty / Unsupported Tab State -->
+            <div class="state-empty" id="state-empty" style="display: none;">
+                <div class="empty-icon">🔍</div>
+                <h4>Ningún piso detectado</h4>
+                <p>Abre un anuncio en <strong>Idealista</strong>, <strong>Fotocasa</strong>, <strong>Habitaclia</strong> o <strong>Pisos.com</strong> para capturarlo automáticamente.</p>
+                <button type="button" class="btn-secondary-action" id="btn-open-habitrack">
+                    ↗ Abrir HabiTrack
+                </button>
+            </div>
+        </main>
+
+        <!-- Settings View -->
+        <div class="popup-body settings-view" id="view-settings" style="display: none;">
+            <div class="settings-header">
+                <h4>⚙️ Configuración de Conexión</h4>
+                <button type="button" class="btn-close-settings" id="btn-close-settings">✕</button>
+            </div>
+
+            <form id="settings-form" class="settings-form">
+                <div class="form-group">
+                    <label for="input-server-url">URL del Servidor HabiTrack:</label>
+                    <input type="url" id="input-server-url" placeholder="http://localhost:3007" required>
+                    <small>Ej: http://localhost:3007 o tu URL de producción en Vercel/Render</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="input-auth-token">Token JWT (Opcional):</label>
+                    <input type="password" id="input-auth-token" placeholder="Bearer eyJhbGciOiJIUzI1Ni...">
+                    <small>Necesario solo si tienes autenticación activa en tu cuenta</small>
+                </div>
+
+                <div class="settings-actions">
+                    <button type="button" class="btn-test-conn" id="btn-test-conn">Probar Conexión</button>
+                    <button type="submit" class="btn-save-settings">Guardar Ajustes</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Notification Toast in Popup -->
+        <div id="popup-toast" class="popup-toast"></div>
+    </div>
+
+    <script src="popup.js"></script>
+</body>
+</html>
