@@ -3472,41 +3472,47 @@ let activeDashboardPoiType = null;
 let dashboardPoiMarkersGroup = null;
 
 // --- CONFIGURACIÓN DE PUNTOS DE INTERÉS Y SERVICIOS CERCANOS ---
+const OVERPASS_MIRRORS = [
+    'https://maps.mail.ru/osm/tools/overpass/api/interpreter',
+    'https://overpass.kumi.systems/api/interpreter',
+    'https://overpass-api.de/api/interpreter'
+];
+
 const POI_CONFIGS = {
     supermarket: {
         label: 'Supermercados',
         icon: 'fa-cart-shopping',
         pinClass: 'poi-pin-supermarket',
-        radius: 1500,
-        query: (lat, lng, radius) => `[out:json][timeout:8];(node["shop"="supermarket"](around:${radius},${lat},${lng});way["shop"="supermarket"](around:${radius},${lat},${lng});node["shop"="convenience"](around:${radius},${lat},${lng}););out center 20;`
+        radius: 2000,
+        query: (lat, lng, radius) => `[out:json][timeout:15];(node["shop"="supermarket"](around:${radius},${lat},${lng});way["shop"="supermarket"](around:${radius},${lat},${lng}););out center 20;`
     },
     crossfit: {
         label: 'CrossFit / Gimnasio',
         icon: 'fa-dumbbell',
         pinClass: 'poi-pin-crossfit',
-        radius: 2000,
-        query: (lat, lng, radius) => `[out:json][timeout:8];(node["leisure"="fitness_centre"](around:${radius},${lat},${lng});node["sport"~"crossfit|fitness"](around:${radius},${lat},${lng});node["name"~"crossfit|cross training|box|gimnasio|gym|fitness" i](around:${radius},${lat},${lng});way["leisure"="fitness_centre"](around:${radius},${lat},${lng}););out center 20;`
+        radius: 2500,
+        query: (lat, lng, radius) => `[out:json][timeout:15];(node["leisure"="fitness_centre"](around:${radius},${lat},${lng});way["leisure"="fitness_centre"](around:${radius},${lat},${lng});node["sport"="fitness"](around:${radius},${lat},${lng}););out center 20;`
     },
     fuel: {
         label: 'Gasolineras',
         icon: 'fa-gas-pump',
         pinClass: 'poi-pin-fuel',
         radius: 2500,
-        query: (lat, lng, radius) => `[out:json][timeout:8];(node["amenity"="fuel"](around:${radius},${lat},${lng});way["amenity"="fuel"](around:${radius},${lat},${lng}););out center 20;`
+        query: (lat, lng, radius) => `[out:json][timeout:15];(node["amenity"="fuel"](around:${radius},${lat},${lng});way["amenity"="fuel"](around:${radius},${lat},${lng}););out center 20;`
     },
     transport: {
         label: 'Metro / Tren / Bus',
         icon: 'fa-train-subway',
         pinClass: 'poi-pin-transport',
-        radius: 1500,
-        query: (lat, lng, radius) => `[out:json][timeout:8];(node["railway"="station"](around:${radius},${lat},${lng});node["railway"="subway_entrance"](around:${radius},${lat},${lng});node["station"="subway"](around:${radius},${lat},${lng});node["public_transport"="station"](around:${radius},${lat},${lng}););out center 20;`
+        radius: 2000,
+        query: (lat, lng, radius) => `[out:json][timeout:15];(node["railway"="station"](around:${radius},${lat},${lng});node["station"="subway"](around:${radius},${lat},${lng});node["railway"="subway_entrance"](around:${radius},${lat},${lng}););out center 20;`
     },
     pharmacy: {
         label: 'Farmacias',
         icon: 'fa-prescription-bottle-medical',
         pinClass: 'poi-pin-pharmacy',
-        radius: 1200,
-        query: (lat, lng, radius) => `[out:json][timeout:8];(node["amenity"="pharmacy"](around:${radius},${lat},${lng});way["amenity"="pharmacy"](around:${radius},${lat},${lng}););out center 20;`
+        radius: 1500,
+        query: (lat, lng, radius) => `[out:json][timeout:15];(node["amenity"="pharmacy"](around:${radius},${lat},${lng}););out center 20;`
     }
 };
 
@@ -3537,49 +3543,65 @@ async function fetchPOIsAround(type, lat, lng) {
     }
 
     const overpassQuery = cfg.query(lat, lng, cfg.radius);
-    const url = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(overpassQuery)}`;
 
-    try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 7000);
+    for (const endpoint of OVERPASS_MIRRORS) {
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 6000);
 
-        const res = await fetch(url, { signal: controller.signal });
-        clearTimeout(timeoutId);
+            const url = `${endpoint}?data=${encodeURIComponent(overpassQuery)}`;
+            const res = await fetch(url, { signal: controller.signal });
+            clearTimeout(timeoutId);
 
-        if (!res.ok) throw new Error(`Overpass error: ${res.status}`);
-        const data = await res.json();
+            if (!res.ok) continue;
 
-        if (!data.elements || !Array.isArray(data.elements)) return [];
+            const text = await res.text();
+            if (!text.startsWith('{')) continue;
+            const data = JSON.parse(text);
 
-        const pois = data.elements.map(el => {
-            const pLat = el.lat || (el.center && el.center.lat);
-            const pLon = el.lon || (el.center && el.center.lon);
-            if (!pLat || !pLon) return null;
+            if (!data.elements || !Array.isArray(data.elements) || data.elements.length === 0) continue;
 
-            const tags = el.tags || {};
-            const name = tags.name || tags.brand || tags.operator || cfg.label;
-            const dist = calculateDistanceMeters(lat, lng, pLat, pLon);
+            const pois = data.elements.map(el => {
+                const pLat = el.lat || (el.center && el.center.lat);
+                const pLon = el.lon || (el.center && el.center.lon);
+                if (!pLat || !pLon) return null;
 
-            return {
-                id: el.id,
-                name,
-                brand: tags.brand || '',
-                type,
-                lat: pLat,
-                lon: pLon,
-                distance: dist
-            };
-        }).filter(Boolean);
+                const tags = el.tags || {};
+                let name = tags.name || tags.brand || tags.operator;
+                if (!name) {
+                    if (type === 'supermarket') name = 'Supermercado';
+                    else if (type === 'crossfit') name = tags.sport ? `Gimnasio (${tags.sport})` : 'Gimnasio / Fitness';
+                    else if (type === 'fuel') name = 'Gasolinera';
+                    else if (type === 'transport') name = 'Estación / Parada';
+                    else if (type === 'pharmacy') name = 'Farmacia';
+                    else name = cfg.label;
+                }
 
-        // Ordenar de más cercano a más lejano
-        pois.sort((a, b) => a.distance - b.distance);
+                const dist = calculateDistanceMeters(lat, lng, pLat, pLon);
 
-        poiCache.set(cacheKey, pois);
-        return pois;
-    } catch (err) {
-        console.warn('Overpass POI query notice:', err.message);
-        return [];
+                return {
+                    id: el.id,
+                    name,
+                    brand: tags.brand || '',
+                    type,
+                    lat: pLat,
+                    lon: pLon,
+                    distance: dist
+                };
+            }).filter(Boolean);
+
+            if (pois.length > 0) {
+                // Ordenar de más cercano a más lejano
+                pois.sort((a, b) => a.distance - b.distance);
+                poiCache.set(cacheKey, pois);
+                return pois;
+            }
+        } catch (err) {
+            // Continuar con el siguiente mirror
+        }
     }
+
+    return [];
 }
 
 function renderMap() {
