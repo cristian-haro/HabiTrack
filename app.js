@@ -1962,13 +1962,17 @@ function setupEventHandlers() {
 
     if (btnClosePropModal) btnClosePropModal.addEventListener('click', closeModal);
     if (btnCancelProp) btnCancelProp.addEventListener('click', closeModal);
+
     const galleryModal = document.getElementById('gallery-modal');
+    const detailModal = document.getElementById('property-detail-modal');
     const btnCloseGallery = document.getElementById('btn-close-gallery-modal');
+    const btnCloseDetail = document.getElementById('btn-close-detail-modal');
     const btnPrevGallery = document.getElementById('gallery-btn-prev');
     const btnNextGallery = document.getElementById('gallery-btn-next');
     const propPhotosInput = document.getElementById('prop-photos');
 
     if (btnCloseGallery) btnCloseGallery.addEventListener('click', closeGalleryModal);
+    if (btnCloseDetail) btnCloseDetail.addEventListener('click', closePropertyDetailSheet);
     if (btnPrevGallery) btnPrevGallery.addEventListener('click', () => navigateGallery(-1));
     if (btnNextGallery) btnNextGallery.addEventListener('click', () => navigateGallery(1));
     if (propPhotosInput) propPhotosInput.addEventListener('input', updateFormPhotosPreview);
@@ -1985,9 +1989,12 @@ function setupEventHandlers() {
         if (e.target === galleryModal) {
             closeGalleryModal();
         }
+        if (e.target === detailModal) {
+            closePropertyDetailSheet();
+        }
     });
 
-    // Navegación con teclado para la galería
+    // Navegación con teclado para la galería y ficha detallada
     window.addEventListener('keydown', (e) => {
         if (galleryModal && galleryModal.classList.contains('active')) {
             if (e.key === 'Escape') {
@@ -1996,6 +2003,10 @@ function setupEventHandlers() {
                 navigateGallery(-1);
             } else if (e.key === 'ArrowRight') {
                 navigateGallery(1);
+            }
+        } else if (detailModal && detailModal.classList.contains('active')) {
+            if (e.key === 'Escape') {
+                closePropertyDetailSheet();
             }
         }
     });
@@ -2402,27 +2413,11 @@ function setupEventHandlers() {
         });
     }
 
-    // --- 8. EXPENSES BREAKDOWN & DETAIL MODAL CLOSE ---
+    // --- 8. EXPENSES BREAKDOWN MODAL CLOSE ---
     const btnCloseExpensesModal = document.getElementById('btn-close-expenses-modal');
     if (btnCloseExpensesModal) {
         btnCloseExpensesModal.addEventListener('click', () => {
             document.getElementById('expenses-modal').classList.remove('active');
-        });
-    }
-
-    const btnCloseDetailModal = document.getElementById('btn-close-detail-modal');
-    if (btnCloseDetailModal) {
-        btnCloseDetailModal.addEventListener('click', () => {
-            closePropertyDetailSheet();
-        });
-    }
-
-    const detailModal = document.getElementById('property-detail-modal');
-    if (detailModal) {
-        detailModal.addEventListener('click', (e) => {
-            if (e.target === detailModal) {
-                closePropertyDetailSheet();
-            }
         });
     }
 
@@ -2703,37 +2698,6 @@ function setupEventHandlers() {
                 '<i class="fa-solid fa-code text-secondary"></i> Ver Código Fuente';
         });
     }
-
-    // --- 11. LIGHTBOX GALLERY & DETAIL MODAL NAVIGATION & KEYS ---
-    const btnCloseGallery = document.getElementById('btn-close-gallery-modal');
-    const galleryModal = document.getElementById('gallery-modal');
-    const btnGalleryPrev = document.getElementById('gallery-btn-prev');
-    const btnGalleryNext = document.getElementById('gallery-btn-next');
-
-    if (btnCloseGallery) {
-        btnCloseGallery.addEventListener('click', closeGalleryModal);
-    }
-    if (galleryModal) {
-        galleryModal.addEventListener('click', (e) => {
-            if (e.target === galleryModal) closeGalleryModal();
-        });
-    }
-    if (btnGalleryPrev) {
-        btnGalleryPrev.addEventListener('click', () => navigateGallery(-1));
-    }
-    if (btnGalleryNext) {
-        btnGalleryNext.addEventListener('click', () => navigateGallery(1));
-    }
-
-    document.addEventListener('keydown', (e) => {
-        if (galleryModal && galleryModal.classList.contains('active')) {
-            if (e.key === 'Escape') closeGalleryModal();
-            else if (e.key === 'ArrowLeft') navigateGallery(-1);
-            else if (e.key === 'ArrowRight') navigateGallery(1);
-        } else if (detailModal && detailModal.classList.contains('active')) {
-            if (e.key === 'Escape') closePropertyDetailSheet();
-        }
-    });
 }
 
 // Configurar manejadores para botones generados dinámicamente en las tarjetas/filas
