@@ -29,14 +29,37 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 });
 
 async function getServerConfig() {
-    return new Promise((resolve) => {
-        chrome.storage.sync.get(['serverUrl', 'authToken'], (items) => {
-            resolve({
-                serverUrl: (items.serverUrl || DEFAULT_SERVER_URL).replace(/\/$/, ''),
-                authToken: items.authToken || ''
-            });
-        });
+    let stored = await new Promise((resolve) => {
+        chrome.storage.sync.get(['serverUrl', 'authToken'], resolve);
     });
+
+    let serverUrl = (stored && stored.serverUrl ? stored.serverUrl : DEFAULT_SERVER_URL).replace(/\/$/, '');
+    let authToken = (stored && stored.authToken) ? stored.authToken : '';
+
+    // Si no hay token configurado, intentar auto-detectarlo de pestañas de HabiTrack abiertas
+    if (!authToken) {
+        try {
+            const tabs = await chrome.tabs.query({});
+            for (const tab of tabs) {
+                if (tab.url && (tab.url.includes('localhost') || tab.url.includes('127.0.0.1') || tab.url.includes('habitrack'))) {
+                    const results = await chrome.scripting.executeScript({
+                        target: { tabId: tab.id },
+                        func: () => localStorage.getItem('token') || ''
+                    });
+                    if (results && results[0] && results[0].result) {
+                        authToken = results[0].result;
+                        chrome.storage.sync.set({ authToken });
+                        console.log('🔑 Token de sesión auto-sincronizado con HabiTrack.');
+                        break;
+                    }
+                }
+            }
+        } catch (e) {
+            // Ignorar errores de permisos en pestañas protegidas
+        }
+    }
+
+    return { serverUrl, authToken };
 }
 
 async function checkServerStatus(customUrl = null) {
@@ -51,7 +74,7 @@ async function checkServerStatus(customUrl = null) {
         clearTimeout(timeout);
 
         if (res.ok) {
-            const data = await res.json();
+            const data = await res.json().catch(() => ({ status: 'ok' }));
             return { online: true, url: targetUrl, data };
         }
         return { online: false, url: targetUrl, status: res.status };
@@ -78,9 +101,9 @@ async function handleSaveProperty(propertyData) {
     const payload = {
         title: propertyData.title,
         price: parseFloat(propertyData.price) || 0,
-        m2: parseFloat(propertyData.m2) || null,
-        rooms: parseInt(propertyData.rooms, 10) || 0,
-        baths: parseInt(propertyData.baths, 10) || 0,
+        m2: propertyData.m2 ? parseFloat(propertyData.m2) : null,
+        rooms: propertyData.rooms ? parseInt(propertyData.rooms, 10) : 0,
+        baths: propertyData.baths ? parseInt(propertyData.baths, 10) : 0,
         garage: propertyData.garage || 'no',
         elevator: propertyData.elevator || 'desconocido',
         estate_type: propertyData.estate_type || 'secondhand',
@@ -96,7 +119,7 @@ async function handleSaveProperty(propertyData) {
 
     try {
         const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 6000);
+        const timeout = setTimeout(() => controller.abort(), 7000);
 
         const res = await fetch(`${serverUrl}/api/properties`, {
             method: 'POST',
@@ -106,8 +129,21 @@ async function handleSaveProperty(propertyData) {
         });
         clearTimeout(timeout);
 
-        const json = await res.json();
+        const text = await res.text();
+        let json;
+        try {
+            json = JSON.parse(text);
+        } catch (parseErr) {
+            if (res.status === 401 || res.status === 403) {
+                throw new Error('Inicia sesión en HabiTrack primero para autorizar la extensión.');
+            }
+            throw new Error(`El servidor respondió con código ${res.status}: ${text.substring(0, 80)}`);
+        }
+
         if (!res.ok) {
+            if (res.status === 401 || res.status === 403) {
+                throw new Error('Inicia sesión en HabiTrack primero para autorizar la extensión.');
+            }
             throw new Error(json.error || `Error del servidor HTTP ${res.status}`);
         }
 

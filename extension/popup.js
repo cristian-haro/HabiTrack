@@ -91,6 +91,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             chrome.runtime.sendMessage({ action: 'SAVE_PROPERTY', propertyData: currentDetectedProperty }, (res) => {
                 btnSaveProperty.disabled = false;
 
+                if (chrome.runtime.lastError) {
+                    btnSaveProperty.textContent = '⚠️ Error de Extensión';
+                    btnSaveProperty.style.background = '#e11d48';
+                    showToast('Error: ' + chrome.runtime.lastError.message, 'error');
+                    return;
+                }
+
                 if (res && res.success) {
                     btnSaveProperty.textContent = '✅ ¡Guardado con Éxito!';
                     btnSaveProperty.style.background = '#059669';

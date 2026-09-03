@@ -246,6 +246,19 @@
                 chrome.runtime.sendMessage({ action: 'SAVE_PROPERTY', propertyData: freshData }, (response) => {
                     trigger.classList.remove('habitrack-loading');
 
+                    if (chrome.runtime.lastError) {
+                        trigger.classList.add('habitrack-error');
+                        trigger.innerHTML = `
+                            <div class="habitrack-floating-logo">⚠️</div>
+                            <div class="habitrack-floating-text">
+                                <div class="habitrack-floating-title">Error de Extensión</div>
+                                <div class="habitrack-floating-sub">Recarga la extensión</div>
+                            </div>
+                        `;
+                        showFloatingToast('Error: ' + chrome.runtime.lastError.message, 'error');
+                        return;
+                    }
+
                     if (response && response.success) {
                         trigger.classList.add('habitrack-success');
                         trigger.innerHTML = `
@@ -257,6 +270,7 @@
                         `;
                         showFloatingToast(`🏡 Piso guardado en tu cartera de HabiTrack.`, 'success');
                     } else {
+                        const errorMsg = response && response.error ? response.error : 'No se pudo conectar con HabiTrack.';
                         trigger.classList.add('habitrack-error');
                         trigger.innerHTML = `
                             <div class="habitrack-floating-logo">⚠️</div>
@@ -265,7 +279,7 @@
                                 <div class="habitrack-floating-sub">Comprueba el servidor</div>
                             </div>
                         `;
-                        showFloatingToast(response ? response.error : 'No se pudo conectar con HabiTrack.', 'error');
+                        showFloatingToast(errorMsg, 'error');
 
                         setTimeout(() => {
                             trigger.classList.remove('habitrack-error');
@@ -275,7 +289,7 @@
                                     <div class="habitrack-floating-title">Reintentar Guardar</div>
                                 </div>
                             `;
-                        }, 3000);
+                        }, 3500);
                     }
                 });
             });
