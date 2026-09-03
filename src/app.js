@@ -30,7 +30,7 @@ app.use(express.json());
 
 // Database connection assurance for API routes
 app.use(async (req, res, next) => {
-    const isApi = req.path.startsWith('/api') || req.path.startsWith('/auth') || req.path.startsWith('/casas') || req.path.startsWith('/propiedades') || req.path.startsWith('/ajustes') || req.path.startsWith('/analizar') || req.path.startsWith('/calcular');
+    const isApi = req.path.startsWith('/api') || req.path.startsWith('/auth') || req.path.startsWith('/casas') || req.path.startsWith('/propiedades') || req.path.startsWith('/properties') || req.path.startsWith('/ajustes') || req.path.startsWith('/analizar') || req.path.startsWith('/calcular');
     if (isApi && req.path !== '/api/health' && req.path !== '/health') {
         try {
             await ensureDB();

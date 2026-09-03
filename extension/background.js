@@ -121,12 +121,22 @@ async function handleSaveProperty(propertyData) {
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 7000);
 
-        const res = await fetch(`${serverUrl}/api/properties`, {
+        let res = await fetch(`${serverUrl}/api/propiedades`, {
             method: 'POST',
             headers,
             body: JSON.stringify(payload),
             signal: controller.signal
         });
+
+        // Fallback a /api/properties o /propiedades si 404
+        if (res.status === 404) {
+            res = await fetch(`${serverUrl}/api/properties`, {
+                method: 'POST',
+                headers,
+                body: JSON.stringify(payload),
+                signal: controller.signal
+            });
+        }
         clearTimeout(timeout);
 
         const text = await res.text();

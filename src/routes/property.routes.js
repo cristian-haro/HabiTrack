@@ -36,7 +36,14 @@ router.post('/propiedades', authenticateToken, validate(propertySchema), createP
 router.put('/propiedades/:id', authenticateToken, validate(propertySchema), updateProperty);
 router.delete('/propiedades/:id', authenticateToken, deleteProperty);
 
-// Legacy aliases for backwards compatibility (/casas)
+// English aliases (/properties)
+router.get('/properties', authenticateToken, getAllProperties);
+router.get('/properties/:id', authenticateToken, getPropertyById);
+router.post('/properties', authenticateToken, validate(propertySchema), createProperty);
+router.put('/properties/:id', authenticateToken, validate(propertySchema), updateProperty);
+router.delete('/properties/:id', authenticateToken, deleteProperty);
+
+// Legacy aliases (/casas)
 router.get('/casas', authenticateToken, getAllProperties);
 router.get('/casas/:id', authenticateToken, getPropertyById);
 router.post('/casas', authenticateToken, validate(propertySchema), createProperty);
