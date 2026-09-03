@@ -926,24 +926,48 @@ function renderRecentListings(recentProps) {
     });
 }
 
+// ==========================================================================
+// FOTOGRAFÍAS, CARRUSEL EN TARJETA Y VISOR LIGHTBOX
+// ==========================================================================
+let activeGalleryProperty = null;
+let activeGalleryIndex = 0;
+
 function createPropertyCardDOM(prop) {
     const card = document.createElement('div');
     card.className = 'property-card';
     card.dataset.id = prop.id;
+    card.dataset.currentPhotoIdx = '0';
 
     const calc = calculateExpenses(prop.price, prop.ccaa, prop.estate_type);
     
-    // Obtener primera foto o placeholder
+    // Obtener lista completa de fotos
+    const photoList = prop.photos ? prop.photos.split(',').map(u => u.trim()).filter(Boolean) : [];
+    
     let imageHTML = `
         <div class="no-img-placeholder">
             <i class="fa-solid fa-house-chimney"></i>
             <span>Sin fotos</span>
         </div>
     `;
-    if (prop.photos) {
-        const photoList = prop.photos.split(',').map(u => u.trim());
-        if (photoList.length > 0 && photoList[0]) {
-            imageHTML = `<img src="${photoList[0]}" class="property-img" alt="${prop.title}" referrerpolicy="no-referrer" loading="lazy" onerror="this.onerror=null;this.parentElement.innerHTML='<div class=\\'no-img-placeholder\\'><i class=\\'fa-solid fa-house-chimney\\'></i><span>Sin fotos</span></div>';">`;
+    let carouselControlsHTML = '';
+    let dotsHTML = '';
+
+    if (photoList.length > 0) {
+        imageHTML = `<img src="${photoList[0]}" class="property-img" alt="${prop.title}" referrerpolicy="no-referrer" loading="lazy" onerror="this.onerror=null;this.parentElement.innerHTML='<div class=\\'no-img-placeholder\\'><i class=\\'fa-solid fa-house-chimney\\'></i><span>Sin fotos</span></div>';">`;
+        
+        if (photoList.length > 1) {
+            carouselControlsHTML = `
+                <button type="button" class="card-carousel-btn card-carousel-prev" title="Foto anterior">
+                    <i class="fa-solid fa-chevron-left"></i>
+                </button>
+                <button type="button" class="card-carousel-btn card-carousel-next" title="Foto siguiente">
+                    <i class="fa-solid fa-chevron-right"></i>
+                </button>
+                <span class="photo-count-badge">
+                    <i class="fa-solid fa-camera"></i> <span class="photo-current-idx">1</span>/${photoList.length}
+                </span>
+            `;
+            dotsHTML = `<div class="carousel-dots">${photoList.slice(0, 5).map((_, i) => `<span class="carousel-dot ${i === 0 ? 'active' : ''}"></span>`).join('')}</div>`;
         }
     }
 
@@ -956,8 +980,10 @@ function createPropertyCardDOM(prop) {
         `<a href="https://www.google.com/maps/search/?api=1&query=${prop.latitude},${prop.longitude}" target="_blank" class="btn btn-secondary btn-sm btn-icon" title="Ver en Mapa"><i class="fa-solid fa-map-location-dot"></i></a>` : '';
 
     card.innerHTML = `
-        <div class="card-img-container">
+        <div class="card-img-container" title="${photoList.length > 0 ? 'Ver galería de fotos a pantalla completa' : ''}">
             ${imageHTML}
+            ${carouselControlsHTML}
+            ${dotsHTML}
             <div class="card-badges">
                 <span class="badge badge-price">${formatCurrency(prop.price)}</span>
                 <span class="badge badge-type">${badgeTypeStr}</span>
@@ -1026,7 +1052,175 @@ function createPropertyCardDOM(prop) {
         </div>
     `;
 
+    // Eventos del carrusel en tarjeta y apertura de galería
+    const imgContainer = card.querySelector('.card-img-container');
+    if (imgContainer && photoList.length > 0) {
+        imgContainer.addEventListener('click', (e) => {
+            if (e.target.closest('.card-carousel-btn') || e.target.closest('.card-badges')) return;
+            const currentIdx = parseInt(card.dataset.currentPhotoIdx || '0', 10);
+            openGalleryModal(prop.id, currentIdx);
+        });
+
+        const prevBtn = card.querySelector('.card-carousel-prev');
+        const nextBtn = card.querySelector('.card-carousel-next');
+
+        if (prevBtn) {
+            prevBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                navigateCardPhoto(card, prop, false);
+            });
+        }
+        if (nextBtn) {
+            nextBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                navigateCardPhoto(card, prop, true);
+            });
+        }
+    }
+
     return card;
+}
+
+function navigateCardPhoto(cardEl, prop, isNext) {
+    const photoList = prop.photos ? prop.photos.split(',').map(u => u.trim()).filter(Boolean) : [];
+    if (photoList.length <= 1) return;
+
+    let currentIdx = parseInt(cardEl.dataset.currentPhotoIdx || '0', 10);
+    if (isNext) {
+        currentIdx = (currentIdx + 1) % photoList.length;
+    } else {
+        currentIdx = (currentIdx - 1 + photoList.length) % photoList.length;
+    }
+    cardEl.dataset.currentPhotoIdx = currentIdx;
+
+    const imgEl = cardEl.querySelector('.property-img');
+    if (imgEl) {
+        imgEl.style.opacity = '0.6';
+        imgEl.src = photoList[currentIdx];
+        imgEl.onload = () => { imgEl.style.opacity = '1'; };
+    }
+
+    const badgeIdx = cardEl.querySelector('.photo-current-idx');
+    if (badgeIdx) badgeIdx.textContent = currentIdx + 1;
+
+    const dots = cardEl.querySelectorAll('.carousel-dot');
+    dots.forEach((dot, i) => {
+        dot.classList.toggle('active', i === (currentIdx % Math.min(dots.length, 5)));
+    });
+}
+
+function openGalleryModal(propertyId, initialIndex = 0) {
+    const prop = properties.find(p => p.id === propertyId);
+    if (!prop) return;
+
+    const photoList = prop.photos ? prop.photos.split(',').map(u => u.trim()).filter(Boolean) : [];
+    if (photoList.length === 0) return;
+
+    activeGalleryProperty = prop;
+    activeGalleryIndex = Math.max(0, Math.min(initialIndex, photoList.length - 1));
+
+    const modal = document.getElementById('gallery-modal');
+    const titleEl = document.getElementById('gallery-modal-title');
+    if (titleEl) titleEl.textContent = prop.title;
+
+    renderGalleryCurrentView();
+
+    if (modal) {
+        modal.classList.add('active');
+        document.body.style.overflow = 'hidden';
+    }
+}
+
+function closeGalleryModal() {
+    const modal = document.getElementById('gallery-modal');
+    if (modal) {
+        modal.classList.remove('active');
+        document.body.style.overflow = '';
+    }
+    activeGalleryProperty = null;
+}
+
+function renderGalleryCurrentView() {
+    if (!activeGalleryProperty) return;
+    const photoList = activeGalleryProperty.photos ? activeGalleryProperty.photos.split(',').map(u => u.trim()).filter(Boolean) : [];
+    if (photoList.length === 0) return;
+
+    const mainImg = document.getElementById('gallery-main-img');
+    const counterEl = document.getElementById('gallery-counter');
+    const thumbsContainer = document.getElementById('gallery-thumbnails-container');
+
+    if (mainImg) {
+        mainImg.style.opacity = '0.4';
+        mainImg.src = photoList[activeGalleryIndex];
+        mainImg.onload = () => { mainImg.style.opacity = '1'; };
+    }
+
+    if (counterEl) {
+        counterEl.textContent = `Foto ${activeGalleryIndex + 1} de ${photoList.length}`;
+    }
+
+    if (thumbsContainer) {
+        thumbsContainer.innerHTML = photoList.map((photo, i) => `
+            <img src="${photo}" 
+                 class="gallery-thumb-item ${i === activeGalleryIndex ? 'active' : ''}" 
+                 data-idx="${i}" 
+                 referrerpolicy="no-referrer"
+                 alt="Miniatura ${i + 1}"
+                 onclick="window.setGalleryPhotoIndex(${i})">
+        `).join('');
+
+        const activeThumb = thumbsContainer.querySelector('.gallery-thumb-item.active');
+        if (activeThumb) {
+            activeThumb.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+        }
+    }
+}
+
+window.setGalleryPhotoIndex = function(idx) {
+    if (!activeGalleryProperty) return;
+    const photoList = activeGalleryProperty.photos ? activeGalleryProperty.photos.split(',').map(u => u.trim()).filter(Boolean) : [];
+    if (idx >= 0 && idx < photoList.length) {
+        activeGalleryIndex = idx;
+        renderGalleryCurrentView();
+    }
+};
+
+function navigateGallery(delta) {
+    if (!activeGalleryProperty) return;
+    const photoList = activeGalleryProperty.photos ? activeGalleryProperty.photos.split(',').map(u => u.trim()).filter(Boolean) : [];
+    if (photoList.length <= 1) return;
+
+    activeGalleryIndex = (activeGalleryIndex + delta + photoList.length) % photoList.length;
+    renderGalleryCurrentView();
+}
+
+function updateFormPhotosPreview() {
+    const input = document.getElementById('prop-photos');
+    const container = document.getElementById('prop-photos-preview');
+    if (!input || !container) return;
+
+    const val = input.value.trim();
+    if (!val) {
+        container.style.display = 'none';
+        container.innerHTML = '';
+        return;
+    }
+
+    const photoList = val.split(',').map(u => u.trim()).filter(Boolean);
+    if (photoList.length === 0) {
+        container.style.display = 'none';
+        container.innerHTML = '';
+        return;
+    }
+
+    container.style.display = 'flex';
+    container.innerHTML = photoList.map((photo, i) => `
+        <div class="form-photo-preview-item" title="Foto ${i + 1}">
+            <img src="${photo}" alt="Foto ${i + 1}" referrerpolicy="no-referrer" onerror="this.parentElement.style.display='none'">
+        </div>
+    `).join('');
 }
 
 function renderListings() {
@@ -1091,7 +1285,7 @@ function renderListings() {
         if (prop.photos) {
             const firstPhoto = prop.photos.split(',')[0].trim();
             if (firstPhoto) {
-                photoHTML = `<img src="${firstPhoto}" class="table-prop-img" alt="${prop.title}" referrerpolicy="no-referrer" loading="lazy" onerror="this.onerror=null;this.parentElement.innerHTML='<div class=\\'table-prop-img bg-indigo flex-center\\'><i class=\\'fa-solid fa-house text-muted\\' style=\\'font-size: 1.2rem;\\'></i></div>';">`;
+                photoHTML = `<img src="${firstPhoto}" class="table-prop-img" alt="${prop.title}" title="Ver fotos a pantalla completa" style="cursor: pointer;" onclick="openGalleryModal(${prop.id})" referrerpolicy="no-referrer" loading="lazy" onerror="this.onerror=null;this.parentElement.innerHTML='<div class=\\'table-prop-img bg-indigo flex-center\\'><i class=\\'fa-solid fa-house text-muted\\' style=\\'font-size: 1.2rem;\\'></i></div>';">`;
             }
         }
 
@@ -1376,6 +1570,7 @@ function setupEventHandlers() {
             // Mostrar tabs
             document.getElementById('extraction-tabs').style.display = 'flex';
             switchTab('manual-form-tab');
+            updateFormPhotosPreview();
 
             // Abrir modal
             propertyModal.classList.add('active');
@@ -1388,7 +1583,17 @@ function setupEventHandlers() {
 
     if (btnClosePropModal) btnClosePropModal.addEventListener('click', closeModal);
     if (btnCancelProp) btnCancelProp.addEventListener('click', closeModal);
-    
+    const galleryModal = document.getElementById('gallery-modal');
+    const btnCloseGallery = document.getElementById('btn-close-gallery-modal');
+    const btnPrevGallery = document.getElementById('gallery-btn-prev');
+    const btnNextGallery = document.getElementById('gallery-btn-next');
+    const propPhotosInput = document.getElementById('prop-photos');
+
+    if (btnCloseGallery) btnCloseGallery.addEventListener('click', closeGalleryModal);
+    if (btnPrevGallery) btnPrevGallery.addEventListener('click', () => navigateGallery(-1));
+    if (btnNextGallery) btnNextGallery.addEventListener('click', () => navigateGallery(1));
+    if (propPhotosInput) propPhotosInput.addEventListener('input', updateFormPhotosPreview);
+
     // Cerrar modal al hacer click fuera del contenido
     window.addEventListener('click', (e) => {
         if (e.target === propertyModal) {
@@ -1397,6 +1602,22 @@ function setupEventHandlers() {
         const expModal = document.getElementById('expenses-modal');
         if (e.target === expModal) {
             expModal.classList.remove('active');
+        }
+        if (e.target === galleryModal) {
+            closeGalleryModal();
+        }
+    });
+
+    // Navegación con teclado para la galería
+    window.addEventListener('keydown', (e) => {
+        if (galleryModal && galleryModal.classList.contains('active')) {
+            if (e.key === 'Escape') {
+                closeGalleryModal();
+            } else if (e.key === 'ArrowLeft') {
+                navigateGallery(-1);
+            } else if (e.key === 'ArrowRight') {
+                navigateGallery(1);
+            }
         }
     });
 
@@ -2169,6 +2390,7 @@ function fillPropertyForm(data) {
     document.getElementById('prop-rating').value = data.rating || 0;
     document.getElementById('prop-latitude').value = data.latitude !== undefined && data.latitude !== null ? data.latitude : '';
     document.getElementById('prop-longitude').value = data.longitude !== undefined && data.longitude !== null ? data.longitude : '';
+    updateFormPhotosPreview();
 }
 
 // Abrir modal en modo edición
@@ -2203,6 +2425,7 @@ function openEditModal(property) {
     document.getElementById('prop-latitude').value = property.latitude !== undefined && property.latitude !== null ? property.latitude : '';
     document.getElementById('prop-longitude').value = property.longitude !== undefined && property.longitude !== null ? property.longitude : '';
 
+    updateFormPhotosPreview();
     propertyModal.classList.add('active');
 }
 
@@ -2320,7 +2543,7 @@ function renderMap() {
         if (p.photos) {
             const firstPhoto = p.photos.split(',')[0].trim();
             if (firstPhoto) {
-                photoHTML = `<img src="${firstPhoto}" referrerpolicy="no-referrer" loading="lazy" style="width: 100%; height: 85px; object-fit: cover; border-radius: 6px; margin-bottom: 0.45rem;" alt="${p.title}">`;
+                photoHTML = `<img src="${firstPhoto}" referrerpolicy="no-referrer" loading="lazy" style="width: 100%; height: 85px; object-fit: cover; border-radius: 6px; margin-bottom: 0.45rem; cursor: pointer;" title="Ver fotos a pantalla completa" onclick="openGalleryModal(${p.id})" alt="${p.title}">`;
             }
         }
 

@@ -16,7 +16,7 @@
     <meta name="theme-color" content="#6366f1">
     <link rel="manifest" href="manifest.json">
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="styles.css?v=27.0">
+    <link rel="stylesheet" href="styles.css?v=28.0">
     <script>
         // Purga preventiva de Service Workers antiguos en caché
         if ('serviceWorker' in navigator) {
@@ -875,8 +875,9 @@
 
                     <div class="form-grid">
                         <div class="form-group">
-                            <label for="prop-photos">URLs de Fotos (Separadas por comas)</label>
+                            <label for="prop-photos"><i class="fa-solid fa-camera"></i> URLs de Fotos (Separadas por comas)</label>
                             <input type="text" id="prop-photos" placeholder="https://ejemplo.com/foto1.jpg, https://ejemplo.com/foto2.jpg">
+                            <div id="prop-photos-preview" class="form-photos-preview-strip" style="display: none;"></div>
                         </div>
                         <div class="form-group">
                             <label for="prop-elevator">¿Tiene Ascensor?</label>
@@ -938,10 +939,33 @@
         </div>
     </div>
 
+    <!-- MODAL: FULLSCREEN PHOTO GALLERY / LIGHTBOX -->
+    <div id="gallery-modal" class="modal gallery-lightbox-modal">
+        <div class="gallery-lightbox-container">
+            <div class="gallery-lightbox-header">
+                <div class="gallery-title-box">
+                    <h3 id="gallery-modal-title">Fotos del Inmueble</h3>
+                    <span id="gallery-counter" class="gallery-counter">Foto 1 de 1</span>
+                </div>
+                <button class="btn-close-modal gallery-close-btn" id="btn-close-gallery-modal" title="Cerrar (Esc)"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="gallery-main-stage">
+                <button class="gallery-nav-btn gallery-nav-prev" id="gallery-btn-prev" title="Foto anterior (←)"><i class="fa-solid fa-chevron-left"></i></button>
+                <div class="gallery-image-wrapper">
+                    <img id="gallery-main-img" src="" alt="Foto del inmueble" referrerpolicy="no-referrer">
+                </div>
+                <button class="gallery-nav-btn gallery-nav-next" id="gallery-btn-next" title="Foto siguiente (→)"><i class="fa-solid fa-chevron-right"></i></button>
+            </div>
+            <div class="gallery-thumbnails-strip" id="gallery-thumbnails-container">
+                <!-- Populated dynamically via JS -->
+            </div>
+        </div>
+    </div>
+
     <!-- Toast Notification -->
     <div id="toast" class="toast hidden"></div>
     <!-- Leaflet Map JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-    <script src="app.js?v=27.0"></script>
+    <script src="app.js?v=28.0"></script>
 </body>
 </html>
