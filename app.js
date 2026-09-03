@@ -972,16 +972,21 @@ function createPropertyCardDOM(prop) {
     }
 
     const badgeTypeStr = prop.estate_type === 'new' ? 'Obra Nueva' : 'Segunda Mano';
-    const garageStr = prop.garage === 'si' ? '<i class="fa-solid fa-square-check text-emerald"></i> Garaje' : 
-                      prop.garage === 'opcional' ? '<i class="fa-solid fa-circle-info text-amber"></i> Garaje opc.' : 
-                      '<i class="fa-solid fa-square-xmark text-rose"></i> Sin garaje';
+    
+    const garageLabel = prop.garage === 'si' ? 'Garaje' : (prop.garage === 'opcional' ? 'Garaje opc.' : 'Sin garaje');
+    const garageIcon = prop.garage === 'si' ? 'fa-car text-indigo' : (prop.garage === 'opcional' ? 'fa-car text-amber' : 'fa-car text-muted');
+
+    const elevatorLabel = prop.elevator === 'si' ? 'Ascensor' : (prop.elevator === 'no' ? 'Sin ascensor' : 'Ascensor desc.');
+    const elevatorIcon = prop.elevator === 'si' ? 'fa-elevator text-indigo' : (prop.elevator === 'no' ? 'fa-elevator text-rose' : 'fa-elevator text-muted');
+
+    const priceM2Str = (prop.m2 && prop.m2 > 0) ? `${formatCurrency(Math.round(prop.price / prop.m2))}/m²` : '';
 
     const statusBadge = prop.status === 'inactive' ? 
         '<span class="badge badge-status-inactive" title="Anuncio dado de baja en el portal"><i class="fa-solid fa-circle-xmark"></i> Inactivo</span>' : 
         (prop.status === 'active' ? '<span class="badge badge-status-active" title="Anuncio activo y publicado"><i class="fa-solid fa-circle-check"></i> Activo</span>' : '');
 
     const mapButton = (prop.latitude && prop.longitude) ? 
-        `<a href="https://www.google.com/maps/search/?api=1&query=${prop.latitude},${prop.longitude}" target="_blank" class="btn btn-secondary btn-sm btn-icon" title="Ver en Mapa"><i class="fa-solid fa-map-location-dot"></i></a>` : '';
+        `<a href="https://www.google.com/maps/search/?api=1&query=${prop.latitude},${prop.longitude}" target="_blank" class="btn btn-secondary btn-sm btn-icon" title="Ver en Google Maps"><i class="fa-solid fa-map-location-dot"></i></a>` : '';
 
     card.innerHTML = `
         <div class="card-img-container" title="${photoList.length > 0 ? 'Ver galería de fotos a pantalla completa' : ''}">
@@ -998,64 +1003,68 @@ function createPropertyCardDOM(prop) {
             <div class="card-title-row">
                 <div class="card-title-main">
                     <h4 title="${prop.title}" style="cursor: pointer;" onclick="openPropertyDetailSheet(${prop.id})">${prop.title}</h4>
+                </div>
+                <div class="card-sub-row">
+                    <span class="card-zone"><i class="fa-solid fa-location-dot text-indigo"></i> ${prop.zone || 'Zona no especificada'}</span>
                     ${prop.rating ? generateStarsHTML(prop.rating) : ''}
                 </div>
-                <span class="card-zone"><i class="fa-solid fa-location-dot"></i> ${prop.zone || 'Zona no especificada'}</span>
             </div>
             
-            <div class="card-specs">
-                <div class="spec-item">
+            <div class="card-specs-grid">
+                <div class="card-spec-item" title="Habitaciones">
                     <i class="fa-solid fa-bed"></i>
-                    <span class="spec-val">${prop.rooms}</span>
-                    <span>Habs.</span>
+                    <span><strong>${prop.rooms}</strong> habs</span>
                 </div>
-                <div class="spec-item">
+                <div class="card-spec-item" title="Baños">
                     <i class="fa-solid fa-bath"></i>
-                    <span class="spec-val">${prop.baths}</span>
-                    <span>Baños</span>
+                    <span><strong>${prop.baths}</strong> baños</span>
                 </div>
-                <div class="spec-item">
+                <div class="card-spec-item" title="Superficie construida ${priceM2Str ? '(' + priceM2Str + ')' : ''}">
                     <i class="fa-solid fa-ruler-combined"></i>
-                    <span class="spec-val">${prop.m2 ? prop.m2 + ' m²' : '--'}</span>
-                    <span>Superficie</span>
+                    <span><strong>${prop.m2 ? prop.m2 + ' m²' : '--'}</strong></span>
+                </div>
+                <div class="card-spec-item" title="Ascensor">
+                    <i class="fa-solid ${elevatorIcon}"></i>
+                    <span>${elevatorLabel}</span>
+                </div>
+                <div class="card-spec-item" title="Garaje">
+                    <i class="fa-solid ${garageIcon}"></i>
+                    <span>${garageLabel}</span>
                 </div>
             </div>
 
-            <div class="spec-item" style="align-items: flex-start; flex-direction: row; gap: 0.5rem; font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.25rem;">
-                ${garageStr}
-            </div>
-
-            <div class="card-budget-box">
-                <div class="budget-lbl">
-                    <span>Ahorro para Firma (aprox)</span>
-                    <small>Entrada (${calc.downpaymentPct}%) + Gastos CCAA</small>
+            <div class="card-financial-grid">
+                <div class="card-kpi-pill kpi-savings">
+                    <div class="kpi-pill-header">
+                        <i class="fa-solid fa-wallet text-amber"></i>
+                        <span>Ahorro Firma</span>
+                    </div>
+                    <strong>${formatCurrency(calc.totalRequiredBudget)}</strong>
+                    <small>Entrada (${calc.downpaymentPct}%) + CCAA</small>
                 </div>
-                <span class="budget-val">${formatCurrency(calc.totalRequiredBudget)}</span>
-            </div>
-
-            <div class="card-budget-box" style="margin-top: 0.5rem; background: rgba(99, 102, 241, 0.04); border-color: rgba(99, 102, 241, 0.15);">
-                <div class="budget-lbl">
-                    <span>Hipoteca Estimada</span>
-                    <small>Cuota al ${calc.mortgageInterestRate}% a ${calc.mortgageDurationYears} años</small>
+                <div class="card-kpi-pill kpi-mortgage">
+                    <div class="kpi-pill-header">
+                        <i class="fa-solid fa-calculator text-indigo"></i>
+                        <span>Hipoteca Est.</span>
+                    </div>
+                    <strong>${formatCurrency(calc.mortgageMonthlyPayment)}<small>/mes</small></strong>
+                    <small>Al ${calc.mortgageInterestRate}% a ${calc.mortgageDurationYears}a</small>
                 </div>
-                <span class="budget-val" style="color: var(--primary);">${formatCurrency(calc.mortgageMonthlyPayment)}/mes</span>
             </div>
 
             <div class="card-actions">
-                <button class="btn btn-secondary btn-sm btn-view-detail" data-id="${prop.id}" title="Ver Ficha Detallada">
-                    <i class="fa-solid fa-id-card text-indigo"></i> Ficha
+                <button class="btn btn-indigo btn-sm btn-view-detail" data-id="${prop.id}" title="Ver Ficha Completa">
+                    <i class="fa-solid fa-id-card"></i> Ficha
                 </button>
-                <button class="btn btn-secondary btn-sm btn-view-expenses" data-id="${prop.id}" title="Ver Gastos">
-                    <i class="fa-solid fa-calculator"></i> Gastos
+                <button class="btn btn-secondary btn-sm btn-view-expenses" data-id="${prop.id}" title="Desglose de Gastos">
+                    <i class="fa-solid fa-calculator text-emerald"></i> Gastos
                 </button>
-                <button class="btn btn-primary btn-sm btn-edit-prop" data-id="${prop.id}" title="Editar">
-                    <i class="fa-solid fa-pen"></i>
-                </button>
-                <button class="btn btn-danger btn-sm btn-delete-prop btn-icon" data-id="${prop.id}" title="Eliminar">
-                    <i class="fa-solid fa-trash"></i>
-                </button>
-                ${mapButton}
-                ${prop.url ? `<a href="${prop.url}" target="_blank" class="btn btn-secondary btn-sm btn-icon" title="Abrir Enlace"><i class="fa-solid fa-arrow-up-right-from-square"></i></a>` : ''}
+                <div class="card-actions-icons">
+                    <button class="btn btn-secondary btn-sm btn-icon btn-edit-prop" data-id="${prop.id}" title="Editar"><i class="fa-solid fa-pen"></i></button>
+                    <button class="btn btn-danger btn-sm btn-icon btn-delete-prop" data-id="${prop.id}" title="Eliminar"><i class="fa-solid fa-trash"></i></button>
+                    ${mapButton}
+                    ${prop.url ? `<a href="${prop.url}" target="_blank" class="btn btn-secondary btn-sm btn-icon" title="Abrir Anuncio Original"><i class="fa-solid fa-arrow-up-right-from-square"></i></a>` : ''}
+                </div>
             </div>
         </div>
     `;
@@ -1497,6 +1506,11 @@ function initDetailMiniMap(prop) {
         iconSize: [85, 30],
         iconAnchor: [42, 30]
     });
+
+    const extLink = document.getElementById('detail-map-ext-link');
+    if (extLink) {
+        extLink.href = `https://www.google.com/maps/search/?api=1&query=${prop.latitude},${prop.longitude}`;
+    }
 
     L.marker([prop.latitude, prop.longitude], { icon: pinIcon }).addTo(detailMiniMapInstance);
 }

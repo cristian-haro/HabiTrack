@@ -16,7 +16,7 @@
     <meta name="theme-color" content="#6366f1">
     <link rel="manifest" href="manifest.json">
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="styles.css?v=29.0">
+    <link rel="stylesheet" href="styles.css?v=30.0">
     <script>
         // Purga preventiva de Service Workers antiguos en caché
         if ('serviceWorker' in navigator) {
@@ -940,7 +940,8 @@
 
     <!-- MODAL: DETAILED PROPERTY SHEET (FICHA DETALLADA) -->
     <div id="property-detail-modal" class="modal">
-        <div class="modal-content glass max-w-4xl property-detail-container">
+        <div class="modal-content glass max-w-5xl property-detail-container">
+            <!-- Modal Header -->
             <div class="modal-header detail-sheet-header">
                 <div class="detail-header-info">
                     <div class="detail-header-badges">
@@ -954,93 +955,108 @@
                 <button class="btn-close-modal" id="btn-close-detail-modal" title="Cerrar (Esc)"><i class="fa-solid fa-xmark"></i></button>
             </div>
 
+            <!-- Modal Body (2-Column Grid Layout) -->
             <div class="modal-body detail-sheet-body">
-                <!-- Media Gallery Section -->
-                <div class="detail-gallery-block">
-                    <div class="detail-main-photo-wrap" id="detail-main-photo-wrap" title="Clic para ampliar a pantalla completa">
-                        <img id="detail-main-photo" src="" alt="Foto principal del inmueble" referrerpolicy="no-referrer">
-                        <div class="detail-photo-badges">
-                            <span class="badge badge-price" id="detail-price-badge">-- €</span>
+                <div class="detail-sheet-grid">
+                    <!-- Columna Izquierda: Multimedia y Mapa -->
+                    <div class="detail-sheet-col-left">
+                        <div class="detail-gallery-block">
+                            <div class="detail-main-photo-wrap" id="detail-main-photo-wrap" title="Clic para ampliar a pantalla completa">
+                                <img id="detail-main-photo" src="" alt="Foto principal del inmueble" referrerpolicy="no-referrer">
+                                <div class="detail-photo-badges">
+                                    <span class="badge badge-price" id="detail-price-badge">-- €</span>
+                                </div>
+                                <button type="button" class="card-carousel-btn detail-carousel-prev" id="detail-btn-prev-photo"><i class="fa-solid fa-chevron-left"></i></button>
+                                <button type="button" class="card-carousel-btn detail-carousel-next" id="detail-btn-next-photo"><i class="fa-solid fa-chevron-right"></i></button>
+                                <button type="button" class="detail-fullscreen-btn" id="detail-btn-fullscreen" title="Ver galería a pantalla completa"><i class="fa-solid fa-expand"></i></button>
+                            </div>
+                            <div class="detail-thumbnails-row" id="detail-thumbnails-row">
+                                <!-- Populated dynamically via JS -->
+                            </div>
                         </div>
-                        <button type="button" class="card-carousel-btn detail-carousel-prev" id="detail-btn-prev-photo"><i class="fa-solid fa-chevron-left"></i></button>
-                        <button type="button" class="card-carousel-btn detail-carousel-next" id="detail-btn-next-photo"><i class="fa-solid fa-chevron-right"></i></button>
-                        <button type="button" class="detail-fullscreen-btn" id="detail-btn-fullscreen" title="Ver galería a pantalla completa"><i class="fa-solid fa-expand"></i></button>
-                    </div>
-                    <div class="detail-thumbnails-row" id="detail-thumbnails-row">
-                        <!-- Populated dynamically via JS -->
-                    </div>
-                </div>
 
-                <!-- Financial KPI Cards -->
-                <div class="detail-kpis-grid">
-                    <div class="detail-kpi-card">
-                        <span class="detail-kpi-lbl"><i class="fa-solid fa-tag text-emerald"></i> Precio de Venta</span>
-                        <strong class="detail-kpi-val text-emerald" id="detail-kpi-price">-- €</strong>
-                        <small id="detail-kpi-m2-price">-- €/m²</small>
+                        <!-- Mini Map Section -->
+                        <div class="detail-section-block" id="detail-map-section" style="display: none;">
+                            <div class="detail-section-header-row">
+                                <h3 class="detail-section-title"><i class="fa-solid fa-map-location-dot text-indigo"></i> Ubicación</h3>
+                                <a href="#" target="_blank" id="detail-map-ext-link" class="detail-ext-link"><i class="fa-solid fa-arrow-up-right-from-square"></i> Google Maps</a>
+                            </div>
+                            <div id="detail-minimap" class="detail-minimap-container"></div>
+                        </div>
                     </div>
-                    <div class="detail-kpi-card highlight-budget">
-                        <span class="detail-kpi-lbl"><i class="fa-solid fa-wallet text-amber"></i> Ahorro para Firma</span>
-                        <strong class="detail-kpi-val text-indigo" id="detail-kpi-budget">-- €</strong>
-                        <small id="detail-kpi-budget-sub">Entrada (20%) + Gastos CCAA</small>
-                    </div>
-                    <div class="detail-kpi-card">
-                        <span class="detail-kpi-lbl"><i class="fa-solid fa-calculator text-indigo"></i> Hipoteca Est. / Mes</span>
-                        <strong class="detail-kpi-val text-primary" id="detail-kpi-mortgage">-- €/mes</strong>
-                        <small id="detail-kpi-mortgage-sub">Al 2.9% a 30 años</small>
-                    </div>
-                    <div class="detail-kpi-card">
-                        <span class="detail-kpi-lbl"><i class="fa-solid fa-landmark text-secondary"></i> Impuestos Estimados</span>
-                        <strong class="detail-kpi-val" id="detail-kpi-taxes">-- €</strong>
-                        <small id="detail-kpi-taxes-sub">Según CCAA</small>
-                    </div>
-                </div>
 
-                <!-- Technical Specs Grid -->
-                <div class="detail-section-block">
-                    <h3 class="detail-section-title"><i class="fa-solid fa-list-check text-indigo"></i> Características Técnicas</h3>
-                    <div class="detail-specs-grid">
-                        <div class="detail-spec-item">
-                            <i class="fa-solid fa-bed text-indigo"></i>
-                            <div><span>Habitaciones</span><strong id="detail-spec-rooms">--</strong></div>
+                    <!-- Columna Derecha: Finanzas, Características y Notas -->
+                    <div class="detail-sheet-col-right">
+                        <!-- Resumen Financiero (KPIs 2x2 Grid) -->
+                        <div class="detail-section-block">
+                            <h3 class="detail-section-title"><i class="fa-solid fa-chart-pie text-indigo"></i> Resumen Económico</h3>
+                            <div class="detail-kpis-grid">
+                                <div class="detail-kpi-card">
+                                    <span class="detail-kpi-lbl"><i class="fa-solid fa-tag text-emerald"></i> Precio Venta</span>
+                                    <strong class="detail-kpi-val text-emerald" id="detail-kpi-price">-- €</strong>
+                                    <small id="detail-kpi-m2-price">-- €/m²</small>
+                                </div>
+                                <div class="detail-kpi-card highlight-budget">
+                                    <span class="detail-kpi-lbl"><i class="fa-solid fa-wallet text-amber"></i> Ahorro Firma</span>
+                                    <strong class="detail-kpi-val text-indigo" id="detail-kpi-budget">-- €</strong>
+                                    <small id="detail-kpi-budget-sub">Entrada (20%) + Gastos</small>
+                                </div>
+                                <div class="detail-kpi-card">
+                                    <span class="detail-kpi-lbl"><i class="fa-solid fa-calculator text-indigo"></i> Hipoteca Est.</span>
+                                    <strong class="detail-kpi-val text-primary" id="detail-kpi-mortgage">-- €/mes</strong>
+                                    <small id="detail-kpi-mortgage-sub">Al 2.9% a 30 años</small>
+                                </div>
+                                <div class="detail-kpi-card">
+                                    <span class="detail-kpi-lbl"><i class="fa-solid fa-landmark text-secondary"></i> Impuestos</span>
+                                    <strong class="detail-kpi-val" id="detail-kpi-taxes">-- €</strong>
+                                    <small id="detail-kpi-taxes-sub">Según CCAA</small>
+                                </div>
+                            </div>
                         </div>
-                        <div class="detail-spec-item">
-                            <i class="fa-solid fa-bath text-indigo"></i>
-                            <div><span>Baños</span><strong id="detail-spec-baths">--</strong></div>
+
+                        <!-- Características Técnicas Grid -->
+                        <div class="detail-section-block">
+                            <h3 class="detail-section-title"><i class="fa-solid fa-list-check text-indigo"></i> Características Técnicas</h3>
+                            <div class="detail-specs-grid">
+                                <div class="detail-spec-item">
+                                    <i class="fa-solid fa-bed text-indigo"></i>
+                                    <div><span>Habitaciones</span><strong id="detail-spec-rooms">--</strong></div>
+                                </div>
+                                <div class="detail-spec-item">
+                                    <i class="fa-solid fa-bath text-indigo"></i>
+                                    <div><span>Baños</span><strong id="detail-spec-baths">--</strong></div>
+                                </div>
+                                <div class="detail-spec-item">
+                                    <i class="fa-solid fa-ruler-combined text-indigo"></i>
+                                    <div><span>Superficie</span><strong id="detail-spec-m2">-- m²</strong></div>
+                                </div>
+                                <div class="detail-spec-item">
+                                    <i class="fa-solid fa-building text-indigo"></i>
+                                    <div><span>Tipología</span><strong id="detail-spec-estate-type">--</strong></div>
+                                </div>
+                                <div class="detail-spec-item">
+                                    <i class="fa-solid fa-car text-indigo"></i>
+                                    <div><span>Garaje</span><strong id="detail-spec-garage">--</strong></div>
+                                </div>
+                                <div class="detail-spec-item">
+                                    <i class="fa-solid fa-elevator text-indigo"></i>
+                                    <div><span>Ascensor</span><strong id="detail-spec-elevator">--</strong></div>
+                                </div>
+                            </div>
                         </div>
-                        <div class="detail-spec-item">
-                            <i class="fa-solid fa-ruler-combined text-indigo"></i>
-                            <div><span>Superficie</span><strong id="detail-spec-m2">-- m²</strong></div>
-                        </div>
-                        <div class="detail-spec-item">
-                            <i class="fa-solid fa-building text-indigo"></i>
-                            <div><span>Tipo de Vivienda</span><strong id="detail-spec-estate-type">--</strong></div>
-                        </div>
-                        <div class="detail-spec-item">
-                            <i class="fa-solid fa-car text-indigo"></i>
-                            <div><span>Garaje</span><strong id="detail-spec-garage">--</strong></div>
-                        </div>
-                        <div class="detail-spec-item">
-                            <i class="fa-solid fa-elevator text-indigo"></i>
-                            <div><span>Ascensor</span><strong id="detail-spec-elevator">--</strong></div>
+
+                        <!-- Notas y Observaciones de Visita -->
+                        <div class="detail-section-block">
+                            <h3 class="detail-section-title"><i class="fa-solid fa-clipboard-check text-indigo"></i> Notas y Observaciones</h3>
+                            <div class="detail-comments-box">
+                                <p id="detail-comments-text">Sin notas adicionales registradas.</p>
+                            </div>
                         </div>
                     </div>
-                </div>
-
-                <!-- Visit Notes & Comments -->
-                <div class="detail-section-block">
-                    <h3 class="detail-section-title"><i class="fa-solid fa-clipboard-check text-indigo"></i> Notas y Observaciones de Visita</h3>
-                    <div class="detail-comments-box">
-                        <p id="detail-comments-text">Sin notas adicionales registradas.</p>
-                    </div>
-                </div>
-
-                <!-- Mini Map Section -->
-                <div class="detail-section-block" id="detail-map-section" style="display: none;">
-                    <h3 class="detail-section-title"><i class="fa-solid fa-map-location-dot text-indigo"></i> Ubicación Geográfica</h3>
-                    <div id="detail-minimap" class="detail-minimap-container"></div>
                 </div>
             </div>
 
+            <!-- Modal Footer -->
             <div class="modal-footer detail-sheet-footer">
                 <div class="detail-footer-left">
                     <button type="button" class="btn btn-secondary btn-sm" id="btn-verify-detail-link">
@@ -1102,6 +1118,6 @@
     <div id="toast" class="toast hidden"></div>
     <!-- Leaflet Map JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-    <script src="app.js?v=29.0"></script>
+    <script src="app.js?v=30.0"></script>
 </body>
 </html>

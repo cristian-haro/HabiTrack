@@ -973,46 +973,50 @@ a:hover {
 }
 
 /* ==========================================================================
-   DETAILED PROPERTY SHEET (FICHA DETALLADA)
+   DETAILED PROPERTY SHEET (FICHA DETALLADA - MASTER DETAIL LAYOUT)
    ========================================================================== */
-.max-w-4xl {
-    max-width: 880px;
+.max-w-5xl {
+    max-width: 1040px;
     width: 95%;
 }
 
 .property-detail-container {
-    max-height: 90vh;
+    max-height: 92vh;
     display: flex;
     flex-direction: column;
     overflow: hidden;
     padding: 0;
+    border-radius: var(--radius-xl);
 }
 
 .detail-sheet-header {
-    padding: 1.5rem 1.75rem;
+    padding: 1.25rem 1.75rem;
     border-bottom: 1px solid var(--border-color);
     background: #ffffff;
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
+    gap: 1rem;
 }
 
 .detail-header-badges {
     display: flex;
     gap: 0.5rem;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.4rem;
     flex-wrap: wrap;
+    align-items: center;
 }
 
 .detail-header-info h2 {
-    font-size: 1.45rem;
+    font-size: 1.35rem;
     color: var(--text-main);
     line-height: 1.3;
-    margin-bottom: 0.25rem;
+    margin-bottom: 0.2rem;
+    font-weight: 800;
 }
 
 .detail-header-info p {
-    font-size: 0.875rem;
+    font-size: 0.85rem;
     color: var(--text-muted);
     display: flex;
     align-items: center;
@@ -1024,23 +1028,37 @@ a:hover {
     overflow-y: auto;
     display: flex;
     flex-direction: column;
+    background: #fafbfc;
+}
+
+.detail-sheet-grid {
+    display: grid;
+    grid-template-columns: 1.05fr 1fr;
     gap: 1.5rem;
+    align-items: start;
+}
+
+.detail-sheet-col-left, .detail-sheet-col-right {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
 }
 
 .detail-gallery-block {
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
+    gap: 0.65rem;
 }
 
 .detail-main-photo-wrap {
     position: relative;
     width: 100%;
-    height: 340px;
+    height: 310px;
     border-radius: var(--radius-lg);
     overflow: hidden;
     background: #0f172a;
     cursor: pointer;
+    box-shadow: var(--shadow-sm);
 }
 
 .detail-main-photo-wrap img {
@@ -1056,18 +1074,18 @@ a:hover {
 
 .detail-photo-badges {
     position: absolute;
-    bottom: 1rem;
-    left: 1rem;
+    bottom: 0.85rem;
+    left: 0.85rem;
     z-index: 5;
     pointer-events: none;
 }
 
 .detail-fullscreen-btn {
     position: absolute;
-    top: 1rem;
-    right: 1rem;
-    width: 38px;
-    height: 38px;
+    top: 0.85rem;
+    right: 0.85rem;
+    width: 36px;
+    height: 36px;
     border-radius: 50%;
     background: rgba(15, 23, 42, 0.75);
     backdrop-filter: blur(4px);
@@ -1083,15 +1101,15 @@ a:hover {
 
 .detail-fullscreen-btn:hover {
     background: var(--primary);
-    transform: scale(1.1);
+    transform: scale(1.08);
 }
 
 .detail-carousel-prev {
-    left: 1rem;
+    left: 0.85rem;
 }
 
 .detail-carousel-next {
-    right: 1rem;
+    right: 0.85rem;
 }
 
 .detail-main-photo-wrap:hover .card-carousel-btn {
@@ -1106,8 +1124,8 @@ a:hover {
 }
 
 .detail-thumb-item {
-    width: 68px;
-    height: 50px;
+    width: 64px;
+    height: 46px;
     border-radius: var(--radius-sm);
     object-fit: cover;
     cursor: pointer;
@@ -1127,21 +1145,62 @@ a:hover {
     transform: scale(1.04);
 }
 
+/* Section Blocks in Detail Sheet */
+.detail-section-block {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+    background: #ffffff;
+    padding: 1.15rem;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-color);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.detail-section-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--text-main);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.detail-section-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.detail-ext-link {
+    font-size: 0.775rem;
+    color: var(--primary);
+    text-decoration: none;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.detail-ext-link:hover {
+    text-decoration: underline;
+}
+
 /* KPI Cards in Detail Sheet */
 .detail-kpis-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 1rem;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.65rem;
 }
 
 .detail-kpi-card {
     background: #f8fafc;
     border: 1px solid var(--border-color);
     border-radius: var(--radius-md);
-    padding: 1rem 1.15rem;
+    padding: 0.85rem 1rem;
     display: flex;
     flex-direction: column;
-    gap: 0.25rem;
+    gap: 0.2rem;
 }
 
 .detail-kpi-card.highlight-budget {
@@ -1150,97 +1209,91 @@ a:hover {
 }
 
 .detail-kpi-lbl {
-    font-size: 0.775rem;
+    font-size: 0.725rem;
     color: var(--text-muted);
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.03em;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
 }
 
 .detail-kpi-val {
-    font-size: 1.35rem;
+    font-size: 1.25rem;
     font-weight: 800;
     font-family: var(--font-heading);
 }
 
 .detail-kpi-card small {
-    font-size: 0.75rem;
+    font-size: 0.725rem;
     color: var(--text-secondary);
 }
 
-/* Section Blocks in Detail Sheet */
-.detail-section-block {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-}
-
-.detail-section-title {
-    font-size: 1.05rem;
-    font-weight: 700;
-    color: var(--text-main);
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
+/* Specs Grid in Detail Sheet */
 .detail-specs-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 0.85rem;
+    gap: 0.65rem;
 }
 
 .detail-spec-item {
-    background: #ffffff;
+    background: #f8fafc;
     border: 1px solid var(--border-color);
     border-radius: var(--radius-md);
-    padding: 0.85rem 1rem;
+    padding: 0.65rem 0.75rem;
     display: flex;
     align-items: center;
-    gap: 0.85rem;
+    gap: 0.65rem;
 }
 
 .detail-spec-item i {
-    font-size: 1.35rem;
-    width: 28px;
+    font-size: 1.15rem;
+    width: 22px;
     text-align: center;
 }
 
 .detail-spec-item div {
     display: flex;
     flex-direction: column;
+    min-width: 0;
 }
 
 .detail-spec-item span {
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     color: var(--text-muted);
 }
 
 .detail-spec-item strong {
-    font-size: 0.95rem;
+    font-size: 0.85rem;
     color: var(--text-main);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .detail-comments-box {
     background: #f8fafc;
     border: 1px dashed var(--border-color);
     border-radius: var(--radius-md);
-    padding: 1rem 1.25rem;
-    font-size: 0.9rem;
+    padding: 0.85rem 1rem;
+    font-size: 0.85rem;
     color: var(--text-main);
-    line-height: 1.6;
+    line-height: 1.55;
+    max-height: 130px;
+    overflow-y: auto;
 }
 
 .detail-minimap-container {
     width: 100%;
-    height: 200px;
+    height: 175px;
     border-radius: var(--radius-md);
     overflow: hidden;
     border: 1px solid var(--border-color);
 }
 
 .detail-sheet-footer {
-    padding: 1.25rem 1.75rem;
+    padding: 1rem 1.75rem;
     border-top: 1px solid var(--border-color);
     background: #ffffff;
     display: flex;
@@ -1257,113 +1310,221 @@ a:hover {
     flex-wrap: wrap;
 }
 
-@media (max-width: 768px) {
-    .detail-kpis-grid {
-        grid-template-columns: 1fr 1fr;
-    }
-    .detail-specs-grid {
-        grid-template-columns: 1fr 1fr;
+@media (max-width: 900px) {
+    .detail-sheet-grid {
+        grid-template-columns: 1fr;
     }
     .detail-main-photo-wrap {
-        height: 220px;
+        height: 240px;
     }
+}
+
+/* ==========================================================================
+   PROPERTY CARD IN LISTINGS (CONSISTENT & HARMONIC DESIGN)
+   ========================================================================== */
+.property-card {
+    display: flex;
+    flex-direction: column;
+    background: #ffffff;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-xl);
+    overflow: hidden;
+    box-shadow: var(--shadow-card);
+    transition: var(--transition);
+    height: 100%;
+}
+
+.property-card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-lg);
+    border-color: rgba(99, 102, 241, 0.35);
+}
+
+.card-img-container {
+    position: relative;
+    width: 100%;
+    height: 195px;
+    background: #0f172a;
+    overflow: hidden;
+    cursor: pointer;
+    flex-shrink: 0;
 }
 
 .card-content {
-    padding: 1.35rem;
+    padding: 1.15rem 1.25rem 1rem 1.25rem;
     display: flex;
     flex-direction: column;
-    gap: 0.85rem;
+    gap: 0.75rem;
     flex-grow: 1;
+    justify-content: space-between;
 }
 
-.card-title-row h4 {
-    font-size: 1.1rem;
+.card-title-row {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+}
+
+.card-title-main h4 {
+    font-size: 1.05rem;
     font-weight: 700;
     line-height: 1.35;
     color: var(--text-main);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
     overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    transition: color 0.2s ease;
 }
 
-.card-zone {
-    font-size: 0.825rem;
-    color: var(--text-muted);
-    display: flex;
-    align-items: center;
-    gap: 0.35rem;
-}
-
-.card-specs {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    border-top: 1px solid var(--border-color);
-    border-bottom: 1px solid var(--border-color);
-    padding: 0.75rem 0;
-    gap: 0.5rem;
-}
-
-.spec-item {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.15rem;
-    font-size: 0.8rem;
-    color: var(--text-secondary);
-}
-
-.spec-item i {
+.card-title-main h4:hover {
     color: var(--primary);
-    font-size: 0.9rem;
 }
 
-.spec-val {
-    font-weight: 700;
-    color: var(--text-main);
-}
-
-.card-budget-box {
-    background: var(--amber-bg);
-    border: 1px solid var(--amber-border);
-    border-radius: var(--radius-sm);
-    padding: 0.85rem 1rem;
+.card-sub-row {
     display: flex;
     justify-content: space-between;
     align-items: center;
     gap: 0.5rem;
-}
-
-.budget-lbl {
-    font-size: 0.775rem;
-    color: #92400e;
-    display: flex;
-    flex-direction: column;
-}
-
-.budget-val {
-    font-size: 1.2rem;
-    font-family: var(--font-heading);
-    font-weight: 800;
-    color: #b45309;
-    font-variant-numeric: tabular-nums;
-}
-
-.card-actions {
-    display: flex;
-    gap: 0.45rem;
-    margin-top: auto;
-    padding-top: 0.5rem;
     flex-wrap: wrap;
 }
 
-.card-actions .btn { flex: 1; }
+.card-zone {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* 5-Item Specs Grid in Card */
+.card-specs-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 0.35rem;
+    background: #f8fafc;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 0.55rem 0.4rem;
+}
+
+.card-spec-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: 0.15rem;
+    font-size: 0.725rem;
+    color: var(--text-secondary);
+}
+
+.card-spec-item i {
+    font-size: 0.825rem;
+    color: var(--primary);
+}
+
+.card-spec-item span {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+}
+
+.card-spec-item strong {
+    color: var(--text-main);
+}
+
+/* Dual Financial KPIs in Card */
+.card-financial-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+}
+
+.card-kpi-pill {
+    padding: 0.55rem 0.75rem;
+    border-radius: var(--radius-md);
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+}
+
+.card-kpi-pill.kpi-savings {
+    background: rgba(245, 158, 11, 0.08);
+    border: 1px solid rgba(245, 158, 11, 0.25);
+}
+
+.card-kpi-pill.kpi-mortgage {
+    background: rgba(99, 102, 241, 0.06);
+    border: 1px solid rgba(99, 102, 241, 0.2);
+}
+
+.kpi-pill-header {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+}
+
+.card-kpi-pill strong {
+    font-size: 1.05rem;
+    font-family: var(--font-heading);
+    font-weight: 800;
+    line-height: 1.2;
+}
+
+.card-kpi-pill.kpi-savings strong {
+    color: #b45309;
+}
+
+.card-kpi-pill.kpi-mortgage strong {
+    color: var(--primary);
+}
+
+.card-kpi-pill small {
+    font-size: 0.675rem;
+    color: var(--text-secondary);
+}
+
+/* Card Actions Toolbar */
+.card-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.45rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--border-color);
+    margin-top: auto;
+}
+
+.card-actions-icons {
+    display: flex;
+    gap: 0.3rem;
+    align-items: center;
+    margin-left: auto;
+}
+
+.card-actions .btn-sm {
+    padding: 0.4rem 0.65rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
 
 .card-actions .btn-icon {
-    flex: 0 0 38px;
-    width: 38px;
-    height: 38px;
+    width: 32px;
+    height: 32px;
     padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-sm);
 }
 
 .empty-state {
