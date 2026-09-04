@@ -40,9 +40,10 @@
         // -------------------------------------------------------------
         if (url.includes('fotocasa.es')) {
             try {
-                const propsScript = document.getElementById('__initial_props__');
-                if (propsScript && propsScript.innerText) {
-                    const props = JSON.parse(propsScript.innerText);
+                // En scripts JSON el contenido debe leerse con textContent
+                const propsScript = document.getElementById('__initial_props__') || document.querySelector('script[id*="initial_props"]');
+                if (propsScript && propsScript.textContent) {
+                    const props = JSON.parse(propsScript.textContent);
                     const entity = props.realEstateAdDetailEntityV2 || props.realEstate || {};
 
                     if (props.propertyTitle) data.title = props.propertyTitle;
@@ -84,7 +85,8 @@
 
             // Fallback de datos desde DOM de Fotocasa si hiciera falta
             if (!data.price) {
-                const priceMatch = document.body.innerText.match(/(\d{1,3}(?:\.\d{3})+|\d+)\s*€/);
+                const bodyText = document.body ? document.body.innerText || '' : '';
+                const priceMatch = bodyText.match(/(\d{1,3}(?:\.\d{3})+|\d+)\s*€/);
                 if (priceMatch) data.price = cleanPrice(priceMatch[1]);
             }
 
@@ -94,7 +96,7 @@
             }
 
             // Características desde DOM de Fotocasa
-            const allText = document.body.innerText.toLowerCase();
+            const allText = (document.body ? document.body.innerText : '').toLowerCase();
             if (!data.m2) {
                 const m2m = allText.match(/(\d+)\s*(?:m²|m2)/);
                 if (m2m && parseInt(m2m[1], 10) > 10 && parseInt(m2m[1], 10) < 5000) data.m2 = parseInt(m2m[1], 10);
@@ -115,7 +117,7 @@
         }
 
         // -------------------------------------------------------------
-        // 2. IDEALISTA (Extracción limpia con desduplicación de fotos)
+        // 2. IDEALISTA (Extracción limpia y desduplicación de fotos)
         // -------------------------------------------------------------
         else if (url.includes('idealista.com')) {
             const h1 = document.querySelector('.main-info__title-main, h1');
@@ -148,12 +150,12 @@
 
             function addPhotoCandidate(rawUrl) {
                 if (!rawUrl || typeof rawUrl !== 'string' || !rawUrl.startsWith('http')) return;
-                if (rawUrl.includes('blank') || rawUrl.includes('static/common') || rawUrl.includes('logo') || rawUrl.includes('icon') || rawUrl.includes('map')) return;
+                if (rawUrl.includes('blank') || rawUrl.includes('static') || rawUrl.includes('logo') || rawUrl.includes('icon') || rawUrl.includes('map')) return;
 
                 // Extraer el hash único del archivo (ej: 111111111.jpg o uuid)
                 const parts = rawUrl.split('/');
                 const filename = parts[parts.length - 1].split('?')[0].toLowerCase();
-                if (!filename || seenImageHashes.has(filename)) return;
+                if (!filename || filename.length < 4 || seenImageHashes.has(filename)) return;
 
                 seenImageHashes.add(filename);
                 // Convertir al tamaño máximo de detalle
@@ -165,13 +167,14 @@
             const ogImg = document.querySelector('meta[property="og:image"]');
             if (ogImg && ogImg.content) addPhotoCandidate(ogImg.content);
 
-            // 2. Extraer de scripts internos (fullScreenGalleryPhotos)
+            // 2. Extraer de scripts internos (soporte para JSON escapado y sin escapar)
             try {
                 const scripts = document.querySelectorAll('script');
                 for (const s of scripts) {
-                    const txt = s.innerText || s.textContent || '';
-                    if (txt.includes('fullScreenGalleryPhotos') || txt.includes('galleryPhotos') || txt.includes('ad_images')) {
-                        const matches = txt.match(/https?:\/\/[a-z0-9.]*idealista\.com\/[^\s"'\\]+\.jpg/gi);
+                    const rawContent = s.textContent || '';
+                    if (rawContent.includes('idealista.com') || rawContent.includes('fullScreenGalleryPhotos') || rawContent.includes('galleryPhotos') || rawContent.includes('ad_images')) {
+                        const cleanTxt = rawContent.replace(/\\\//g, '/');
+                        const matches = cleanTxt.match(/https?:\/\/[a-z0-9.]*idealista\.com\/[^\s"'<>\\]+/gi);
                         if (matches) {
                             matches.forEach(u => addPhotoCandidate(u));
                         }
@@ -234,14 +237,14 @@
         }
 
         // -------------------------------------------------------------
-        // 4. SCHEMA.ORG JSON-LD FALLBACK GENÉRICO
+        // 4. SCHEMA.ORG JSON-LD FALLBACK GENÉRICO (Con desduplicación)
         // -------------------------------------------------------------
         if (!data.price || !data.photos) {
             try {
                 const scripts = document.querySelectorAll('script[type="application/ld+json"]');
                 for (const script of scripts) {
                     try {
-                        const text = script.innerText || script.textContent || '';
+                        const text = script.textContent || '';
                         if (!text) continue;
                         const parsed = JSON.parse(text);
                         const items = Array.isArray(parsed) ? parsed : [parsed];
@@ -250,7 +253,17 @@
                                 if (item.name && (!data.title || data.title === 'Inmueble Detectado')) data.title = item.name;
                                 if (item.description && !data.comments) data.comments = item.description;
                                 if (item.image && !data.photos) {
-                                    data.photos = Array.isArray(item.image) ? item.image.join(', ') : item.image;
+                                    const rawImgs = Array.isArray(item.image) ? item.image : [item.image];
+                                    const uniqueList = [];
+                                    const seen = new Set();
+                                    for (const imgUrl of rawImgs) {
+                                        const fn = String(imgUrl).split('/').pop().split('?')[0].toLowerCase();
+                                        if (!seen.has(fn)) {
+                                            seen.add(fn);
+                                            uniqueList.push(imgUrl);
+                                        }
+                                    }
+                                    data.photos = uniqueList.join(', ');
                                 }
                                 if (item.offers && !data.price) {
                                     const offers = Array.isArray(item.offers) ? item.offers[0] : item.offers;
@@ -456,7 +469,6 @@
             if (existingBtn) existingBtn.remove();
             setTimeout(injectFloatingWidget, 600);
         } else {
-            // Si es página de detalle pero no tiene el botón todavía, inyectarlo
             const isDetail = window.location.href.includes('/inmueble/') || 
                              window.location.href.includes('/vivienda/') || 
                              window.location.href.match(/\/\d{6,12}\//);
