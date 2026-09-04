@@ -6,6 +6,12 @@ const nodemailer = require('nodemailer');
  * @param {string} otpCode 
  */
 async function sendOTPEmail(toEmail, otpCode) {
+    // Si estamos en entorno de tests, no enviar correos reales
+    if (process.env.NODE_ENV === 'test') {
+        console.log(`[TEST MODE] Simulación de envío de OTP a ${toEmail}: ${otpCode}`);
+        return { sent: true, mocked: true };
+    }
+
     const smtpHost = process.env.SMTP_HOST;
     const smtpPort = parseInt(process.env.SMTP_PORT || '587', 10);
     const smtpUser = process.env.SMTP_USER;
