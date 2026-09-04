@@ -40,48 +40,62 @@
         // -------------------------------------------------------------
         if (url.includes('fotocasa.es')) {
             try {
-                // En scripts JSON el contenido debe leerse con textContent
-                const propsScript = document.getElementById('__initial_props__') || document.querySelector('script[id*="initial_props"]');
+                // Buscar script con los datos de Fotocasa por ID o por contenido
+                const allScripts = Array.from(document.querySelectorAll('script'));
+                const propsScript = allScripts.find(s => s.id === '__initial_props__' || (s.textContent && (s.textContent.includes('realEstateAdDetailEntityV2') || s.textContent.includes('propertyTitle'))));
+                
                 if (propsScript && propsScript.textContent) {
-                    const props = JSON.parse(propsScript.textContent);
-                    const entity = props.realEstateAdDetailEntityV2 || props.realEstate || {};
+                    let props;
+                    const txt = propsScript.textContent.trim();
+                    if (txt.includes('JSON.parse(')) {
+                        const m = txt.match(/JSON\.parse\('([\s\S]*?)'\)/);
+                        if (m) props = JSON.parse(m[1].replace(/\\'/g, "'").replace(/\\\\/g, "\\"));
+                    } else {
+                        props = JSON.parse(txt);
+                    }
 
-                    if (props.propertyTitle) data.title = props.propertyTitle;
-                    if (entity.price && entity.price.amount) data.price = entity.price.amount;
-                    if (entity.description) data.comments = entity.description;
+                    if (props) {
+                        const entity = props.realEstateAdDetailEntityV2 || props.realEstate || {};
 
-                    if (entity.address) {
-                        if (entity.address.autonomousCommunity) data.ccaa = entity.address.autonomousCommunity;
-                        if (entity.address.neighborhood || entity.address.municipality) {
-                            data.zone = [entity.address.neighborhood, entity.address.municipality].filter(Boolean).join(', ');
+                        if (props.propertyTitle) data.title = props.propertyTitle;
+                        if (entity.price && entity.price.amount) data.price = entity.price.amount;
+                        if (entity.description) data.comments = entity.description;
+
+                        if (entity.address) {
+                            if (entity.address.autonomousCommunity) data.ccaa = entity.address.autonomousCommunity;
+                            if (entity.address.neighborhood || entity.address.municipality) {
+                                data.zone = [entity.address.neighborhood, entity.address.municipality].filter(Boolean).join(', ');
+                            }
+                            if (entity.address.coordinates) {
+                                data.latitude = entity.address.coordinates.lat || null;
+                                data.longitude = entity.address.coordinates.lng || null;
+                            }
                         }
-                        if (entity.address.coordinates) {
-                            data.latitude = entity.address.coordinates.lat || null;
-                            data.longitude = entity.address.coordinates.lng || null;
+
+                        if (entity.extraFeatures && Array.isArray(entity.extraFeatures)) {
+                            const extraStr = entity.extraFeatures.join(' ').toLowerCase();
+                            if (extraStr.includes('ascensor')) data.elevator = 'si';
+                            if (extraStr.includes('parking') || extraStr.includes('garaje')) data.garage = 'si';
                         }
-                    }
 
-                    if (entity.extraFeatures && Array.isArray(entity.extraFeatures)) {
-                        const extraStr = entity.extraFeatures.join(' ').toLowerCase();
-                        if (extraStr.includes('ascensor')) data.elevator = 'si';
-                        if (extraStr.includes('parking') || extraStr.includes('garaje')) data.garage = 'si';
-                    }
+                        if (entity.features && Array.isArray(entity.features)) {
+                            entity.features.forEach(f => {
+                                if (f.type === 'ELEVATOR' && f.value === 'YES') data.elevator = 'si';
+                                if (f.type === 'PARKING' && f.value === 'YES') data.garage = 'si';
+                            });
+                        }
 
-                    if (entity.features && Array.isArray(entity.features)) {
-                        entity.features.forEach(f => {
-                            if (f.type === 'ELEVATOR' && f.value === 'YES') data.elevator = 'si';
-                            if (f.type === 'PARKING' && f.value === 'YES') data.garage = 'si';
-                        });
-                    }
-
-                    if (entity.multimedias && Array.isArray(entity.multimedias)) {
-                        const fotoUrls = entity.multimedias
-                            .filter(m => m.type === 'image' && m.url)
-                            .map(m => m.url);
-                        if (fotoUrls.length > 0) data.photos = fotoUrls.slice(0, 15).join(', ');
+                        if (entity.multimedias && Array.isArray(entity.multimedias)) {
+                            const fotoUrls = entity.multimedias
+                                .filter(m => m.type === 'image' && m.url)
+                                .map(m => m.url);
+                            if (fotoUrls.length > 0) data.photos = fotoUrls.slice(0, 15).join(', ');
+                        }
                     }
                 }
-            } catch (e) {}
+            } catch (e) {
+                console.warn('[HabiTrack Fotocasa Scraper]', e);
+            }
 
             // Fallback de datos desde DOM de Fotocasa si hiciera falta
             if (!data.price) {
@@ -117,7 +131,7 @@
         }
 
         // -------------------------------------------------------------
-        // 2. IDEALISTA (Extracción limpia y desduplicación de fotos)
+        // 2. IDEALISTA (Extracción limpia y estricta desduplicación de fotos)
         // -------------------------------------------------------------
         else if (url.includes('idealista.com')) {
             const h1 = document.querySelector('.main-info__title-main, h1');
@@ -144,22 +158,26 @@
             const descEl = document.querySelector('.comment p, .comment .adCommentsLanguage');
             if (descEl && descEl.innerText) data.comments = descEl.innerText.trim();
 
-            // Extracción de galería con desduplicación por hash de imagen
+            // Extracción de galería con desduplicación por base ID (sin extensión .jpg/.webp)
             const idealistaPhotos = [];
-            const seenImageHashes = new Set();
+            const seenBaseIds = new Set();
 
             function addPhotoCandidate(rawUrl) {
                 if (!rawUrl || typeof rawUrl !== 'string' || !rawUrl.startsWith('http')) return;
                 if (rawUrl.includes('blank') || rawUrl.includes('static') || rawUrl.includes('logo') || rawUrl.includes('icon') || rawUrl.includes('map')) return;
 
-                // Extraer el hash único del archivo (ej: 111111111.jpg o uuid)
-                const parts = rawUrl.split('/');
-                const filename = parts[parts.length - 1].split('?')[0].toLowerCase();
-                if (!filename || filename.length < 4 || seenImageHashes.has(filename)) return;
+                // Extraer el nombre de archivo y eliminar la extensión para obtener el ID único puro
+                const filename = rawUrl.split('/').pop().split('?')[0].toLowerCase();
+                const baseId = filename.replace(/\.(jpg|jpeg|webp|png|gif)$/i, '');
+                
+                if (!baseId || baseId.length < 3 || seenBaseIds.has(baseId)) return;
 
-                seenImageHashes.add(filename);
-                // Convertir al tamaño máximo de detalle
-                const highRes = rawUrl.replace(/\/blur\/[^\/]+\//, '/blur/WEB_DETAIL_TOP-L-L/');
+                seenBaseIds.add(baseId);
+                // Normalizar al tamaño de alta resolución y extensión JPG
+                const highRes = rawUrl
+                    .replace(/\/blur\/[^\/]+\//, '/blur/WEB_DETAIL_TOP-L-L/')
+                    .replace(/\.webp$/i, '.jpg');
+
                 idealistaPhotos.push(highRes);
             }
 
@@ -167,7 +185,7 @@
             const ogImg = document.querySelector('meta[property="og:image"]');
             if (ogImg && ogImg.content) addPhotoCandidate(ogImg.content);
 
-            // 2. Extraer de scripts internos (soporte para JSON escapado y sin escapar)
+            // 2. Extraer de scripts internos (desescapando URLs JSON)
             try {
                 const scripts = document.querySelectorAll('script');
                 for (const s of scripts) {
@@ -257,7 +275,7 @@
                                     const uniqueList = [];
                                     const seen = new Set();
                                     for (const imgUrl of rawImgs) {
-                                        const fn = String(imgUrl).split('/').pop().split('?')[0].toLowerCase();
+                                        const fn = String(imgUrl).split('/').pop().split('?')[0].toLowerCase().replace(/\.(jpg|jpeg|webp|png|gif)$/i, '');
                                         if (!seen.has(fn)) {
                                             seen.add(fn);
                                             uniqueList.push(imgUrl);
@@ -334,7 +352,7 @@
         const isPropertyPage = propertyData.price || 
                                window.location.href.includes('/inmueble/') || 
                                window.location.href.includes('/vivienda/') ||
-                               window.location.href.match(/\/\d{6,12}\//);
+                               window.location.href.match(/\/\d{6,12}(?:\/[a-z0-9]*)?(?:\?|$)/i);
 
         if (!isPropertyPage) return;
 
@@ -371,6 +389,7 @@
                 `;
 
                 const freshData = scrapePropertyData();
+                console.log('[HabiTrack Extension] Guardando propiedad detectada:', freshData);
 
                 chrome.runtime.sendMessage({ action: 'SAVE_PROPERTY', propertyData: freshData }, (response) => {
                     trigger.classList.remove('habitrack-loading');
@@ -455,9 +474,9 @@
 
     // Ejecutar inyección periódica e instantánea
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', () => setTimeout(injectFloatingWidget, 500));
+        document.addEventListener('DOMContentLoaded', () => setTimeout(injectFloatingWidget, 400));
     } else {
-        setTimeout(injectFloatingWidget, 500);
+        setTimeout(injectFloatingWidget, 400);
     }
 
     // Observador de cambios en SPA y navegación
@@ -467,14 +486,14 @@
             lastUrl = window.location.href;
             const existingBtn = document.getElementById('habitrack-floating-btn');
             if (existingBtn) existingBtn.remove();
-            setTimeout(injectFloatingWidget, 600);
+            setTimeout(injectFloatingWidget, 500);
         } else {
             const isDetail = window.location.href.includes('/inmueble/') || 
                              window.location.href.includes('/vivienda/') || 
-                             window.location.href.match(/\/\d{6,12}\//);
+                             window.location.href.match(/\/\d{6,12}(?:\/[a-z0-9]*)?(?:\?|$)/i);
             if (isDetail && !document.getElementById('habitrack-floating-btn')) {
                 injectFloatingWidget();
             }
         }
-    }, 1200);
+    }, 800);
 })();
