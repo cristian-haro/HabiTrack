@@ -4117,5 +4117,244 @@ code {
     gap: 0.5rem;
 }
 
+/* ==========================================================================
+   EXTRACTOR & CAPTURA GUIDE - MODE SWITCHER & BENTO STYLES
+   ========================================================================== */
 
+.extractor-switch-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: #f1f5f9;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 0.35rem;
+    margin-bottom: 1.5rem;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
 
+.extractor-switch-btn {
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    font-family: var(--font-body);
+    font-size: 0.85rem;
+    font-weight: 600;
+    padding: 0.65rem 1.15rem;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    white-space: nowrap;
+    transition: var(--transition);
+}
+
+.extractor-switch-btn:hover {
+    background: rgba(255, 255, 255, 0.75);
+    color: var(--text-main);
+}
+
+.extractor-switch-btn.active {
+    background: #ffffff;
+    color: var(--primary);
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
+    font-weight: 700;
+}
+
+.extractor-pill-badge {
+    background: var(--primary-light);
+    color: var(--primary);
+    font-size: 0.68rem;
+    font-weight: 700;
+    padding: 0.15rem 0.5rem;
+    border-radius: 12px;
+    border: 1px solid #c7d2fe;
+    letter-spacing: 0.02em;
+}
+
+.extractor-tab-panel {
+    animation: fadeIn 0.25s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Portales Soportados Chips */
+.portals-badge-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 0.5rem;
+}
+
+.portal-chip {
+    padding: 0.45rem 0.75rem;
+    border-radius: 8px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    border: 1px solid var(--border-color);
+    background: #f8fafc;
+    color: var(--text-secondary);
+    transition: var(--transition);
+}
+
+.portal-chip:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm);
+}
+
+.portal-chip.portal-idealista {
+    background: #f7fee7;
+    color: #4d7c0f;
+    border-color: #d9f99d;
+}
+
+.portal-chip.portal-fotocasa {
+    background: #f0f9ff;
+    color: #0284c7;
+    border-color: #bae6fd;
+}
+
+.portal-chip.portal-habitaclia {
+    background: #fffbeb;
+    color: #d97706;
+    border-color: #fde68a;
+}
+
+.portal-chip.portal-pisos {
+    background: #fff1f2;
+    color: #e11d48;
+    border-color: #fecdd3;
+}
+
+.portal-chip.portal-yaencontre {
+    background: #f5f3ff;
+    color: #7c3aed;
+    border-color: #ddd6fe;
+}
+
+.portal-chip.portal-facebook {
+    background: #eff6ff;
+    color: #1d4ed8;
+    border-color: #bfdbfe;
+}
+
+/* Bento Grid de Características */
+.bento-features-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.85rem;
+}
+
+@media (max-width: 640px) {
+    .bento-features-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.bento-feature-card {
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    background: #ffffff;
+    padding: 0.85rem;
+    display: flex;
+    gap: 0.75rem;
+    align-items: flex-start;
+    transition: var(--transition);
+}
+
+.bento-feature-card:hover {
+    border-color: var(--border-hover);
+    box-shadow: var(--shadow-sm);
+}
+
+.bento-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 1rem;
+}
+
+.bento-content h4 {
+    font-size: 0.88rem;
+    margin-bottom: 0.25rem;
+    color: var(--text-main);
+}
+
+.bento-content p {
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    line-height: 1.45;
+    margin: 0;
+}
+
+/* Lista de Pasos de Instalación */
+.installation-steps-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.install-step-item {
+    display: flex;
+    gap: 0.75rem;
+    align-items: flex-start;
+}
+
+.install-step-badge {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--primary);
+    color: #fff;
+    font-weight: 700;
+    font-size: 0.75rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 0.1rem;
+}
+
+.install-step-body strong {
+    font-size: 0.825rem;
+    color: var(--text-main);
+    display: block;
+    margin-bottom: 0.2rem;
+}
+
+.install-step-body p {
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    line-height: 1.45;
+    margin: 0;
+}
+
+.extension-path-box {
+    margin-top: 0.6rem;
+    padding: 0.5rem 0.75rem;
+    background: #0f172a;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    border: 1px solid #334155;
+}
+
+.extension-path-box code {
+    color: #38bdf8;
+    font-size: 0.75rem;
+    word-break: break-all;
+    font-family: monospace;
+}

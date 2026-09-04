@@ -3456,6 +3456,79 @@ function setupEventHandlers() {
                 '<i class="fa-solid fa-code text-secondary"></i> Ver Código Fuente';
         });
     }
+
+    // --- MANEJADOR DEL SWITCH DE MODOS DE CAPTURA & EXTRACTOR ---
+    const extractorSwitchBtns = document.querySelectorAll('.extractor-switch-btn');
+    const extractorTabPanels = document.querySelectorAll('.extractor-tab-panel');
+
+    extractorSwitchBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const targetTabId = btn.getAttribute('data-tab');
+            extractorSwitchBtns.forEach(b => b.classList.remove('active'));
+            extractorTabPanels.forEach(panel => {
+                panel.classList.remove('active');
+                panel.style.display = 'none';
+            });
+            btn.classList.add('active');
+            const activePanel = document.getElementById(targetTabId);
+            if (activePanel) {
+                activePanel.classList.add('active');
+                activePanel.style.display = 'block';
+            }
+        });
+    });
+
+    // Toggle de dispositivo en Bookmarklet (Desktop vs Móvil)
+    const guideToggleDesktop = document.getElementById('guide-toggle-desktop');
+    const guideToggleMobile = document.getElementById('guide-toggle-mobile');
+    const guideInstDesktop = document.getElementById('guide-instructions-desktop');
+    const guideInstMobile = document.getElementById('guide-instructions-mobile');
+
+    if (guideToggleDesktop && guideToggleMobile) {
+        guideToggleDesktop.addEventListener('click', () => {
+            guideToggleDesktop.style.background = 'var(--primary)';
+            guideToggleDesktop.style.color = '#fff';
+            guideToggleMobile.style.background = 'transparent';
+            guideToggleMobile.style.color = 'var(--text-muted)';
+            if (guideInstDesktop) guideInstDesktop.style.display = 'block';
+            if (guideInstMobile) guideInstMobile.style.display = 'none';
+        });
+
+        guideToggleMobile.addEventListener('click', () => {
+            guideToggleMobile.style.background = 'var(--emerald)';
+            guideToggleMobile.style.color = '#fff';
+            guideToggleDesktop.style.background = 'transparent';
+            guideToggleDesktop.style.color = 'var(--text-muted)';
+            if (guideInstDesktop) guideInstDesktop.style.display = 'none';
+            if (guideInstMobile) guideInstMobile.style.display = 'block';
+        });
+    }
+
+    // Copiar ruta de la extensión Chrome
+    const btnCopyExtPath = document.getElementById('btn-copy-extension-path');
+    if (btnCopyExtPath) {
+        btnCopyExtPath.addEventListener('click', () => {
+            const extPath = 'C:\\Users\\crist\\Documents\\GitHub\\HabiTrack\\extension';
+            navigator.clipboard.writeText(extPath).then(() => {
+                showToast('Ruta de la extensión copiada al portapapeles.', 'success');
+            }).catch(() => {
+                showToast('No se pudo copiar la ruta automáticamente.', 'error');
+            });
+        });
+    }
+
+    // Abrir modal de Analizador desde la pestaña de Pegado Rápido
+    const btnOpenAnalyzerGuide = document.getElementById('btn-open-analyzer-guide');
+    if (btnOpenAnalyzerGuide) {
+        btnOpenAnalyzerGuide.addEventListener('click', () => {
+            const modal = document.getElementById('analyzer-modal');
+            if (modal) {
+                modal.classList.add('active');
+                const input = document.getElementById('analyzer-input');
+                if (input) input.focus();
+            }
+        });
+    }
 }
 
 // Configurar manejadores para botones generados dinámicamente en las tarjetas/filas

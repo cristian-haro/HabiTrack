@@ -473,195 +473,458 @@
                 <!-- Guide Header -->
                 <div class="card shadow-sm mb-4">
                     <div class="card-header" style="background: linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%);">
-                        <div style="display: flex; align-items: center; gap: 1rem;">
-                            <div class="logo-icon" style="background: var(--primary-gradient); width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 1.25rem; box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25); flex-shrink: 0;">
-                                <i class="fa-solid fa-wand-magic-sparkles"></i>
+                        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+                            <div style="display: flex; align-items: center; gap: 1rem;">
+                                <div class="logo-icon" style="background: var(--primary-gradient); width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 1.25rem; box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25); flex-shrink: 0;">
+                                    <i class="fa-solid fa-wand-magic-sparkles"></i>
+                                </div>
+                                <div>
+                                    <h2 style="font-size: 1.4rem; color: var(--text-main); margin-bottom: 0.25rem;">Módulo de Captura Inteligente & Métodos de Extracción</h2>
+                                    <p class="subtitle" style="margin: 0;">Elige el método de extracción que prefieras: Extensión oficial 1-Clic, Bookmarklet sin instalación, Analizador inteligente o consulta la arquitectura técnica.</p>
+                                </div>
                             </div>
-                            <div>
-                                <h2 style="font-size: 1.4rem; color: var(--text-main); margin-bottom: 0.25rem;">Módulo de Captura Inteligente & Bookmarklet 1-Click</h2>
-                                <p class="subtitle" style="margin: 0;">Arquitectura de extracción de Fotocasa, Idealista y Marketplace, e instrucciones de uso de la extensión.</p>
+                            <div style="display: flex; gap: 0.5rem; align-items: center;">
+                                <span class="badge" style="background: var(--emerald-bg); color: var(--emerald); border: 1px solid var(--emerald-border); font-size: 0.8rem; font-weight: 700; padding: 0.4rem 0.75rem; border-radius: 20px;">
+                                    <i class="fa-solid fa-bolt"></i> 6 Portales Soportados
+                                </span>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="settings-grid-layout">
-                    <!-- Column 1: Funcionamiento Técnico del Motor de Captura -->
-                    <div class="card shadow-sm settings-card">
-                        <div class="card-header">
-                            <h3><i class="fa-solid fa-microchip text-indigo"></i> ¿Cómo Funciona la Extracción de Datos?</h3>
-                            <p class="subtitle">El motor combina 4 capas consecutivas de análisis para garantizar la máxima precisión.</p>
+                <!-- Segmented Mode Switcher -->
+                <div class="extractor-switch-bar">
+                    <button type="button" class="extractor-switch-btn active" data-tab="guide-tab-extension">
+                        <i class="fa-brands fa-chrome"></i>
+                        <span>Extensión de Navegador</span>
+                        <span class="extractor-pill-badge">Recomendado</span>
+                    </button>
+                    <button type="button" class="extractor-switch-btn" data-tab="guide-tab-bookmarklet">
+                        <i class="fa-solid fa-bookmark"></i>
+                        <span>Bookmarklet Marcador</span>
+                    </button>
+                    <button type="button" class="extractor-switch-btn" data-tab="guide-tab-quickparse">
+                        <i class="fa-solid fa-paste"></i>
+                        <span>Pegado Rápido & Analizador</span>
+                    </button>
+                    <button type="button" class="extractor-switch-btn" data-tab="guide-tab-architecture">
+                        <i class="fa-solid fa-microchip"></i>
+                        <span>Arquitectura & Motor</span>
+                    </button>
+                </div>
+
+                <!-- TAB 1: EXTENSIÓN DE NAVEGADOR (RECOMENDADA) -->
+                <div id="guide-tab-extension" class="extractor-tab-panel active">
+                    <div class="settings-grid-layout">
+                        <!-- Columna Izquierda: Presentación y Bento de Funcionalidades -->
+                        <div class="card shadow-sm settings-card">
+                            <div class="card-header" style="background: linear-gradient(135deg, rgba(79, 70, 229, 0.05) 0%, rgba(99, 102, 241, 0.02) 100%); border-bottom: 1px solid #e0e7ff;">
+                                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem;">
+                                    <div>
+                                        <h3 style="color: var(--primary);"><i class="fa-brands fa-chrome"></i> Extensión Oficial HabiTrack (Manifest V3)</h3>
+                                        <p class="subtitle">Captura 1-Clic in-situ con previsualización financiera directamente en los anuncios.</p>
+                                    </div>
+                                    <span class="badge" style="background: #e0e7ff; color: #4338ca; font-weight:700; font-size:0.75rem; border:1px solid #c7d2fe; padding: 0.35rem 0.65rem; border-radius: 6px;">v3.0 · Chromium</span>
+                                </div>
+                            </div>
+                            <div class="card-body" style="display: flex; flex-direction: column; gap: 1.5rem;">
+                                <!-- Portales Soportados -->
+                                <div>
+                                    <label style="font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 0.65rem;">
+                                        <i class="fa-solid fa-circle-check text-emerald"></i> Portales Inmobiliarios Compatibles:
+                                    </label>
+                                    <div class="portals-badge-grid">
+                                        <div class="portal-chip portal-idealista">
+                                            <i class="fa-solid fa-building"></i>
+                                            <span>Idealista</span>
+                                        </div>
+                                        <div class="portal-chip portal-fotocasa">
+                                            <i class="fa-solid fa-house-chimney"></i>
+                                            <span>Fotocasa</span>
+                                        </div>
+                                        <div class="portal-chip portal-habitaclia">
+                                            <i class="fa-solid fa-city"></i>
+                                            <span>Habitaclia</span>
+                                        </div>
+                                        <div class="portal-chip portal-pisos">
+                                            <i class="fa-solid fa-key"></i>
+                                            <span>Pisos.com</span>
+                                        </div>
+                                        <div class="portal-chip portal-yaencontre">
+                                            <i class="fa-solid fa-magnifying-glass-location"></i>
+                                            <span>YaEncontre</span>
+                                        </div>
+                                        <div class="portal-chip portal-facebook">
+                                            <i class="fa-brands fa-facebook"></i>
+                                            <span>Marketplace</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Bento Box de Características de la Extensión -->
+                                <div class="bento-features-grid">
+                                    <div class="bento-feature-card">
+                                        <div class="bento-icon" style="background: #eef2ff; color: var(--primary);">
+                                            <i class="fa-solid fa-location-arrow"></i>
+                                        </div>
+                                        <div class="bento-content">
+                                            <h4>Botón Flotante In-Situ</h4>
+                                            <p>Aparece automáticamente en la esquina de cada anuncio con la cuota hipotecaria mensual precalculada.</p>
+                                        </div>
+                                    </div>
+
+                                    <div class="bento-feature-card">
+                                        <div class="bento-icon" style="background: #ecfdf5; color: var(--emerald);">
+                                            <i class="fa-solid fa-calculator"></i>
+                                        </div>
+                                        <div class="bento-content">
+                                            <h4>Simulador & Ahorro Firma</h4>
+                                            <p>Abre el popup de la extensión para ver el capital inicial necesario (ITP + Notaría + Entrada) sin salir del portal.</p>
+                                        </div>
+                                    </div>
+
+                                    <div class="bento-feature-card">
+                                        <div class="bento-icon" style="background: #fffbeb; color: var(--amber);">
+                                            <i class="fa-solid fa-images"></i>
+                                        </div>
+                                        <div class="bento-content">
+                                            <h4>Galería HD & Deduplicación</h4>
+                                            <p>Extrae hasta 15 fotos en alta resolución filtrando logotipos, planos repetidos y miniaturas borrosas.</p>
+                                        </div>
+                                    </div>
+
+                                    <div class="bento-feature-card">
+                                        <div class="bento-icon" style="background: #f0fdf4; color: #166534;">
+                                            <i class="fa-solid fa-users"></i>
+                                        </div>
+                                        <div class="bento-content">
+                                            <h4>Asignación a Workspace</h4>
+                                            <p>Guarda y clasifica la propiedad directamente en tu espacio de búsqueda compartido con pareja o familia.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                        <div class="card-body" style="display: flex; flex-direction: column; gap: 1.25rem;">
-                            <!-- Capa 1: Fotocasa -->
-                            <div class="guide-step-card">
-                                <div class="guide-step-num" style="background: #eef2ff; color: var(--primary); border: 1px solid #c7d2fe;">1</div>
-                                <div class="guide-step-content">
-                                    <h4 style="font-size: 0.95rem; color: var(--text-main); margin-bottom: 0.35rem;">
-                                        <i class="fa-solid fa-house-user text-indigo"></i> Captura Específica en Fotocasa
-                                    </h4>
-                                    <p style="font-size: 0.825rem; color: var(--text-secondary); line-height: 1.5; margin-bottom: 0.5rem;">
-                                        El extractor lee directamente la estructura interna del DOM de Fotocasa:
-                                    </p>
-                                    <ul style="font-size: 0.8rem; color: var(--text-muted); list-style: disc; margin-left: 1.25rem; line-height: 1.6;">
-                                        <li><strong>Título:</strong> Extraído de <code>.re-DetailHeader-title</code>.</li>
-                                        <li><strong>Precio:</strong> Limpieza numérica desde <code>.re-DetailHeader-price</code>.</li>
-                                        <li><strong>Características:</strong> Inspección de <code>.re-DetailFeaturesList-feature</code> para extraer metros cuadrados (<code>m²</code>), habitaciones (<code>habs</code>) y baños (<code>baño/aseo</code>).</li>
-                                        <li><strong>Descripción:</strong> Texto de <code>.re-DetailDescription-text</code>.</li>
-                                    </ul>
-                                </div>
-                            </div>
 
-                            <!-- Capa 2: Idealista & Facebook Marketplace -->
-                            <div class="guide-step-card">
-                                <div class="guide-step-num" style="background: #ecfdf5; color: var(--emerald); border: 1px solid var(--emerald-border);">2</div>
-                                <div class="guide-step-content">
-                                    <h4 style="font-size: 0.95rem; color: var(--text-main); margin-bottom: 0.35rem;">
-                                        <i class="fa-solid fa-layer-group text-emerald"></i> Compatibilidad con Idealista y Marketplace
-                                    </h4>
-                                    <p style="font-size: 0.825rem; color: var(--text-secondary); line-height: 1.5; margin-bottom: 0.5rem;">
-                                        El script se adapta al portal activo:
-                                    </p>
-                                    <ul style="font-size: 0.8rem; color: var(--text-muted); list-style: disc; margin-left: 1.25rem; line-height: 1.6;">
-                                        <li><strong>Idealista:</strong> Mapea <code>.main-info__title-main</code>, <code>.info-data-price</code>, <code>.info-features</code> y galería multimedia.</li>
-                                        <li><strong>Facebook Marketplace:</strong> Filtra títulos, detecta precios en euros y extrae fotos de alta resolución (<code>fbcdn/scontent</code>).</li>
-                                    </ul>
+                        <!-- Columna Derecha: Guía de Instalación Paso a Paso -->
+                        <div class="settings-col-right">
+                            <div class="card shadow-sm settings-card">
+                                <div class="card-header">
+                                    <h3><i class="fa-solid fa-download text-indigo"></i> Cómo Instalar en Chrome / Edge / Brave</h3>
+                                    <p class="subtitle">Instalación en 30 segundos mediante el modo desarrollador del navegador.</p>
                                 </div>
-                            </div>
+                                <div class="card-body">
+                                    <div class="installation-steps-list">
+                                        <div class="install-step-item">
+                                            <div class="install-step-badge">1</div>
+                                            <div class="install-step-body">
+                                                <strong>Abre el gestor de extensiones:</strong>
+                                                <p>Escribe <code>chrome://extensions</code> en Chrome/Brave o <code>edge://extensions</code> en Microsoft Edge.</p>
+                                            </div>
+                                        </div>
 
-                            <!-- Capa 3: Microdatos JSON-LD & Fallback Regex -->
-                            <div class="guide-step-card">
-                                <div class="guide-step-num" style="background: #fffbeb; color: var(--amber); border: 1px solid var(--amber-border);">3</div>
-                                <div class="guide-step-content">
-                                    <h4 style="font-size: 0.95rem; color: var(--text-main); margin-bottom: 0.35rem;">
-                                        <i class="fa-solid fa-code text-amber"></i> Microdatos Schema.org / JSON-LD & Regex
-                                    </h4>
-                                    <p style="font-size: 0.825rem; color: var(--text-secondary); line-height: 1.5;">
-                                        Inspecciona scripts <code>application/ld+json</code> buscando entidades <code>SingleFamilyResidence</code>, <code>Offer</code> o <code>Product</code>. Si algún dato no está accesible, un motor de expresiones regulares semánticas analiza el texto para deducir garaje, ascensor y superficie.
-                                    </p>
-                                </div>
-                            </div>
+                                        <div class="install-step-item">
+                                            <div class="install-step-badge">2</div>
+                                            <div class="install-step-body">
+                                                <strong>Activa el "Modo de desarrollador":</strong>
+                                                <p>Encuentra el interruptor en la esquina superior derecha y actívalo.</p>
+                                            </div>
+                                        </div>
 
-                            <!-- Capa 4: Pegado Mágico -->
-                            <div class="guide-step-card">
-                                <div class="guide-step-num" style="background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0;">4</div>
-                                <div class="guide-step-content">
-                                    <h4 style="font-size: 0.95rem; color: var(--text-main); margin-bottom: 0.35rem;">
-                                        <i class="fa-solid fa-paste text-emerald"></i> Pegado Mágico (Auto-Detección Ctrl + V)
-                                    </h4>
-                                    <p style="font-size: 0.825rem; color: var(--text-secondary); line-height: 1.5;">
-                                        Al ejecutar el bookmarklet, copia un objeto JSON al portapapeles. Al regresar a HabiTrack y pulsar <kbd>Ctrl + V</kbd>, la plataforma detecta automáticamente los datos, abre el modal y calcula el ahorro para firma y cuota hipotecaria estimada en tiempo real.
-                                    </p>
+                                        <div class="install-step-item">
+                                            <div class="install-step-badge">3</div>
+                                            <div class="install-step-body">
+                                                <strong>Pulsa en "Cargar descomprimida":</strong>
+                                                <p>Haz clic en el botón superior izquierdo <em>(Load unpacked)</em>.</p>
+                                            </div>
+                                        </div>
+
+                                        <div class="install-step-item">
+                                            <div class="install-step-badge">4</div>
+                                            <div class="install-step-body">
+                                                <strong>Selecciona la carpeta de la extensión:</strong>
+                                                <p>Elige la carpeta <code>extension</code> dentro de tu directorio de HabiTrack:</p>
+                                                <div class="extension-path-box">
+                                                    <code>C:\Users\crist\Documents\GitHub\HabiTrack\extension</code>
+                                                    <button type="button" id="btn-copy-extension-path" class="btn btn-secondary btn-sm" title="Copiar ruta">
+                                                        <i class="fa-solid fa-copy text-indigo"></i> Copiar Ruta
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="install-step-item">
+                                            <div class="install-step-badge" style="background: var(--emerald); color: #fff;">5</div>
+                                            <div class="install-step-body">
+                                                <strong>¡Listo para usar!</strong>
+                                                <p>Fija el icono de HabiTrack 🏡 en tu barra de herramientas. Al entrar a cualquier piso en Fotocasa o Idealista verás el botón flotante.</p>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
+                </div>
 
-                    <!-- Column 2: Extensión de Navegador y Bookmarklet -->
-                    <div class="settings-col-right">
-                        <!-- Extensión Oficial HabiTrack (Fase 4) -->
-                        <div class="card shadow-sm settings-card mb-4" style="background: linear-gradient(135deg, rgba(79, 70, 229, 0.05) 0%, rgba(99, 102, 241, 0.02) 100%); border: 1.5px solid #c7d2fe; margin-bottom: 1.5rem;">
-                            <div class="card-header" style="display:flex; justify-content:space-between; align-items:center;">
-                                <div>
-                                    <h3 style="color: #4f46e5;"><i class="fa-brands fa-chrome text-indigo"></i> Extensión de Navegador (1-Clic)</h3>
-                                    <p class="subtitle">Captura automática in-situ sin copiar ni pegar URLs en Idealista, Fotocasa, Habitaclia y más.</p>
-                                </div>
-                                <span class="badge" style="background: #e0e7ff; color: #4338ca; font-weight:700; font-size:0.75rem; border:1px solid #c7d2fe;">Fase 4 · V3</span>
-                            </div>
-                            <div class="card-body">
-                                <div style="display:flex; flex-direction:column; gap:0.6rem; font-size:0.825rem; color:var(--text-secondary); margin-bottom:1rem;">
-                                    <div style="display:flex; gap:0.5rem; align-items:center;">
-                                        <i class="fa-solid fa-circle-check text-emerald"></i>
-                                        <span><strong>Botón Flotante In-Situ:</strong> Aparece automáticamente dentro del anuncio del portal.</span>
-                                    </div>
-                                    <div style="display:flex; gap:0.5rem; align-items:center;">
-                                        <i class="fa-solid fa-circle-check text-emerald"></i>
-                                        <span><strong>Simulador Rápido:</strong> Muestra la cuota y el ahorro estimado directamente sobre la página.</span>
-                                    </div>
-                                </div>
-                                <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:var(--radius-md); padding:0.85rem; font-size:0.8rem; color:#475569;">
-                                    <strong>Para instalar en Chrome / Edge / Brave:</strong>
-                                    <ol style="margin-left:1.2rem; margin-top:0.35rem; line-height:1.5;">
-                                        <li>Abre <code>chrome://extensions</code> y activa el <strong>Modo de desarrollador</strong>.</li>
-                                        <li>Pulsa en <strong>"Cargar descomprimida"</strong>.</li>
-                                        <li>Selecciona la carpeta <code>extension</code> de tu proyecto HabiTrack.</li>
-                                    </ol>
-                                </div>
-                            </div>
-                        </div>
-
+                <!-- TAB 2: BOOKMARKLET MARCADOR (SIN INSTALACIÓN) -->
+                <div id="guide-tab-bookmarklet" class="extractor-tab-panel" style="display: none;">
+                    <div class="settings-grid-layout">
+                        <!-- Columna 1: Botón Arrastrable y Selector de Dispositivo -->
                         <div class="card shadow-sm settings-card">
                             <div class="card-header">
-                                <h3><i class="fa-solid fa-bookmark text-indigo"></i> Instalar y Usar el Bookmarklet Alternativo</h3>
-                                <p class="subtitle">Guarda el botón en tus marcadores para extraer con 1 clic en cualquier portal.</p>
+                                <h3><i class="fa-solid fa-bookmark text-indigo"></i> Botón Bookmarklet Marcador</h3>
+                                <p class="subtitle">Ideal si no deseas instalar extensiones o usas ordenadores con restricciones corporativas.</p>
                             </div>
                             <div class="card-body">
                                 <!-- Botón Arrastrable -->
-                                <div style="text-align: center; padding: 1.5rem; background: #f8fafc; border: 2px dashed var(--border-color); border-radius: var(--radius-md); margin-bottom: 1.5rem;">
-                                    <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.85rem;">
-                                        👇 <strong>Arrastra este botón morado</strong> hacia tu barra de marcadores del navegador:
+                                <div style="text-align: center; padding: 2rem 1.5rem; background: #f8fafc; border: 2px dashed #c7d2fe; border-radius: var(--radius-md); margin-bottom: 1.5rem;">
+                                    <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 1rem;">
+                                        👇 <strong>Arrastra este botón morado</strong> directamente hacia tu barra de marcadores del navegador:
                                     </p>
-                                    <a id="guide-bookmarklet-btn" href="#" class="btn btn-indigo" style="cursor: grab; font-size: 0.95rem; padding: 0.85rem 1.5rem; box-shadow: 0 4px 14px rgba(79, 70, 229, 0.35);">
+                                    <a id="guide-bookmarklet-btn" href="#" class="btn btn-indigo" style="cursor: grab; font-size: 1rem; padding: 0.9rem 1.75rem; box-shadow: 0 4px 14px rgba(79, 70, 229, 0.35); display: inline-flex; align-items: center; gap: 0.6rem;">
                                         <i class="fa-solid fa-house-laptop"></i> + HabiTrack Extractor
                                     </a>
+                                    <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.85rem;">
+                                        (Si la barra de marcadores no está visible, pulsa <kbd>Ctrl + Shift + B</kbd> o <kbd>Cmd + Shift + B</kbd>)
+                                    </p>
                                 </div>
 
                                 <!-- Acciones Rápidas -->
-                                <div class="backup-actions-grid mb-4">
-                                    <button type="button" id="btn-guide-copy-bookmarklet" class="btn btn-secondary btn-sm">
+                                <div class="backup-actions-grid mb-4" style="display: flex; gap: 0.75rem;">
+                                    <button type="button" id="btn-guide-copy-bookmarklet" class="btn btn-secondary btn-sm" style="flex: 1;">
                                         <i class="fa-solid fa-copy text-indigo"></i> Copiar Código JS
                                     </button>
-                                    <button type="button" id="btn-guide-view-code" class="btn btn-secondary btn-sm">
+                                    <button type="button" id="btn-guide-view-code" class="btn btn-secondary btn-sm" style="flex: 1;">
                                         <i class="fa-solid fa-code text-secondary"></i> Ver Código Fuente
                                     </button>
                                 </div>
 
-                                <!-- Selector de Instrucciones por Dispositivo -->
-                                <div class="device-toggle" style="display: flex; gap: 0.5rem; margin-bottom: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem;">
-                                    <button type="button" class="btn btn-sm" id="guide-toggle-desktop" style="font-size: 0.75rem; padding: 0.4rem 0.85rem; border-radius: 6px; background: var(--primary); color: #fff; border: none; cursor: pointer; font-weight: 600;">💻 En Ordenador (PC / Mac)</button>
-                                    <button type="button" class="btn btn-sm" id="guide-toggle-mobile" style="font-size: 0.75rem; padding: 0.4rem 0.85rem; border-radius: 6px; background: transparent; color: var(--text-muted); border: none; cursor: pointer; font-weight: 600;">📱 En Móvil (iOS / Android)</button>
-                                </div>
-
-                                <!-- Instrucciones Ordenador -->
-                                <div id="guide-instructions-desktop">
-                                    <div style="display: flex; flex-direction: column; gap: 0.75rem; font-size: 0.825rem; color: var(--text-secondary);">
-                                        <div style="display: flex; gap: 0.6rem; align-items: flex-start;">
-                                            <span style="background: var(--primary); color: #fff; border-radius: 50%; width: 20px; height: 20px; display: inline-flex; align-items: center; justify-content: center; font-weight: bold; flex-shrink: 0; font-size: 0.75rem;">1</span>
-                                            <span>Muestra la barra de marcadores en tu navegador (<kbd>Ctrl + Shift + B</kbd> o <kbd>Cmd + Shift + B</kbd>).</span>
-                                        </div>
-                                        <div style="display: flex; gap: 0.6rem; align-items: flex-start;">
-                                            <span style="background: var(--primary); color: #fff; border-radius: 50%; width: 20px; height: 20px; display: inline-flex; align-items: center; justify-content: center; font-weight: bold; flex-shrink: 0; font-size: 0.75rem;">2</span>
-                                            <span>Arrastra el botón <strong>+ HabiTrack Extractor</strong> a tu barra de marcadores.</span>
-                                        </div>
-                                        <div style="display: flex; gap: 0.6rem; align-items: flex-start;">
-                                            <span style="background: var(--primary); color: #fff; border-radius: 50%; width: 20px; height: 20px; display: inline-flex; align-items: center; justify-content: center; font-weight: bold; flex-shrink: 0; font-size: 0.75rem;">3</span>
-                                            <span>Entra en cualquier anuncio de Fotocasa o Idealista y pulsa el marcador. Vuelve a HabiTrack y pulsa <kbd>Ctrl + V</kbd>.</span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- Instrucciones Móvil -->
-                                <div id="guide-instructions-mobile" style="display: none;">
-                                    <div style="display: flex; flex-direction: column; gap: 0.75rem; font-size: 0.825rem; color: var(--text-secondary);">
-                                        <div style="display: flex; gap: 0.6rem; align-items: flex-start;">
-                                            <span style="background: var(--emerald); color: #fff; border-radius: 50%; width: 20px; height: 20px; display: inline-flex; align-items: center; justify-content: center; font-weight: bold; flex-shrink: 0; font-size: 0.75rem;">1</span>
-                                            <span>Copia el código pulsando en el botón <strong>Copiar Código JS</strong> de arriba.</span>
-                                        </div>
-                                        <div style="display: flex; gap: 0.6rem; align-items: flex-start;">
-                                            <span style="background: var(--emerald); color: #fff; border-radius: 50%; width: 20px; height: 20px; display: inline-flex; align-items: center; justify-content: center; font-weight: bold; flex-shrink: 0; font-size: 0.75rem;">2</span>
-                                            <span>Guarda cualquier página en favoritos en Safari o Chrome Móvil y edita la URL pegando el script.</span>
-                                        </div>
-                                        <div style="display: flex; gap: 0.6rem; align-items: flex-start;">
-                                            <span style="background: var(--emerald); color: #fff; border-radius: 50%; width: 20px; height: 20px; display: inline-flex; align-items: center; justify-content: center; font-weight: bold; flex-shrink: 0; font-size: 0.75rem;">3</span>
-                                            <span>En Fotocasa, ejecuta el marcador desde la barra de direcciones y pega el contenido en HabiTrack.</span>
-                                        </div>
-                                    </div>
-                                </div>
-
                                 <!-- Bloque de Código JS Ocultable -->
                                 <div id="guide-code-box" style="display: none; margin-top: 1.25rem;">
-                                    <label style="font-size: 0.75rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.35rem; display: block;">Código JavaScript del Extractor:</label>
+                                    <label style="font-size: 0.75rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.35rem; display: block;">Código JavaScript del Bookmarklet:</label>
                                     <textarea id="guide-code-textarea" readonly rows="5" style="width: 100%; font-family: monospace; font-size: 0.75rem; background: #0f172a; color: #38bdf8; padding: 0.75rem; border-radius: 6px; border: 1px solid #334155; line-height: 1.4; resize: vertical;"></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Columna 2: Instrucciones Desktop / Móvil -->
+                        <div class="settings-col-right">
+                            <div class="card shadow-sm settings-card">
+                                <div class="card-header">
+                                    <h3><i class="fa-solid fa-mobile-screen-button text-indigo"></i> Instrucciones por Dispositivo</h3>
+                                    <p class="subtitle">Guía adaptada según uses ordenador o dispositivo móvil.</p>
+                                </div>
+                                <div class="card-body">
+                                    <!-- Selector de Dispositivo -->
+                                    <div class="device-toggle" style="display: flex; gap: 0.5rem; margin-bottom: 1.25rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem;">
+                                        <button type="button" class="btn btn-sm" id="guide-toggle-desktop" style="font-size: 0.75rem; padding: 0.45rem 0.95rem; border-radius: 6px; background: var(--primary); color: #fff; border: none; cursor: pointer; font-weight: 600;">💻 En Ordenador (PC / Mac)</button>
+                                        <button type="button" class="btn btn-sm" id="guide-toggle-mobile" style="font-size: 0.75rem; padding: 0.45rem 0.95rem; border-radius: 6px; background: transparent; color: var(--text-muted); border: none; cursor: pointer; font-weight: 600;">📱 En Móvil (iOS / Android)</button>
+                                    </div>
+
+                                    <!-- Instrucciones Ordenador -->
+                                    <div id="guide-instructions-desktop">
+                                        <div style="display: flex; flex-direction: column; gap: 0.9rem; font-size: 0.85rem; color: var(--text-secondary);">
+                                            <div style="display: flex; gap: 0.75rem; align-items: flex-start;">
+                                                <span style="background: var(--primary); color: #fff; border-radius: 50%; width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center; font-weight: bold; flex-shrink: 0; font-size: 0.75rem;">1</span>
+                                                <span>Abre la barra de marcadores en tu navegador (<kbd>Ctrl + Shift + B</kbd>).</span>
+                                            </div>
+                                            <div style="display: flex; gap: 0.75rem; align-items: flex-start;">
+                                                <span style="background: var(--primary); color: #fff; border-radius: 50%; width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center; font-weight: bold; flex-shrink: 0; font-size: 0.75rem;">2</span>
+                                                <span>Arrastra el botón <strong>+ HabiTrack Extractor</strong> hacia la barra.</span>
+                                            </div>
+                                            <div style="display: flex; gap: 0.75rem; align-items: flex-start;">
+                                                <span style="background: var(--primary); color: #fff; border-radius: 50%; width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center; font-weight: bold; flex-shrink: 0; font-size: 0.75rem;">3</span>
+                                                <span>Entra a un anuncio en Idealista o Fotocasa y pulsa el marcador. Luego vuelve a HabiTrack y presiona <kbd>Ctrl + V</kbd>.</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Instrucciones Móvil -->
+                                    <div id="guide-instructions-mobile" style="display: none;">
+                                        <div style="display: flex; flex-direction: column; gap: 0.9rem; font-size: 0.85rem; color: var(--text-secondary);">
+                                            <div style="display: flex; gap: 0.75rem; align-items: flex-start;">
+                                                <span style="background: var(--emerald); color: #fff; border-radius: 50%; width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center; font-weight: bold; flex-shrink: 0; font-size: 0.75rem;">1</span>
+                                                <span>Copia el código pulsando en el botón <strong>Copiar Código JS</strong>.</span>
+                                            </div>
+                                            <div style="display: flex; gap: 0.75rem; align-items: flex-start;">
+                                                <span style="background: var(--emerald); color: #fff; border-radius: 50%; width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center; font-weight: bold; flex-shrink: 0; font-size: 0.75rem;">2</span>
+                                                <span>Guarda cualquier página en favoritos en Safari / Chrome Móvil y edita la URL pegando el script.</span>
+                                            </div>
+                                            <div style="display: flex; gap: 0.75rem; align-items: flex-start;">
+                                                <span style="background: var(--emerald); color: #fff; border-radius: 50%; width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center; font-weight: bold; flex-shrink: 0; font-size: 0.75rem;">3</span>
+                                                <span>En el anuncio inmobiliario, ejecuta el marcador desde la barra de direcciones y pega los datos en HabiTrack.</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 3: PEGADO RÁPIDO & ANALIZADOR -->
+                <div id="guide-tab-quickparse" class="extractor-tab-panel" style="display: none;">
+                    <div class="settings-grid-layout">
+                        <!-- Columna 1: Pegado Mágico (Ctrl + V) -->
+                        <div class="card shadow-sm settings-card">
+                            <div class="card-header">
+                                <h3><i class="fa-solid fa-paste text-emerald"></i> Pegado Mágico Automático (Ctrl + V)</h3>
+                                <p class="subtitle">Detector de portapapeles con reconocimiento instantáneo de propiedades.</p>
+                            </div>
+                            <div class="card-body" style="display: flex; flex-direction: column; gap: 1.25rem;">
+                                <div class="guide-step-card">
+                                    <div class="guide-step-num" style="background: #f0fdf4; color: var(--emerald); border: 1px solid var(--emerald-border);">1</div>
+                                    <div class="guide-step-content">
+                                        <h4 style="font-size: 0.95rem; color: var(--text-main); margin-bottom: 0.35rem;">
+                                            Copia el texto o enlace desde cualquier portal
+                                        </h4>
+                                        <p style="font-size: 0.825rem; color: var(--text-secondary); line-height: 1.5;">
+                                            Selecciona el texto de la descripción, características, precio y dirección de cualquier anuncio inmobiliario (incluso de Idealista, Fotocasa, Habitaclia, Milanuncios o WhatsApp) y pulsa <kbd>Ctrl + C</kbd>.
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div class="guide-step-card">
+                                    <div class="guide-step-num" style="background: #eef2ff; color: var(--primary); border: 1px solid #c7d2fe;">2</div>
+                                    <div class="guide-step-content">
+                                        <h4 style="font-size: 0.95rem; color: var(--text-main); margin-bottom: 0.35rem;">
+                                            Pulsa Ctrl + V en cualquier lugar de HabiTrack
+                                        </h4>
+                                        <p style="font-size: 0.825rem; color: var(--text-secondary); line-height: 1.5;">
+                                            Al volver a la aplicación y presionar <kbd>Ctrl + V</kbd>, HabiTrack detecta el contenido del portapapeles, abre el formulario y autocompleta el precio, m², dormitorios, baños, ascensor, garaje y fotos.
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div class="guide-step-card">
+                                    <div class="guide-step-num" style="background: #fffbeb; color: var(--amber); border: 1px solid var(--amber-border);">3</div>
+                                    <div class="guide-step-content">
+                                        <h4 style="font-size: 0.95rem; color: var(--text-main); margin-bottom: 0.35rem;">
+                                            Cálculo Financiero Instantáneo
+                                        </h4>
+                                        <p style="font-size: 0.825rem; color: var(--text-secondary); line-height: 1.5;">
+                                            Al importar el piso, el motor calcula el ahorro requerido para la firma (Entrada + ITP según tu Comunidad Autónoma + Notaría y Registro) y la cuota hipotecaria mensual en tiempo real.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Columna 2: Acceso Directo al Analizador -->
+                        <div class="settings-col-right">
+                            <div class="card shadow-sm settings-card" style="background: linear-gradient(135deg, rgba(5, 150, 105, 0.04) 0%, rgba(16, 185, 129, 0.02) 100%); border: 1.5px solid var(--emerald-border);">
+                                <div class="card-header">
+                                    <h3 style="color: var(--emerald);"><i class="fa-solid fa-wand-magic-sparkles"></i> Analizador Inteligente Integrado</h3>
+                                    <p class="subtitle">Prueba y procesa texto o JSON directamente en el modal de análisis.</p>
+                                </div>
+                                <div class="card-body" style="text-align: center; padding: 1.75rem 1.25rem;">
+                                    <div style="width: 56px; height: 56px; border-radius: 16px; background: var(--emerald-bg); color: var(--emerald); display: inline-flex; align-items: center; justify-content: center; font-size: 1.5rem; margin-bottom: 1rem; border: 1px solid var(--emerald-border);">
+                                        <i class="fa-solid fa-file-import"></i>
+                                    </div>
+                                    <h4 style="font-size: 1.05rem; margin-bottom: 0.5rem; color: var(--text-main);">¿Tienes un anuncio copiado?</h4>
+                                    <p style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.5; margin-bottom: 1.25rem;">
+                                        Haz clic en el botón inferior para abrir el Analizador Inteligente de HabiTrack y pegar tu texto para procesarlo al instante.
+                                    </p>
+                                    <button type="button" class="btn btn-primary" id="btn-open-analyzer-guide" style="background: var(--emerald); border-color: var(--emerald); width: 100%; padding: 0.8rem 1.25rem; font-size: 0.95rem;">
+                                        <i class="fa-solid fa-wand-magic-sparkles"></i> Abrir Analizador de Texto / URLs
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 4: ARQUITECTURA & MOTOR TÉCNICO -->
+                <div id="guide-tab-architecture" class="extractor-tab-panel" style="display: none;">
+                    <div class="settings-grid-layout">
+                        <!-- Columna 1: Las 4 Capas del Motor -->
+                        <div class="card shadow-sm settings-card">
+                            <div class="card-header">
+                                <h3><i class="fa-solid fa-microchip text-indigo"></i> Arquitectura en 4 Capas de Extracción</h3>
+                                <p class="subtitle">El motor combina 4 capas consecutivas de análisis para garantizar la máxima fiabilidad.</p>
+                            </div>
+                            <div class="card-body" style="display: flex; flex-direction: column; gap: 1.25rem;">
+                                <!-- Capa 1: DOM Fotocasa & Portales -->
+                                <div class="guide-step-card">
+                                    <div class="guide-step-num" style="background: #eef2ff; color: var(--primary); border: 1px solid #c7d2fe;">1</div>
+                                    <div class="guide-step-content">
+                                        <h4 style="font-size: 0.95rem; color: var(--text-main); margin-bottom: 0.35rem;">
+                                            <i class="fa-solid fa-house-user text-indigo"></i> Capa 1: Scrapers DOM Específicos
+                                        </h4>
+                                        <p style="font-size: 0.825rem; color: var(--text-secondary); line-height: 1.5; margin-bottom: 0.5rem;">
+                                            Inspecciona selectores optimizados según el portal:
+                                        </p>
+                                        <ul style="font-size: 0.8rem; color: var(--text-muted); list-style: disc; margin-left: 1.25rem; line-height: 1.6;">
+                                            <li><strong>Fotocasa:</strong> <code>.re-DetailHeader-title</code>, <code>.re-DetailHeader-price</code>, <code>.re-DetailFeaturesList-feature</code> y <code>.re-DetailDescription-text</code>.</li>
+                                            <li><strong>Idealista:</strong> <code>.main-info__title-main</code>, <code>.info-data-price</code>, <code>.info-features</code> y galería multimedia.</li>
+                                            <li><strong>Habitaclia & Pisos.com:</strong> Mapeo estructural de ficha técnica y superficie.</li>
+                                            <li><strong>Facebook Marketplace:</strong> Filtrado de títulos, precios en euros y fotos de alta resolución (<code>scontent/fbcdn</code>).</li>
+                                        </ul>
+                                    </div>
+                                </div>
+
+                                <!-- Capa 2: Microdatos JSON-LD -->
+                                <div class="guide-step-card">
+                                    <div class="guide-step-num" style="background: #ecfdf5; color: var(--emerald); border: 1px solid var(--emerald-border);">2</div>
+                                    <div class="guide-step-content">
+                                        <h4 style="font-size: 0.95rem; color: var(--text-main); margin-bottom: 0.35rem;">
+                                            <i class="fa-solid fa-code text-emerald"></i> Capa 2: Microdatos Schema.org / JSON-LD
+                                        </h4>
+                                        <p style="font-size: 0.825rem; color: var(--text-secondary); line-height: 1.5;">
+                                            Inspecciona scripts <code>application/ld+json</code> buscando entidades <code>SingleFamilyResidence</code>, <code>RealEstateListing</code>, <code>Offer</code> o <code>Product</code> para extraer metadatos puros no renderizados en pantalla.
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <!-- Capa 3: RegEx Heurísticas -->
+                                <div class="guide-step-card">
+                                    <div class="guide-step-num" style="background: #fffbeb; color: var(--amber); border: 1px solid var(--amber-border);">3</div>
+                                    <div class="guide-step-content">
+                                        <h4 style="font-size: 0.95rem; color: var(--text-main); margin-bottom: 0.35rem;">
+                                            <i class="fa-solid fa-filter text-amber"></i> Capa 3: Motor Semántico RegEx de Respaldo
+                                        </h4>
+                                        <p style="font-size: 0.825rem; color: var(--text-secondary); line-height: 1.5;">
+                                            Si algún valor numérico no se encuentra en el DOM, un analizador de expresiones regulares contextuales deduce habitaciones, baños, metros cuadrados, ascensor, garaje y precio a partir de la descripción y el título.
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <!-- Capa 4: Persistencia SQLite & Colaboración -->
+                                <div class="guide-step-card">
+                                    <div class="guide-step-num" style="background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0;">4</div>
+                                    <div class="guide-step-content">
+                                        <h4 style="font-size: 0.95rem; color: var(--text-main); margin-bottom: 0.35rem;">
+                                            <i class="fa-solid fa-database text-emerald"></i> Capa 4: Persistencia SQLite & Sincronización
+                                        </h4>
+                                        <p style="font-size: 0.825rem; color: var(--text-secondary); line-height: 1.5;">
+                                            Normalización en base de datos local SQLite (<code>casas.db</code>), deduplicación de imágenes, geolocalización de coordenadas y sincronización en tiempo real con los espacios de trabajo compartidos.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Columna 2: Resumen de Tecnologías -->
+                        <div class="settings-col-right">
+                            <div class="card shadow-sm settings-card">
+                                <div class="card-header">
+                                    <h3><i class="fa-solid fa-cubes text-indigo"></i> Stack Tecnológico de Extracción</h3>
+                                    <p class="subtitle">Herramientas y estándares implementados en HabiTrack.</p>
+                                </div>
+                                <div class="card-body" style="display: flex; flex-direction: column; gap: 1rem; font-size: 0.825rem; color: var(--text-secondary);">
+                                    <div style="padding: 0.75rem; background: #f8fafc; border-radius: 8px; border: 1px solid var(--border-color);">
+                                        <strong><i class="fa-brands fa-chrome text-indigo"></i> Chrome Extension Manifest V3:</strong>
+                                        <p style="margin-top: 0.25rem; color: var(--text-muted); font-size: 0.8rem;">Content Scripts seguros, Service Worker en segundo plano e inyección dinámica de estilos sin dependencias externas.</p>
+                                    </div>
+                                    <div style="padding: 0.75rem; background: #f8fafc; border-radius: 8px; border: 1px solid var(--border-color);">
+                                        <strong><i class="fa-solid fa-shield-halved text-emerald"></i> CORS & Fetch API Segura:</strong>
+                                        <p style="margin-top: 0.25rem; color: var(--text-muted); font-size: 0.8rem;">Comunicación directa REST hacia el servidor de HabiTrack con cabeceras de autorización JWT.</p>
+                                    </div>
+                                    <div style="padding: 0.75rem; background: #f8fafc; border-radius: 8px; border: 1px solid var(--border-color);">
+                                        <strong><i class="fa-solid fa-diagram-project text-amber"></i> Microdatos Schema.org:</strong>
+                                        <p style="margin-top: 0.25rem; color: var(--text-muted); font-size: 0.8rem;">Estándar internacional de indexación semántica utilizado por los principales motores de búsqueda.</p>
+                                    </div>
                                 </div>
                             </div>
                         </div>
