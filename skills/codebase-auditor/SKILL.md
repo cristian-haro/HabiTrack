@@ -12,7 +12,7 @@ Use this skill when refactoring, adding new features, or verifying system integr
 ## Security & Architecture Checklist
 
 ### 1. Endpoint Security
-- [ ] **Authentication:** All private routes must use `authenticateToken` middleware from [auth.middleware.js](file:///C:/Users/crist/Documents/GitHub/HabiTrack/src/middlewares/auth.middleware.js).
+- [ ] **Authentication:** All private routes must use `authenticateToken` middleware from [src/middlewares/auth.middleware.js](src/middlewares/auth.middleware.js).
 - [ ] **Rate Limiting:** Authentication routes must have `authLimiter` applied. General API must have `apiLimiter`.
 - [ ] **Input Validation:** All body/query parameters must be validated using Zod schemas via `validate(schema)` middleware.
 - [ ] **SQL Injection Prevention:** Never concatenate user input into SQL queries. Always use parameterized queries (`?` in SQLite, `$1, $2` in Postgres).

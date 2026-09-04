@@ -3504,15 +3504,15 @@ function setupEventHandlers() {
         });
     }
 
-    // Copiar ruta de la extensión Chrome
+    // Copiar nombre de la carpeta de la extensión
     const btnCopyExtPath = document.getElementById('btn-copy-extension-path');
     if (btnCopyExtPath) {
         btnCopyExtPath.addEventListener('click', () => {
-            const extPath = 'C:\\Users\\crist\\Documents\\GitHub\\HabiTrack\\extension';
-            navigator.clipboard.writeText(extPath).then(() => {
-                showToast('Ruta de la extensión copiada al portapapeles.', 'success');
+            const extFolderName = 'extension';
+            navigator.clipboard.writeText(extFolderName).then(() => {
+                showToast('Nombre de carpeta "extension" copiado al portapapeles.', 'success');
             }).catch(() => {
-                showToast('No se pudo copiar la ruta automáticamente.', 'error');
+                showToast('No se pudo copiar automáticamente.', 'error');
             });
         });
     }

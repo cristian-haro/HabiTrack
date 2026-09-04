@@ -49,4 +49,4 @@ javascript:(function(){
 ```
 
 ## Validation
-Always validate extracted data against `propertySchema` in [property.schema.js](file:///C:/Users/crist/Documents/GitHub/HabiTrack/src/schemas/property.schema.js) before storing in the database.
+Always validate extracted data against `propertySchema` in [src/schemas/property.schema.js](src/schemas/property.schema.js) before storing in the database.

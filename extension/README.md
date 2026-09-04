@@ -25,7 +25,7 @@ Extensión oficial para **Google Chrome**, **Microsoft Edge**, **Brave** y naveg
 4. Haz clic en el botón **"Cargar descomprimida"** (*Load unpacked*).
 5. Selecciona la carpeta `extension` dentro del repositorio de HabiTrack:
    ```text
-   C:\Users\crist\Documents\GitHub\HabiTrack\extension
+   habitrack/extension
    ```
 6. ¡Listo! Verás el icono de **HabiTrack** 🏡 en tu barra de extensiones. Fíjalo (*pin*) para tenerlo siempre a mano.
 

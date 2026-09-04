@@ -38,4 +38,4 @@ Monthly payment $M$ for principal $P$, monthly interest rate $r = \frac{\text{TI
 $$M = P \cdot \frac{r(1+r)^n}{(1+r)^n - 1}$$
 
 ## Implementation Reference
-See the core logic implemented in [calculator.service.js](file:///C:/Users/crist/Documents/GitHub/HabiTrack/src/services/calculator.service.js).
+See the core logic implemented in [src/services/calculator.service.js](src/services/calculator.service.js).
