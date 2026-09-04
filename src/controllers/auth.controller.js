@@ -4,6 +4,8 @@ const { JWT_SECRET } = require('../middlewares/auth.middleware');
 const { JWT_EXPIRES_IN, OTP_EXPIRATION_MINUTES, DEFAULT_SETTINGS } = require('../config/constants');
 const { sendOTPEmail } = require('../services/email.service');
 
+const lastSentTimestamps = new Map();
+
 /**
  * Request a 6-digit OTP login code sent by email
  */
@@ -11,6 +13,18 @@ async function sendOtp(req, res, next) {
     try {
         const { email } = req.body;
         const cleanEmail = email.trim().toLowerCase();
+
+        // Cooldown de 60 segundos por dirección de email (evita bucles y spam)
+        const now = Date.now();
+        const lastSent = lastSentTimestamps.get(cleanEmail);
+        if (lastSent && now - lastSent < 60000 && process.env.NODE_ENV !== 'test') {
+            const secondsLeft = Math.ceil((60000 - (now - lastSent)) / 1000);
+            console.warn(`⏳ [OTP COOLDOWN BLOQUEADO] Para: ${cleanEmail} (Esperar ${secondsLeft}s) | IP: ${req.ip}`);
+            return res.status(429).json({
+                error: `Por favor, espera ${secondsLeft} segundos antes de solicitar otro código de acceso.`
+            });
+        }
+
         const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
         const expiresAt = new Date(Date.now() + OTP_EXPIRATION_MINUTES * 60 * 1000).toISOString();
 
@@ -37,7 +51,8 @@ async function sendOtp(req, res, next) {
             }
         }
 
-        console.log(`🔑 [OTP SOLICITADO] Para: ${cleanEmail}`);
+        lastSentTimestamps.set(cleanEmail, now);
+        console.log(`🔑 [OTP SOLICITADO] Para: ${cleanEmail} | IP: ${req.ip} | User-Agent: ${req.get('user-agent') || 'N/A'} | Hora: ${new Date().toISOString()}`);
 
         const emailResult = await sendOTPEmail(cleanEmail, otpCode);
 

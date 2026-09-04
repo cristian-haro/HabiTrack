@@ -5,11 +5,11 @@ const rateLimit = require('express-rate-limit');
 // Rate limiter estricto para rutas de autenticación (OTP)
 const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutos
-    max: 100, // 100 intentos
+    max: 10, // Máximo 10 intentos cada 15 minutos
     standardHeaders: true,
     legacyHeaders: false,
-    skip: (req) => process.env.NODE_ENV === 'test' || req.ip === '127.0.0.1' || req.ip === '::1' || req.ip === '::ffff:127.0.0.1',
-    message: { error: 'Demasiados intentos de acceso desde esta IP. Por favor, inténtalo de nuevo más tarde.' }
+    skip: (req) => process.env.NODE_ENV === 'test',
+    message: { error: 'Demasiadas solicitudes de código de acceso. Por seguridad, inténtalo de nuevo en 15 minutos.' }
 });
 
 // Rate limiter general para la API
