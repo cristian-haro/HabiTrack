@@ -3372,7 +3372,7 @@ function setupEventHandlers() {
     "const zoneEl=document.querySelector('#headerMap .map-label');" +
     "if(zoneEl)data.zone=zoneEl.innerText.trim();" +
     "}else if(url.includes('fotocasa.es')){" +
-    "const h1=document.querySelector('.re-DetailHeader-title');" +
+    "const h1=document.querySelector('.re-DetailHeader-title, h1');" +
     "if(h1)data.title=h1.innerText.trim();" +
     "const priceEl=document.querySelector('.re-DetailHeader-price');" +
     "if(priceEl)data.price=cleanPrice(priceEl.innerText);" +
@@ -3385,6 +3385,44 @@ function setupEventHandlers() {
     "});" +
     "const commentsEl=document.querySelector('.re-DetailDescription-text');" +
     "if(commentsEl)data.comments=commentsEl.innerText.trim();" +
+    "}else if(document.querySelector('#modulo-fichapropiedad, .fichapropiedad-tituloprincipal, [cargafoto]')||url.includes('/ficha/')){" +
+    "const h1=document.querySelector('.fichapropiedad-tituloprincipal h1, #fichapropiedad-titulos h1, h1');" +
+    "if(h1)data.title=h1.innerText.trim();" +
+    "const priceEl=document.querySelector('.fichapropiedad-precio, .precio-ficha');" +
+    "if(priceEl)data.price=cleanPrice(priceEl.innerText);" +
+    "const listItems=document.querySelectorAll('.fichapropiedad-listadatos li, ul.listadatos li');" +
+    "let zPart='',sPart='';" +
+    "listItems.forEach(li=>{" +
+    "const label=(li.querySelector('.caracteristica, b')?li.querySelector('.caracteristica, b').innerText:'').toLowerCase();" +
+    "const val=(li.querySelector('.valor, span:last-child')?li.querySelector('.valor, span:last-child').innerText:li.innerText).trim();" +
+    "if(label.includes('superficie')&&!data.m2)data.m2=cleanNum(val);" +
+    "if((label.includes('habitacion')||label.includes('dormitorio'))&&!data.rooms)data.rooms=cleanNum(val);" +
+    "if((label.includes('baño')||label.includes('aseo'))&&!data.baths)data.baths=cleanNum(val);" +
+    "if(label.includes('zona / ciudad')||label.includes('zona'))zPart=val;" +
+    "if(label.includes('calle'))sPart=val;" +
+    "});" +
+    "if(zPart||sPart)data.zone=[sPart,zPart].filter(Boolean).join(', ');" +
+    "const calidades=document.querySelectorAll('.fichapropiedad-listacalidades li, .bloqueCalidadPropiedad');" +
+    "calidades.forEach(c=>{" +
+    "const t=c.innerText.toLowerCase();" +
+    "if(t.includes('ascensor'))data.elevator='si';" +
+    "if(t.includes('garaje')||t.includes('parking'))data.garage='si';" +
+    "});" +
+    "const descEl=document.querySelector('#fichapropiedad-bloquedescripcion, .fichapropiedad-descripcion');" +
+    "if(descEl)data.comments=descEl.innerText.trim();" +
+    "const cfElements=document.querySelectorAll('[cargafoto]');" +
+    "const inmoPhotos=[];" +
+    "const seenBase=new Set();" +
+    "cfElements.forEach(el=>{" +
+    "let cf=el.getAttribute('cargafoto');" +
+    "if(cf){" +
+    "let hd=cf.replace(/s\\.(jpg|jpeg|webp|png)(\\?.*)?$/i,'.$1$2').replace(/\\?n$/i,'');" +
+    "if(!hd.startsWith('http')){if(hd.startsWith('//'))hd='https:'+hd;else hd=window.location.origin+hd;}" +
+    "const fn=hd.split('/').pop().split('?')[0].toLowerCase();" +
+    "if(!seenBase.has(fn)){seenBase.add(fn);inmoPhotos.push(hd);}" +
+    "}" +
+    "});" +
+    "if(inmoPhotos.length>0)data.photos=inmoPhotos.slice(0,15).join(', ');" +
     "}" +
     "const textToScan=(data.title+' '+data.comments).toLowerCase();" +
     "if(!data.price){" +

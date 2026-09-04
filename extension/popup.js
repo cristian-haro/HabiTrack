@@ -161,28 +161,21 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
 
             const activeTab = tabs[0];
-            const isSupported = activeTab.url && (
-                activeTab.url.includes('idealista.com') ||
-                activeTab.url.includes('fotocasa.es') ||
-                activeTab.url.includes('habitaclia.com') ||
-                activeTab.url.includes('yaencontre.com') ||
-                activeTab.url.includes('pisos.com') ||
-                activeTab.url.includes('facebook.com/marketplace')
-            );
+            const isWebPage = activeTab.url && (activeTab.url.startsWith('http://') || activeTab.url.startsWith('https://'));
 
-            if (!isSupported) {
+            if (!isWebPage) {
                 showEmptyState();
                 return;
             }
 
             chrome.tabs.sendMessage(activeTab.id, { action: 'GET_CURRENT_PROPERTY' }, (response) => {
                 const sendErr = chrome.runtime.lastError;
-                if (!sendErr && response && response.data && (response.data.price || response.data.title)) {
+                if (!sendErr && response && response.data && (response.data.price || response.data.photos || (response.data.title && response.data.title !== 'Inmueble Detectado'))) {
                     renderPropertyPreview(response.data);
                     return;
                 }
 
-                // Si la pestaña estaba abierta antes de recargar la extensión, inyectar dinámicamente
+                // Si la pestaña estaba abierta antes o no tenía el content script inyectado
                 try {
                     chrome.scripting.executeScript({
                         target: { tabId: activeTab.id },
@@ -196,7 +189,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         setTimeout(() => {
                             chrome.tabs.sendMessage(activeTab.id, { action: 'GET_CURRENT_PROPERTY' }, (retryRes) => {
                                 const retryErr = chrome.runtime.lastError;
-                                if (!retryErr && retryRes && retryRes.data && (retryRes.data.price || retryRes.data.title)) {
+                                if (!retryErr && retryRes && retryRes.data && (retryRes.data.price || retryRes.data.photos || (retryRes.data.title && retryRes.data.title !== 'Inmueble Detectado'))) {
                                     renderPropertyPreview(retryRes.data);
                                 } else {
                                     showEmptyState();

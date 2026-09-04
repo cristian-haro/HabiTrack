@@ -255,7 +255,107 @@
         }
 
         // -------------------------------------------------------------
-        // 4. SCHEMA.ORG JSON-LD FALLBACK GENÉRICO (Con desduplicación)
+        // 4. INMOVILLA CMS & WEBS DE INMOBILIARIAS (Artesa, Apinmo, etc.)
+        // -------------------------------------------------------------
+        const isInmovilla = document.querySelector('#modulo-fichapropiedad, .fichapropiedad-tituloprincipal, #fichapropiedad-bloquecaracteristicas, .fichapropiedad-precio, meta[name="author"][content*="inmovilla"]') ||
+                            url.includes('/ficha/') ||
+                            document.querySelector('.visorficha-principal, .visorficha-miniaturas');
+
+        if (isInmovilla) {
+            // Título
+            const h1 = document.querySelector('.fichapropiedad-tituloprincipal h1, #fichapropiedad-titulos h1, .titulo-ficha h1, h1');
+            if (h1 && h1.innerText && (!data.title || data.title === 'Inmueble Detectado' || data.title === document.title)) {
+                data.title = h1.innerText.trim();
+            }
+
+            // Precio
+            const priceEl = document.querySelector('.fichapropiedad-precio, .precio-ficha, [class*="fichapropiedad-precio"]');
+            if (priceEl && priceEl.innerText && !data.price) {
+                data.price = cleanPrice(priceEl.innerText);
+            }
+
+            // Lista de datos estructurados Inmovilla
+            const dataItems = Array.from(document.querySelectorAll('.fichapropiedad-listadatos li, ul.listadatos li, .caracteristicas-propiedad li'));
+            let zonePart = '';
+            let cityPart = '';
+            let streetPart = '';
+
+            dataItems.forEach(li => {
+                const charEl = li.querySelector('.caracteristica, b, strong, .etiqueta');
+                const valEl = li.querySelector('.valor, span:last-child');
+                const label = (charEl ? charEl.innerText : '').toLowerCase();
+                const val = (valEl ? valEl.innerText : li.innerText).trim();
+
+                if (label.includes('superficie construida') || label.includes('superficie útil') || label.includes('superficie')) {
+                    if (!data.m2) data.m2 = cleanNum(val);
+                } else if (label.includes('habitacion') || label.includes('dormitorio')) {
+                    if (!data.rooms) data.rooms = cleanNum(val);
+                } else if (label.includes('baño') || label.includes('aseo')) {
+                    if (!data.baths) data.baths = cleanNum(val);
+                } else if (label.includes('zona / ciudad') || label.includes('zona') || label.includes('poblacion') || label.includes('ciudad')) {
+                    zonePart = val;
+                } else if (label.includes('calle') || label.includes('dirección') || label.includes('direccion')) {
+                    streetPart = val;
+                } else if (label.includes('conservación') || label.includes('estado')) {
+                    if (val.toLowerCase().includes('nueva') || val.toLowerCase().includes('a estrenar')) data.estate_type = 'new';
+                }
+            });
+
+            if (zonePart || streetPart) {
+                data.zone = [streetPart, zonePart].filter(Boolean).join(', ');
+            }
+
+            // Calidades / Equipamiento (Ascensor, Garaje, etc.)
+            const calidades = Array.from(document.querySelectorAll('.fichapropiedad-listacalidades li, .bloqueCalidadPropiedad, .calidades-ficha li'));
+            calidades.forEach(c => {
+                const cText = c.innerText.toLowerCase();
+                if (cText.includes('ascensor')) data.elevator = 'si';
+                if (cText.includes('garaje') || cText.includes('parking') || cText.includes('cochera')) data.garage = 'si';
+            });
+
+            // Descripción
+            const descEl = document.querySelector('#fichapropiedad-bloquedescripcion, .fichapropiedad-descripcion, #fichapropiedad-descripcion-texto, .descripcion-propiedad');
+            if (descEl && descEl.innerText && !data.comments) {
+                data.comments = descEl.innerText.trim();
+            }
+
+            // Fotos en Alta Resolución (des-miniaturización inteligente de Inmovilla / Apinmo)
+            const inmoPhotos = [];
+            const seenInmoBase = new Set();
+
+            function addInmoPhoto(rawUrl) {
+                if (!rawUrl || typeof rawUrl !== 'string' || !rawUrl.startsWith('http')) return;
+                if (rawUrl.includes('blank') || rawUrl.includes('logo') || rawUrl.includes('icon')) return;
+
+                // Reemplazar sufijo 's' antes de la extensión para obtener la versión HD 1920x1279
+                const hdUrl = rawUrl.replace(/s\.(jpg|jpeg|webp|png)(\?.*)?$/i, '.$1$2').replace(/\?n$/i, '');
+                const fn = hdUrl.split('/').pop().split('?')[0].toLowerCase().replace(/\.(jpg|jpeg|webp|png)$/i, '');
+
+                if (!fn || fn.length < 2 || seenInmoBase.has(fn)) return;
+                seenInmoBase.add(fn);
+                inmoPhotos.push(hdUrl);
+            }
+
+            // Extraer fotos de atributos 'cargafoto' y visor
+            const cargaElements = Array.from(document.querySelectorAll('[cargafoto], .visorficha-principal img, .visorficha-miniaturas img, #modulo-fichapropiedad img'));
+            cargaElements.forEach(el => {
+                let cf = el.getAttribute('cargafoto') || el.getAttribute('data-src') || el.src;
+                if (cf) {
+                    if (!cf.startsWith('http')) {
+                        if (cf.startsWith('//')) cf = 'https:' + cf;
+                        else if (cf.startsWith('/')) cf = window.location.origin + cf;
+                    }
+                    addInmoPhoto(cf);
+                }
+            });
+
+            if (inmoPhotos.length > 0 && !data.photos) {
+                data.photos = inmoPhotos.slice(0, 15).join(', ');
+            }
+        }
+
+        // -------------------------------------------------------------
+        // 5. SCHEMA.ORG JSON-LD FALLBACK GENÉRICO (Con desduplicación)
         // -------------------------------------------------------------
         if (!data.price || !data.photos) {
             try {
@@ -350,13 +450,20 @@
         
         // Verificar si es un anuncio de inmueble válido
         const url = window.location.href;
-        const isPropertyPage = propertyData.price || 
-                               propertyData.photos ||
-                               url.includes('/inmueble/') || 
-                               url.includes('/vivienda/') ||
-                               url.includes('/comprar/') ||
-                               url.includes('/alquiler/') ||
-                               url.match(/\/\d{6,12}/);
+        const hasRealEstateMarkers = document.querySelector('#modulo-fichapropiedad, .fichapropiedad-tituloprincipal, #fichapropiedad-bloquecaracteristicas, .fichapropiedad-precio, meta[name="author"][content*="inmovilla"], .visorficha-principal') ||
+                                     url.includes('/ficha/') ||
+                                     url.includes('/inmueble/') || 
+                                     url.includes('/vivienda/') ||
+                                     url.includes('/propiedad/') ||
+                                     url.includes('/piso/') ||
+                                     url.includes('/casa/') ||
+                                     url.includes('/comprar/') ||
+                                     url.includes('/alquiler/') ||
+                                     url.match(/\/\d{6,12}/);
+
+        const isPropertyPage = (propertyData.price && (propertyData.m2 || propertyData.rooms || propertyData.photos || propertyData.zone)) ||
+                               (propertyData.photos && propertyData.price) ||
+                               hasRealEstateMarkers;
 
         if (!isPropertyPage) return;
 

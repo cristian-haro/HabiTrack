@@ -38,23 +38,13 @@
     "*://facebook.com/marketplace/*",
     "http://localhost:*/*",
     "http://127.0.0.1:*/*",
-    "https://*/*"
+    "https://*/*",
+    "http://*/*"
   ],
   "content_scripts": [
     {
       "matches": [
-        "*://*.idealista.com/*",
-        "*://idealista.com/*",
-        "*://*.fotocasa.es/*",
-        "*://fotocasa.es/*",
-        "*://*.habitaclia.com/*",
-        "*://habitaclia.com/*",
-        "*://*.yaencontre.com/*",
-        "*://yaencontre.com/*",
-        "*://*.pisos.com/*",
-        "*://pisos.com/*",
-        "*://*.facebook.com/marketplace/*",
-        "*://facebook.com/marketplace/*"
+        "<all_urls>"
       ],
       "js": ["content.js"],
       "css": ["content.css"],

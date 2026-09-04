@@ -117,7 +117,160 @@ async function scrapePropertyUrl(urlStr) {
         }
     }
 
-    // 2. Generic OpenGraph + Regex fallback Parser
+    // 2. Structured Inmovilla CMS Parser (Artesa Inmobiliaria, Apinmo, etc.)
+    const isInmovilla = url.hostname.includes('inmovilla') || 
+                        url.hostname.includes('apinmo') || 
+                        url.pathname.includes('/ficha/') || 
+                        html.includes('inmovilla') || 
+                        html.includes('fichapropiedad') || 
+                        html.includes('apinmo.com');
+
+    if (isInmovilla) {
+        try {
+            const inmoData = {
+                title: '',
+                price: 0,
+                m2: null,
+                rooms: 0,
+                baths: 0,
+                estate_type: 'secondhand',
+                garage: 'no',
+                elevator: 'desconocido',
+                zone: '',
+                ccaa: 'Andalucía',
+                photos: '',
+                latitude: null,
+                longitude: null,
+                comments: '',
+                url: urlStr
+            };
+
+            // Title
+            const titleMatch = html.match(/<div[^>]*class=["'][^"']*fichapropiedad-tituloprincipal[^"']*["'][^>]*>[\s\S]*?<h1[^>]*>([\s\S]*?)<\/h1>/i) ||
+                               html.match(/<section[^>]*id=["']modulo-fichapropiedad["'][\s\S]*?<h1[^>]*>([\s\S]*?)<\/h1>/i) ||
+                               html.match(/<meta[^>]*property=["']og:title["'][^>]*content=["']([^"']+)["']/i);
+            if (titleMatch && titleMatch[1]) {
+                inmoData.title = titleMatch[1].replace(/<[^>]+>/g, '').trim();
+            }
+
+            // Price
+            const priceMatch = html.match(/class=["'][^"']*fichapropiedad-precio[^"']*["'][^>]*>([\s\S]*?)<\/(?:div|span|p)>/i) ||
+                               html.match(/<meta[^>]*property=["']og:price:amount["'][^>]*content=["']([^"']+)["']/i);
+            if (priceMatch && priceMatch[1]) {
+                const rawP = priceMatch[1].replace(/<[^>]+>/g, '').replace(/[^\d]/g, '');
+                inmoData.price = rawP ? parseInt(rawP, 10) : 0;
+            }
+
+            // Surface (m2)
+            const m2Match = html.match(/Superficie\s+(?:Construida|Útil|util)[^<]*<\/span>\s*<span[^>]*class=["']valor["'][^>]*>([\s\S]*?)<\/span>/i) ||
+                            html.match(/Superficie\s+(?:Construida|Útil|util)[^<]*<\/div>[\s\S]*?<div[^>]*class=["'][^"']*fichapropiedad-datos-derecha[^"']*["'][^>]*>([\s\S]*?)<\/div>/i) ||
+                            html.match(/(\d+)\s*(?:m²|m2|m<sup>2<\/sup>)/i);
+            if (m2Match && m2Match[1]) {
+                const cleanM = m2Match[1].replace(/<[^>]+>/g, '').match(/\d+/);
+                if (cleanM) inmoData.m2 = parseInt(cleanM[0], 10);
+            }
+
+            // Rooms
+            const habMatch = html.match(/Habitaciones[^<]*<\/span>\s*<span[^>]*class=["']valor["'][^>]*>([\s\S]*?)<\/span>/i) ||
+                             html.match(/Habitaciones[^<]*<\/div>[\s\S]*?<div[^>]*class=["'][^"']*fichapropiedad-datos-derecha[^"']*["'][^>]*>([\s\S]*?)<\/div>/i) ||
+                             html.match(/(\d+)\s*(?:hab|dormitorio|habitac)/i);
+            if (habMatch && habMatch[1]) {
+                const cleanH = habMatch[1].replace(/<[^>]+>/g, '').match(/\d+/);
+                if (cleanH) inmoData.rooms = parseInt(cleanH[0], 10);
+            }
+
+            // Baths
+            const banosMatch = html.match(/Baños[^<]*<\/span>\s*<span[^>]*class=["']valor["'][^>]*>([\s\S]*?)<\/span>/i) ||
+                              html.match(/Baños[^<]*<\/div>[\s\S]*?<div[^>]*class=["'][^"']*fichapropiedad-datos-derecha[^"']*["'][^>]*>([\s\S]*?)<\/div>/i) ||
+                              html.match(/(\d+)\s*(?:baño|aseo|wc)/i);
+            if (banosMatch && banosMatch[1]) {
+                const cleanB = banosMatch[1].replace(/<[^>]+>/g, '').match(/\d+/);
+                if (cleanB) inmoData.baths = parseInt(cleanB[0], 10);
+            }
+
+            // Zone & City
+            const zoneMatch = html.match(/Zona\s*\/\s*Ciudad[^<]*<\/span>\s*<span[^>]*class=["']valor["'][^>]*>([\s\S]*?)<\/span>/i) ||
+                              html.match(/Zona\s*\/\s*Ciudad[^<]*<\/div>[\s\S]*?<div[^>]*class=["'][^"']*fichapropiedad-datos-derecha[^"']*["'][^>]*>([\s\S]*?)<\/div>/i);
+            const streetMatch = html.match(/Calle[^<]*<\/span>\s*<span[^>]*class=["']valor["'][^>]*>([\s\S]*?)<\/span>/i) ||
+                                html.match(/Calle[^<]*<\/div>[\s\S]*?<div[^>]*class=["'][^"']*fichapropiedad-datos-derecha[^"']*["'][^>]*>([\s\S]*?)<\/div>/i);
+
+            const zParts = [];
+            if (streetMatch && streetMatch[1]) zParts.push(streetMatch[1].replace(/<[^>]+>/g, '').trim());
+            if (zoneMatch && zoneMatch[1]) zParts.push(zoneMatch[1].replace(/<[^>]+>/g, '').trim());
+            if (zParts.length > 0) inmoData.zone = zParts.join(', ');
+
+            // Calidades (Ascensor, Parking)
+            if (/bloqueCalidadPropiedad[\s\S]*?Ascensor/i.test(html) || /Ascensor/i.test(html)) {
+                inmoData.elevator = 'si';
+            }
+            if (/bloqueCalidadPropiedad[\s\S]*?(?:Garaje|Parking|Cochera)/i.test(html) || /(?:Garaje|Parking|Cochera)/i.test(html)) {
+                inmoData.garage = 'si';
+            }
+
+            // Description
+            const descMatch = html.match(/<div[^>]*id=["']fichapropiedad-bloquedescripcion["'][^>]*>([\s\S]*?)<\/div>/i) ||
+                              html.match(/<div[^>]*class=["'][^"']*fichapropiedad-descripcion[^"']*["'][^>]*>([\s\S]*?)<\/div>/i) ||
+                              html.match(/<meta[^>]*property=["']og:description["'][^>]*content=["']([^"']+)["']/i);
+            if (descMatch && descMatch[1]) {
+                inmoData.comments = descMatch[1].replace(/<[^>]+>/g, '').trim();
+            }
+
+            // Photos HD Extraction
+            const photosList = [];
+            const seenBase = new Set();
+            const cfRegex = /cargafoto=["']([^"']+)["']/gi;
+            let cf;
+            while ((cf = cfRegex.exec(html)) !== null) {
+                let pUrl = cf[1].replace(/s\.(jpg|jpeg|webp|png)(\?.*)?$/i, '.$1$2').replace(/\?n$/i, '');
+                if (!pUrl.startsWith('http')) {
+                    if (pUrl.startsWith('//')) pUrl = 'https:' + pUrl;
+                    else if (pUrl.startsWith('/')) pUrl = url.origin + pUrl;
+                }
+                const fn = pUrl.split('/').pop().split('?')[0].toLowerCase().replace(/\.(jpg|jpeg|webp|png)$/i, '');
+                if (fn && !seenBase.has(fn)) {
+                    seenBase.add(fn);
+                    photosList.push(pUrl);
+                }
+            }
+
+            if (photosList.length > 0) {
+                inmoData.photos = photosList.slice(0, 15).join(', ');
+            } else {
+                const ogImg = html.match(/<meta\s+property=["']og:image["']\s+content=["']([^"']+)["']/i);
+                if (ogImg && ogImg[1]) inmoData.photos = ogImg[1];
+            }
+
+            // Infer CCAA
+            const textToScan = (inmoData.title + ' ' + inmoData.zone + ' ' + inmoData.comments).toLowerCase();
+            const CCAA_MAP = {
+                'Andalucía': ['granada', 'sevilla', 'málaga', 'malaga', 'marbella', 'córdoba', 'cordoba', 'cádiz', 'cadiz', 'almería', 'almeria', 'jaén', 'jaen', 'huelva'],
+                'Madrid': ['madrid', 'alcalá', 'getafe', 'leganés', 'móstoles'],
+                'Cataluña': ['barcelona', 'girona', 'tarragona', 'lleida'],
+                'Comunidad Valenciana': ['valencia', 'alicante', 'castellón'],
+                'País Vasco': ['bilbao', 'san sebastián', 'vitoria'],
+                'Baleares': ['mallorca', 'ibiza', 'menorca'],
+                'Canarias': ['tenerife', 'las palmas', 'gran canaria']
+            };
+            for (const [region, kwList] of Object.entries(CCAA_MAP)) {
+                if (kwList.some(k => textToScan.includes(k))) {
+                    inmoData.ccaa = region;
+                    break;
+                }
+            }
+
+            if (inmoData.title || inmoData.price) {
+                return {
+                    success: true,
+                    source: 'inmovilla',
+                    data: inmoData
+                };
+            }
+        } catch (inmoErr) {
+            console.warn('Error parsing Inmovilla CMS data, falling back to generic parser', inmoErr);
+        }
+    }
+
+    // 3. Generic OpenGraph + Regex fallback Parser
     const extractedData = {
         title: '',
         price: 0,

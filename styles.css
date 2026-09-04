@@ -4324,6 +4324,12 @@ code {
     border-color: #bfdbfe;
 }
 
+.portal-chip.portal-inmovilla {
+    background: #ecfdf5;
+    color: #047857;
+    border-color: #a7f3d0;
+}
+
 /* Bento Grid de Características */
 .bento-features-grid {
     display: grid;
