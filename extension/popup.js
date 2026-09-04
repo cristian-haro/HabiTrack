@@ -171,30 +171,30 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
 
             chrome.tabs.sendMessage(activeTab.id, { action: 'GET_CURRENT_PROPERTY' }, (response) => {
-                if (chrome.runtime.lastError || !response || !response.data || !response.data.price) {
-                    // Si la pestaña estaba abierta antes de recargar la extensión, inyectar dinámicamente
-                    try {
-                        chrome.scripting.executeScript({
-                            target: { tabId: activeTab.id },
-                            files: ['content.js']
-                        }, () => {
-                            setTimeout(() => {
-                                chrome.tabs.sendMessage(activeTab.id, { action: 'GET_CURRENT_PROPERTY' }, (retryRes) => {
-                                    if (retryRes && retryRes.data && retryRes.data.price) {
-                                        renderPropertyPreview(retryRes.data);
-                                    } else {
-                                        showEmptyState();
-                                    }
-                                });
-                            }, 300);
-                        });
-                    } catch (e) {
-                        showEmptyState();
-                    }
+                if (response && response.data && (response.data.price || response.data.title)) {
+                    renderPropertyPreview(response.data);
                     return;
                 }
 
-                renderPropertyPreview(response.data);
+                // Si la pestaña estaba abierta antes de recargar la extensión, inyectar dinámicamente
+                try {
+                    chrome.scripting.executeScript({
+                        target: { tabId: activeTab.id },
+                        files: ['content.js']
+                    }, () => {
+                        setTimeout(() => {
+                            chrome.tabs.sendMessage(activeTab.id, { action: 'GET_CURRENT_PROPERTY' }, (retryRes) => {
+                                if (retryRes && retryRes.data && (retryRes.data.price || retryRes.data.title)) {
+                                    renderPropertyPreview(retryRes.data);
+                                } else {
+                                    showEmptyState();
+                                }
+                            });
+                        }, 300);
+                    });
+                } catch (e) {
+                    showEmptyState();
+                }
             });
         });
     }

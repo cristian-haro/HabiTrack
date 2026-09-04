@@ -349,10 +349,14 @@
         const propertyData = scrapePropertyData();
         
         // Verificar si es un anuncio de inmueble válido
+        const url = window.location.href;
         const isPropertyPage = propertyData.price || 
-                               window.location.href.includes('/inmueble/') || 
-                               window.location.href.includes('/vivienda/') ||
-                               window.location.href.match(/\/\d{6,12}(?:\/[a-z0-9]*)?(?:\?|$)/i);
+                               propertyData.photos ||
+                               url.includes('/inmueble/') || 
+                               url.includes('/vivienda/') ||
+                               url.includes('/comprar/') ||
+                               url.includes('/alquiler/') ||
+                               url.match(/\/\d{6,12}/);
 
         if (!isPropertyPage) return;
 
@@ -474,9 +478,9 @@
 
     // Ejecutar inyección periódica e instantánea
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', () => setTimeout(injectFloatingWidget, 400));
+        document.addEventListener('DOMContentLoaded', () => setTimeout(injectFloatingWidget, 300));
     } else {
-        setTimeout(injectFloatingWidget, 400);
+        setTimeout(injectFloatingWidget, 300);
     }
 
     // Observador de cambios en SPA y navegación
@@ -486,14 +490,16 @@
             lastUrl = window.location.href;
             const existingBtn = document.getElementById('habitrack-floating-btn');
             if (existingBtn) existingBtn.remove();
-            setTimeout(injectFloatingWidget, 500);
+            setTimeout(injectFloatingWidget, 400);
         } else {
             const isDetail = window.location.href.includes('/inmueble/') || 
                              window.location.href.includes('/vivienda/') || 
-                             window.location.href.match(/\/\d{6,12}(?:\/[a-z0-9]*)?(?:\?|$)/i);
+                             window.location.href.includes('/comprar/') ||
+                             window.location.href.includes('/alquiler/') ||
+                             window.location.href.match(/\/\d{6,12}/);
             if (isDetail && !document.getElementById('habitrack-floating-btn')) {
                 injectFloatingWidget();
             }
         }
-    }, 800);
+    }, 600);
 })();
