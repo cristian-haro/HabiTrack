@@ -13,24 +13,33 @@ chrome.runtime.onInstalled.addListener(() => {
 
 // Listener de mensajes desde Content Scripts y Popup
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+    if (!request || !request.action) {
+        return false;
+    }
+
     if (request.action === 'SAVE_PROPERTY') {
         handleSaveProperty(request.propertyData)
-            .then(res => sendResponse(res))
-            .catch(err => sendResponse({ success: false, error: err.message }));
+            .then(res => sendResponse(res || { success: true }))
+            .catch(err => sendResponse({ success: false, error: err.message || String(err) }));
         return true; // Asynchronous response
     }
 
     if (request.action === 'CHECK_SERVER_STATUS') {
         checkServerStatus(request.serverUrl)
             .then(status => sendResponse(status))
-            .catch(err => sendResponse({ online: false, error: err.message }));
+            .catch(err => sendResponse({ online: false, error: err.message || String(err) }));
         return true;
     }
+
+    return false;
 });
 
 async function getServerConfig() {
     let stored = await new Promise((resolve) => {
-        chrome.storage.sync.get(['serverUrl', 'authToken'], resolve);
+        chrome.storage.sync.get(['serverUrl', 'authToken'], (res) => {
+            const err = chrome.runtime.lastError;
+            resolve(res || {});
+        });
     });
 
     let serverUrl = (stored && stored.serverUrl ? stored.serverUrl : DEFAULT_SERVER_URL).replace(/\/$/, '');
@@ -39,23 +48,32 @@ async function getServerConfig() {
     // Si no hay token configurado, intentar auto-detectarlo de pestañas de HabiTrack abiertas
     if (!authToken) {
         try {
-            const tabs = await chrome.tabs.query({});
+            const tabs = await new Promise((resolve) => {
+                chrome.tabs.query({}, (t) => {
+                    const err = chrome.runtime.lastError;
+                    resolve(t || []);
+                });
+            });
             for (const tab of tabs) {
-                if (tab.url && (tab.url.includes('localhost') || tab.url.includes('127.0.0.1') || tab.url.includes('habitrack'))) {
-                    const results = await chrome.scripting.executeScript({
-                        target: { tabId: tab.id },
-                        func: () => localStorage.getItem('token') || ''
-                    });
-                    if (results && results[0] && results[0].result) {
-                        authToken = results[0].result;
-                        chrome.storage.sync.set({ authToken });
-                        console.log('🔑 Token de sesión auto-sincronizado con HabiTrack.');
-                        break;
+                if (tab.id && tab.url && (tab.url.includes('localhost') || tab.url.includes('127.0.0.1') || tab.url.includes('habitrack'))) {
+                    try {
+                        const results = await chrome.scripting.executeScript({
+                            target: { tabId: tab.id },
+                            func: () => localStorage.getItem('token') || ''
+                        });
+                        if (results && results[0] && results[0].result) {
+                            authToken = results[0].result;
+                            chrome.storage.sync.set({ authToken });
+                            console.log('🔑 Token de sesión auto-sincronizado con HabiTrack.');
+                            break;
+                        }
+                    } catch (scriptErr) {
+                        // Ignorar errores de permisos en pestañas restringidas
                     }
                 }
             }
         } catch (e) {
-            // Ignorar errores de permisos en pestañas protegidas
+            // Ignorar errores de pestañas
         }
     }
 

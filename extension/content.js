@@ -470,10 +470,16 @@
 
     // Responder a peticiones del Popup
     chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-        if (request.action === 'GET_CURRENT_PROPERTY') {
-            const data = scrapePropertyData();
-            sendResponse({ success: true, data });
+        if (request && request.action === 'GET_CURRENT_PROPERTY') {
+            try {
+                const data = scrapePropertyData();
+                sendResponse({ success: true, data });
+            } catch (err) {
+                sendResponse({ success: false, error: err.message || String(err) });
+            }
+            return true;
         }
+        return false;
     });
 
     // Ejecutar inyección periódica e instantánea

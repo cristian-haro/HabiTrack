@@ -62,13 +62,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const testUrl = inputServerUrl.value.trim().replace(/\/$/, '');
         chrome.runtime.sendMessage({ action: 'CHECK_SERVER_STATUS', serverUrl: testUrl }, (res) => {
+            const err = chrome.runtime.lastError;
             btnTestConn.textContent = 'Probar Conexión';
             btnTestConn.disabled = false;
 
-            if (res && res.online) {
-                showToast('✅ Conexión con HabiTrack establecida.');
-            } else {
+            if (err || !res || !res.online) {
                 showToast('❌ Servidor no responde en esa URL.', 'error');
+            } else {
+                showToast('✅ Conexión con HabiTrack establecida.');
             }
         });
     });
@@ -89,12 +90,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             btnSaveProperty.textContent = 'Guardando en HabiTrack...';
 
             chrome.runtime.sendMessage({ action: 'SAVE_PROPERTY', propertyData: currentDetectedProperty }, (res) => {
+                const err = chrome.runtime.lastError;
                 btnSaveProperty.disabled = false;
 
-                if (chrome.runtime.lastError) {
+                if (err) {
                     btnSaveProperty.textContent = '⚠️ Error de Extensión';
                     btnSaveProperty.style.background = '#e11d48';
-                    showToast('Error: ' + chrome.runtime.lastError.message, 'error');
+                    showToast('Error: ' + err.message, 'error');
                     return;
                 }
 
@@ -125,9 +127,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     async function getStoredConfig() {
         return new Promise((resolve) => {
             chrome.storage.sync.get(['serverUrl', 'authToken'], (items) => {
+                const err = chrome.runtime.lastError;
                 resolve({
-                    serverUrl: items.serverUrl || 'http://localhost:3007',
-                    authToken: items.authToken || ''
+                    serverUrl: (items && items.serverUrl) || 'http://localhost:3007',
+                    authToken: (items && items.authToken) || ''
                 });
             });
         });
@@ -138,19 +141,21 @@ document.addEventListener('DOMContentLoaded', async () => {
         serverStatusText.textContent = 'Verificando...';
 
         chrome.runtime.sendMessage({ action: 'CHECK_SERVER_STATUS', serverUrl: url }, (res) => {
-            if (res && res.online) {
-                serverStatusPill.className = 'status-indicator status-online';
-                serverStatusText.textContent = 'Conectado';
-            } else {
+            const err = chrome.runtime.lastError;
+            if (err || !res || !res.online) {
                 serverStatusPill.className = 'status-indicator status-offline';
                 serverStatusText.textContent = 'Desconectado';
+            } else {
+                serverStatusPill.className = 'status-indicator status-online';
+                serverStatusText.textContent = 'Conectado';
             }
         });
     }
 
     function detectActiveTabProperty() {
         chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-            if (!tabs || tabs.length === 0) {
+            const err = chrome.runtime.lastError;
+            if (err || !tabs || tabs.length === 0) {
                 showEmptyState();
                 return;
             }
@@ -171,7 +176,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
 
             chrome.tabs.sendMessage(activeTab.id, { action: 'GET_CURRENT_PROPERTY' }, (response) => {
-                if (response && response.data && (response.data.price || response.data.title)) {
+                const sendErr = chrome.runtime.lastError;
+                if (!sendErr && response && response.data && (response.data.price || response.data.title)) {
                     renderPropertyPreview(response.data);
                     return;
                 }
@@ -182,9 +188,15 @@ document.addEventListener('DOMContentLoaded', async () => {
                         target: { tabId: activeTab.id },
                         files: ['content.js']
                     }, () => {
+                        const execErr = chrome.runtime.lastError;
+                        if (execErr) {
+                            showEmptyState();
+                            return;
+                        }
                         setTimeout(() => {
                             chrome.tabs.sendMessage(activeTab.id, { action: 'GET_CURRENT_PROPERTY' }, (retryRes) => {
-                                if (retryRes && retryRes.data && (retryRes.data.price || retryRes.data.title)) {
+                                const retryErr = chrome.runtime.lastError;
+                                if (!retryErr && retryRes && retryRes.data && (retryRes.data.price || retryRes.data.title)) {
                                     renderPropertyPreview(retryRes.data);
                                 } else {
                                     showEmptyState();
