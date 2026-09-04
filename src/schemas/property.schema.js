@@ -3,7 +3,7 @@ const { z } = require('zod');
 const propertySchema = z.object({
     title: z.string({
         required_error: 'El título es obligatorio.'
-    }).min(1, 'El título no puede estar vacío.').max(255),
+    }).min(1, 'El título no puede estar vacío.'),
     price: z.coerce.number({
         required_error: 'El precio es obligatorio.'
     }).positive('El precio debe ser un número positivo.'),

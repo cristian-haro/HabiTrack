@@ -212,6 +212,9 @@ async function initDB() {
         await safeAlter(db, "ALTER TABLE users ALTER COLUMN otp_expires_at TYPE TIMESTAMPTZ");
         await safeAlter(db, "ALTER TABLE properties ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'active'");
         await safeAlter(db, "ALTER TABLE properties ADD COLUMN IF NOT EXISTS last_checked_at TIMESTAMPTZ");
+        await safeAlter(db, "ALTER TABLE properties ALTER COLUMN title TYPE TEXT");
+        await safeAlter(db, "ALTER TABLE properties ALTER COLUMN zone TYPE TEXT");
+        await safeAlter(db, "ALTER TABLE properties ALTER COLUMN ccaa TYPE TEXT");
     } else {
         await db.exec(`
             CREATE TABLE IF NOT EXISTS users (
