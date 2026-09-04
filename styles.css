@@ -2757,14 +2757,20 @@ code {
     
     .topbar {
         margin-bottom: 1.25rem;
-        flex-direction: row;
-        justify-content: space-between;
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.85rem;
+    }
+
+    .welcome-msg {
+        display: flex;
         align-items: center;
-        gap: 0.75rem;
+        justify-content: space-between;
     }
 
     .welcome-msg h2 {
-        font-size: 1.15rem;
+        font-size: 1.2rem;
         margin-bottom: 0;
     }
 
@@ -2772,15 +2778,50 @@ code {
         display: none;
     }
     
-    .topbar .actions {
-        width: auto;
-        flex-shrink: 0;
+    .topbar-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        width: 100%;
     }
     
-    .topbar .actions .btn {
+    .workspace-selector-container {
+        flex: 1;
+        min-width: 0;
+        position: relative;
+    }
+    
+    .btn-workspace-selector {
+        width: 100%;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.5rem 0.75rem;
+    }
+    
+    .ws-name-text {
+        max-width: none;
+        flex: 1;
+        text-align: left;
+        margin: 0 0.25rem;
+        font-size: 0.825rem;
+    }
+    
+    .topbar .actions .btn,
+    .topbar-actions #btn-add-property {
         width: auto;
+        flex-shrink: 0;
         padding: 0.5rem 0.85rem;
         font-size: 0.825rem;
+        white-space: nowrap;
+    }
+    
+    .workspace-dropdown-menu {
+        left: 0;
+        right: auto;
+        width: 100%;
+        min-width: 270px;
+        max-width: calc(100vw - 2rem);
     }
     
     .toolbar-top-row {
@@ -3635,11 +3676,12 @@ code {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0.55rem 0.85rem;
+    padding: 0.6rem 0.85rem;
     cursor: pointer;
     font-size: 0.85rem;
     color: var(--text-main);
     transition: background 0.15s ease;
+    gap: 0.5rem;
 }
 
 .ws-dropdown-item:hover {
@@ -3655,8 +3697,16 @@ code {
 .ws-item-left {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.55rem;
     overflow: hidden;
+    flex: 1;
+    min-width: 0;
+}
+
+.ws-item-left span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .ws-item-badge {
@@ -3665,6 +3715,7 @@ code {
     border-radius: 4px;
     background: #f1f5f9;
     color: var(--text-muted);
+    flex-shrink: 0;
 }
 
 .ws-dropdown-divider {
@@ -3702,22 +3753,34 @@ code {
 /* Workspace Modal Tabs & Details */
 .ws-modal-tabs {
     display: flex;
-    gap: 0.5rem;
-    padding: 0 1.5rem;
+    gap: 0.35rem;
+    padding: 0 1rem;
     border-bottom: 1px solid var(--border-color);
     background: #f8fafc;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+}
+
+.ws-modal-tabs::-webkit-scrollbar {
+    display: none;
 }
 
 .ws-tab-btn {
-    padding: 0.75rem 1rem;
+    padding: 0.75rem 0.85rem;
     border: none;
     background: transparent;
     border-bottom: 2px solid transparent;
     color: var(--text-secondary);
-    font-size: 0.85rem;
+    font-size: 0.825rem;
     font-weight: 600;
     cursor: pointer;
     transition: var(--transition);
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    flex-shrink: 0;
 }
 
 .ws-tab-btn:hover {
@@ -3773,6 +3836,22 @@ code {
     align-items: center;
     gap: 0.5rem;
     flex-wrap: wrap;
+}
+
+@media (max-width: 520px) {
+    .ws-invite-code-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .ws-invite-code {
+        text-align: center;
+    }
+    
+    .ws-invite-code-row .btn {
+        width: 100%;
+        justify-content: center;
+    }
 }
 
 .ws-invite-code {
