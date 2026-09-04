@@ -52,3 +52,29 @@ export async function apiRequest(endpoint, options = {}) {
         };
     }
 }
+
+// Workspace API
+export const workspacesAPI = {
+    list: () => apiRequest('/api/workspaces'),
+    create: (name) => apiRequest('/api/workspaces', { method: 'POST', body: JSON.stringify({ name }) }),
+    join: (invite_code) => apiRequest('/api/workspaces/join', { method: 'POST', body: JSON.stringify({ invite_code }) }),
+    getDetails: (id) => apiRequest(`/api/workspaces/${id}`),
+    leave: (id) => apiRequest(`/api/workspaces/${id}/leave`, { method: 'DELETE' })
+};
+
+// Collaboration API (Votes & Comments)
+export const collaborationAPI = {
+    vote: (propertyId, vote, score = 0) => apiRequest(`/api/propiedades/${propertyId}/votes`, {
+        method: 'POST',
+        body: JSON.stringify({ vote, score })
+    }),
+    getVotes: (propertyId) => apiRequest(`/api/propiedades/${propertyId}/votes`),
+    addComment: (propertyId, comment) => apiRequest(`/api/propiedades/${propertyId}/comments`, {
+        method: 'POST',
+        body: JSON.stringify({ comment })
+    }),
+    getComments: (propertyId) => apiRequest(`/api/propiedades/${propertyId}/comments`),
+    deleteComment: (propertyId, commentId) => apiRequest(`/api/propiedades/${propertyId}/comments/${commentId}`, {
+        method: 'DELETE'
+    })
+};

@@ -24,7 +24,8 @@ const propertySchema = z.object({
     latitude: z.coerce.number().nullable().optional(),
     longitude: z.coerce.number().nullable().optional(),
     status: z.enum(['active', 'inactive', 'unknown']).default('active').optional(),
-    last_checked_at: z.string().nullable().optional()
+    last_checked_at: z.string().nullable().optional(),
+    workspace_id: z.coerce.number().int().nullable().optional()
 });
 
 const queryUrlSchema = z.object({

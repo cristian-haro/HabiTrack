@@ -155,7 +155,36 @@
                     <h2>Hola, encuentra tu hogar ideal</h2>
                     <p>Gestiona, compara y calcula los gastos de tus pisos favoritos en un solo lugar.</p>
                 </div>
-                <div class="actions">
+                <div class="actions topbar-actions">
+                    <!-- Workspace Switcher Pill & Dropdown -->
+                    <div class="workspace-selector-container" id="workspace-selector-container">
+                        <button type="button" class="btn-workspace-selector" id="workspace-selector-btn" title="Cambiar espacio de búsqueda">
+                            <span class="ws-icon-badge"><i class="fa-solid fa-users"></i></span>
+                            <span class="ws-name-text" id="active-workspace-name">Todos los Pisos</span>
+                            <i class="fa-solid fa-chevron-down ws-chevron"></i>
+                        </button>
+                        <div class="workspace-dropdown-menu" id="workspace-dropdown-menu" style="display: none;">
+                            <div class="ws-dropdown-header">
+                                <span><i class="fa-solid fa-layer-group"></i> Espacios de Búsqueda</span>
+                            </div>
+                            <div class="ws-dropdown-list" id="workspace-dropdown-list">
+                                <!-- Populated dynamically via JS -->
+                            </div>
+                            <div class="ws-dropdown-divider"></div>
+                            <div class="ws-dropdown-actions">
+                                <button type="button" class="ws-dropdown-btn" id="btn-ws-manage">
+                                    <i class="fa-solid fa-gear text-indigo"></i> Gestionar e Invitar
+                                </button>
+                                <button type="button" class="ws-dropdown-btn" id="btn-ws-create-open">
+                                    <i class="fa-solid fa-plus-circle text-emerald"></i> Crear nuevo espacio
+                                </button>
+                                <button type="button" class="ws-dropdown-btn" id="btn-ws-join-open">
+                                    <i class="fa-solid fa-key text-amber"></i> Unirse con código
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
                     <button id="btn-add-property" class="btn btn-primary">
                         <i class="fa-solid fa-plus"></i> Añadir Piso
                     </button>
@@ -374,6 +403,16 @@
                                 <option value="">Todos</option>
                                 <option value="active">🟢 Solo Activos</option>
                                 <option value="inactive">🔴 Dados de baja</option>
+                            </select>
+                        </div>
+                        <div class="filter-item">
+                            <label><i class="fa-solid fa-heart-circle-check text-rose"></i> Voto Grupo</label>
+                            <select id="filter-vote">
+                                <option value="">Todos los votos</option>
+                                <option value="like">❤️ Me encanta</option>
+                                <option value="maybe">🤔 Con dudas</option>
+                                <option value="dislike">❌ Descartados</option>
+                                <option value="voted">🗳️ Votados</option>
                             </select>
                         </div>
                         <div class="filter-item filter-reset-item">
@@ -1092,11 +1131,53 @@
                     </div>
                 </div>
 
-                <!-- Notas y Observaciones de Visita -->
-                <div class="detail-section-block">
-                    <h3 class="detail-section-title"><i class="fa-solid fa-clipboard-check text-indigo"></i> Notas y Observaciones</h3>
-                    <div class="detail-comments-box">
-                        <p id="detail-comments-text">Sin notas adicionales registradas.</p>
+                <!-- Colaboración: Votación de Equipo / Afinidad -->
+                <div class="detail-section-block" id="detail-collab-voting-block">
+                    <div class="detail-section-header-row">
+                        <h3 class="detail-section-title"><i class="fa-solid fa-heart-circle-check text-rose"></i> Votación y Afinidad del Equipo</h3>
+                        <span class="detail-sub-badge" id="detail-my-vote-status">Tu voto: Ninguno</span>
+                    </div>
+                    <div class="collab-voting-actions">
+                        <button type="button" class="btn-vote-pill vote-like" data-vote="like" title="Me encanta este piso">
+                            <span class="vote-emoji">❤️</span> <span>Me encanta</span>
+                        </button>
+                        <button type="button" class="btn-vote-pill vote-maybe" data-vote="maybe" title="Tengo dudas / indeciso">
+                            <span class="vote-emoji">🤔</span> <span>Dudas</span>
+                        </button>
+                        <button type="button" class="btn-vote-pill vote-dislike" data-vote="dislike" title="Descartar este piso">
+                            <span class="vote-emoji">❌</span> <span>Descartar</span>
+                        </button>
+                        <button type="button" class="btn-vote-pill vote-clear" data-vote="clear" title="Eliminar mi voto">
+                            <i class="fa-solid fa-rotate-left"></i>
+                        </button>
+                    </div>
+                    <div class="collab-votes-summary" id="detail-votes-summary">
+                        <!-- Populated dynamically via JS: member vote avatars -->
+                    </div>
+                </div>
+
+                <!-- Colaboración: Muro de Notas de Visita y Comentarios -->
+                <div class="detail-section-block" id="detail-collab-comments-block">
+                    <h3 class="detail-section-title"><i class="fa-solid fa-comments text-indigo"></i> Muro de Notas de Visita y Comentarios</h3>
+                    
+                    <!-- Formulario para publicar nueva nota -->
+                    <form id="form-add-comment" class="collab-comment-form">
+                        <div class="comment-input-wrap">
+                            <textarea id="detail-new-comment-input" rows="2" placeholder="Escribe tus impresiones tras la visita, notas con la inmobiliaria, acuerdos..."></textarea>
+                        </div>
+                        <div class="comment-form-actions">
+                            <button type="submit" id="btn-submit-comment" class="btn btn-indigo btn-sm">
+                                <i class="fa-solid fa-paper-plane"></i> Publicar Nota
+                            </button>
+                        </div>
+                    </form>
+
+                    <!-- Lista cronológica de comentarios -->
+                    <div class="collab-comments-timeline" id="detail-comments-list">
+                        <div class="collab-empty-comments">
+                            <i class="fa-solid fa-message-dots"></i>
+                            <span>No hay notas de visita ni comentarios en este inmueble aún.</span>
+                        </div>
                     </div>
                 </div>
 
@@ -1144,6 +1225,106 @@
         </div>
     </div>
 
+
+    <!-- MODAL: WORKSPACE MANAGEMENT & COLLABORATION -->
+    <div id="workspace-modal" class="modal">
+        <div class="modal-content glass max-w-lg">
+            <div class="modal-header">
+                <h2><i class="fa-solid fa-users text-indigo"></i> <span id="ws-modal-title">Espacios de Búsqueda Compartida</span></h2>
+                <button class="btn-close-modal" id="btn-close-workspace-modal"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            
+            <!-- Navigation Tabs in Modal -->
+            <div class="ws-modal-tabs">
+                <button type="button" class="ws-tab-btn active" data-tab="ws-tab-active" id="btn-tab-active-ws">
+                    <i class="fa-solid fa-house-user"></i> Espacio Actual
+                </button>
+                <button type="button" class="ws-tab-btn" data-tab="ws-tab-create" id="btn-tab-create-ws">
+                    <i class="fa-solid fa-plus-circle"></i> Crear Espacio
+                </button>
+                <button type="button" class="ws-tab-btn" data-tab="ws-tab-join" id="btn-tab-join-ws">
+                    <i class="fa-solid fa-key"></i> Unirse con Código
+                </button>
+            </div>
+
+            <div class="modal-body ws-modal-body">
+                <!-- TAB 1: Current Workspace Details & Members -->
+                <div class="ws-tab-content active" id="ws-tab-active">
+                    <div class="ws-current-card">
+                        <div class="ws-current-header">
+                            <div>
+                                <h3 id="ws-current-name">Mi Espacio Personal</h3>
+                                <span class="badge badge-type" id="ws-current-role-badge">Privado</span>
+                            </div>
+                            <span class="badge badge-dark" id="ws-current-count-badge">0 pisos</span>
+                        </div>
+
+                        <!-- Shared workspace invite box (hidden if personal) -->
+                        <div id="ws-invite-box" class="ws-invite-box" style="display: none;">
+                            <label class="ws-invite-label"><i class="fa-solid fa-share-nodes text-indigo"></i> Código de Invitación Único:</label>
+                            <div class="ws-invite-code-row">
+                                <div class="ws-invite-code" id="ws-invite-code-display">HABI-XXXXXX</div>
+                                <button type="button" class="btn btn-secondary btn-sm" id="btn-copy-invite-code" title="Copiar código">
+                                    <i class="fa-solid fa-copy"></i> Copiar Código
+                                </button>
+                                <button type="button" class="btn btn-indigo btn-sm" id="btn-copy-invite-link" title="Copiar enlace directo de invitación">
+                                    <i class="fa-solid fa-link"></i> Copiar Enlace
+                                </button>
+                            </div>
+                            <p class="ws-invite-hint">Comparte este código o enlace con tu pareja, amigo o socio para buscar y votar inmuebles juntos en tiempo real.</p>
+                        </div>
+
+                        <!-- Members list section -->
+                        <div id="ws-members-section" class="ws-members-section" style="display: none;">
+                            <h4><i class="fa-solid fa-user-group text-indigo"></i> Miembros del Espacio (<span id="ws-members-count">1</span>)</h4>
+                            <div class="ws-members-list" id="ws-members-list">
+                                <!-- Populated dynamically via JS -->
+                            </div>
+                        </div>
+
+                        <!-- Leave workspace button (for non-owners or shared spaces) -->
+                        <div id="ws-leave-wrap" class="ws-leave-wrap mt-3" style="display: none;">
+                            <button type="button" class="btn btn-secondary btn-sm text-rose" id="btn-leave-workspace">
+                                <i class="fa-solid fa-right-from-bracket"></i> Abandonar este Espacio
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 2: Create New Workspace -->
+                <div class="ws-tab-content" id="ws-tab-create" style="display: none;">
+                    <form id="form-create-workspace">
+                        <div class="form-group">
+                            <label for="new-ws-name"><i class="fa-solid fa-signature"></i> Nombre del Espacio Compartido</label>
+                            <input type="text" id="new-ws-name" required placeholder="Ej: Piso con Laura 🏡, Inversión Madrid...">
+                            <small class="text-muted">Podrás invitar a otras personas una vez creado.</small>
+                        </div>
+                        <div class="modal-footer" style="padding-left:0; padding-right:0; margin-top:1.5rem;">
+                            <button type="submit" class="btn btn-emerald block" id="btn-submit-create-ws">
+                                <i class="fa-solid fa-plus"></i> Crear Espacio Compartido
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- TAB 3: Join Existing Workspace with Code -->
+                <div class="ws-tab-content" id="ws-tab-join" style="display: none;">
+                    <form id="form-join-workspace">
+                        <div class="form-group">
+                            <label for="join-ws-code"><i class="fa-solid fa-key"></i> Código de Invitación (ej. HABI-8F2A9C)</label>
+                            <input type="text" id="join-ws-code" required placeholder="HABI-XXXXXX" style="text-transform: uppercase; font-family: monospace; font-size: 1.1rem; letter-spacing: 0.15em; font-weight: 700; text-align: center;">
+                            <small class="text-muted">Pega el código de 8-11 caracteres proporcionado por el organizador del espacio.</small>
+                        </div>
+                        <div class="modal-footer" style="padding-left:0; padding-right:0; margin-top:1.5rem;">
+                            <button type="submit" class="btn btn-indigo block" id="btn-submit-join-ws">
+                                <i class="fa-solid fa-right-to-bracket"></i> Unirme al Espacio
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- MODAL: EXPENSES BREAKDOWN DETAILS -->
     <div id="expenses-modal" class="modal">

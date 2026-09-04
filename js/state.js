@@ -35,7 +35,9 @@ export const state = {
         sortBy: 'created_desc'
     },
     mapInstance: null,
-    mapMarkers: []
+    mapMarkers: [],
+    activeWorkspace: JSON.parse(localStorage.getItem('activeWorkspace') || 'null'),
+    workspacesList: []
 };
 
 export const CCAA_LIST = [

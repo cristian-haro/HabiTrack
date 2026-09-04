@@ -9,6 +9,13 @@ const {
     verifyAllPropertiesLinks,
     analyzeUrl
 } = require('../controllers/property.controller');
+const {
+    voteProperty,
+    getPropertyVotes,
+    addPropertyComment,
+    getPropertyComments,
+    deletePropertyComment
+} = require('../controllers/collaboration.controller');
 const { authenticateToken } = require('../middlewares/auth.middleware');
 const { validate } = require('../middlewares/validate.middleware');
 const { propertySchema, queryUrlSchema } = require('../schemas/property.schema');
@@ -28,6 +35,20 @@ router.post('/casas/verificar-todos', authenticateToken, verifyAllPropertiesLink
 router.post('/casas/verify-all', authenticateToken, verifyAllPropertiesLinks);
 router.post('/casas/:id/verificar', authenticateToken, verifyPropertyLinkById);
 router.post('/casas/:id/verify', authenticateToken, verifyPropertyLinkById);
+
+// Collaboration: Votes
+router.post('/propiedades/:id/votes', authenticateToken, voteProperty);
+router.get('/propiedades/:id/votes', authenticateToken, getPropertyVotes);
+router.post('/properties/:id/votes', authenticateToken, voteProperty);
+router.get('/properties/:id/votes', authenticateToken, getPropertyVotes);
+
+// Collaboration: Comments & Notes
+router.post('/propiedades/:id/comments', authenticateToken, addPropertyComment);
+router.get('/propiedades/:id/comments', authenticateToken, getPropertyComments);
+router.delete('/propiedades/:id/comments/:commentId', authenticateToken, deletePropertyComment);
+router.post('/properties/:id/comments', authenticateToken, addPropertyComment);
+router.get('/properties/:id/comments', authenticateToken, getPropertyComments);
+router.delete('/properties/:id/comments/:commentId', authenticateToken, deletePropertyComment);
 
 // Property CRUD endpoints
 router.get('/propiedades', authenticateToken, getAllProperties);

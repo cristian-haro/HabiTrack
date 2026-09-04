@@ -204,6 +204,41 @@ async function initDB() {
                 value TEXT NOT NULL,
                 PRIMARY KEY (user_id, key)
             );
+
+            CREATE TABLE IF NOT EXISTS workspaces (
+                id SERIAL PRIMARY KEY,
+                name VARCHAR(255) NOT NULL,
+                invite_code VARCHAR(32) UNIQUE NOT NULL,
+                owner_id INTEGER REFERENCES users(id),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+
+            CREATE TABLE IF NOT EXISTS workspace_members (
+                workspace_id INTEGER REFERENCES workspaces(id) ON DELETE CASCADE,
+                user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+                role VARCHAR(50) DEFAULT 'member',
+                joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (workspace_id, user_id)
+            );
+
+            CREATE TABLE IF NOT EXISTS property_votes (
+                property_id INTEGER REFERENCES properties(id) ON DELETE CASCADE,
+                user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+                vote VARCHAR(20) NOT NULL,
+                score INTEGER DEFAULT 0,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (property_id, user_id)
+            );
+
+            CREATE TABLE IF NOT EXISTS property_comments (
+                id SERIAL PRIMARY KEY,
+                property_id INTEGER REFERENCES properties(id) ON DELETE CASCADE,
+                user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+                author_name VARCHAR(255),
+                author_email VARCHAR(255),
+                comment TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
         `);
 
         await safeAlter(db, "ALTER TABLE users ADD COLUMN IF NOT EXISTS email VARCHAR(255)");
@@ -212,6 +247,7 @@ async function initDB() {
         await safeAlter(db, "ALTER TABLE users ALTER COLUMN otp_expires_at TYPE TIMESTAMPTZ");
         await safeAlter(db, "ALTER TABLE properties ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'active'");
         await safeAlter(db, "ALTER TABLE properties ADD COLUMN IF NOT EXISTS last_checked_at TIMESTAMPTZ");
+        await safeAlter(db, "ALTER TABLE properties ADD COLUMN IF NOT EXISTS workspace_id INTEGER REFERENCES workspaces(id)");
         await safeAlter(db, "ALTER TABLE properties ALTER COLUMN title TYPE TEXT");
         await safeAlter(db, "ALTER TABLE properties ALTER COLUMN zone TYPE TEXT");
         await safeAlter(db, "ALTER TABLE properties ALTER COLUMN ccaa TYPE TEXT");
@@ -247,6 +283,7 @@ async function initDB() {
                 longitude REAL,
                 status TEXT DEFAULT 'active',
                 last_checked_at DATETIME,
+                workspace_id INTEGER,
                 user_id INTEGER REFERENCES users(id),
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP
             );
@@ -256,6 +293,41 @@ async function initDB() {
                 key TEXT NOT NULL,
                 value TEXT NOT NULL,
                 PRIMARY KEY (user_id, key)
+            );
+
+            CREATE TABLE IF NOT EXISTS workspaces (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                invite_code TEXT UNIQUE NOT NULL,
+                owner_id INTEGER REFERENCES users(id),
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            );
+
+            CREATE TABLE IF NOT EXISTS workspace_members (
+                workspace_id INTEGER REFERENCES workspaces(id) ON DELETE CASCADE,
+                user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+                role TEXT DEFAULT 'member',
+                joined_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (workspace_id, user_id)
+            );
+
+            CREATE TABLE IF NOT EXISTS property_votes (
+                property_id INTEGER REFERENCES properties(id) ON DELETE CASCADE,
+                user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+                vote TEXT NOT NULL,
+                score INTEGER DEFAULT 0,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (property_id, user_id)
+            );
+
+            CREATE TABLE IF NOT EXISTS property_comments (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                property_id INTEGER REFERENCES properties(id) ON DELETE CASCADE,
+                user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+                author_name TEXT,
+                author_email TEXT,
+                comment TEXT NOT NULL,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
             );
         `);
 
@@ -268,6 +340,7 @@ async function initDB() {
         await safeAlter(db, "ALTER TABLE properties ADD COLUMN user_id INTEGER");
         await safeAlter(db, "ALTER TABLE properties ADD COLUMN status TEXT DEFAULT 'active'");
         await safeAlter(db, "ALTER TABLE properties ADD COLUMN last_checked_at DATETIME");
+        await safeAlter(db, "ALTER TABLE properties ADD COLUMN workspace_id INTEGER");
     }
 
     console.log("Base de datos inicializada correctamente.");

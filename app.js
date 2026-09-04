@@ -8,6 +8,11 @@ let activeSection = 'dashboard-section';
 let activeView = 'grid'; // 'grid' o 'table'
 let token = localStorage.getItem('token') || '';
 let username = localStorage.getItem('username') || '';
+let currentUserId = null;
+let currentUserEmail = '';
+let activeWorkspaceId = localStorage.getItem('habitrack_workspace_id') || 'all';
+let workspaces = [];
+let activeDetailComments = [];
 let eventHandlersSetup = false;
 let mapInstance = null;
 let mapMarkers = [];
@@ -41,7 +46,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 });
             }
         } else if (window.location.protocol.startsWith('http')) {
-            navigator.serviceWorker.register('/sw.js?v=23.0').catch(err => {
+            navigator.serviceWorker.register('/sw.js?v=44.0').catch(err => {
                 console.debug('Service Worker no registrado:', err);
             });
         }
@@ -72,6 +77,8 @@ async function checkSession() {
         if (response.status === 401 || response.status === 403) {
             token = '';
             username = '';
+            currentUserId = null;
+            currentUserEmail = '';
             localStorage.removeItem('token');
             localStorage.removeItem('username');
             showLoginScreen();
@@ -80,7 +87,9 @@ async function checkSession() {
         
         if (response.ok) {
             const data = await response.json();
-            username = data.username;
+            username = data.username || data.email;
+            currentUserId = data.id || null;
+            currentUserEmail = data.email || data.username || '';
             localStorage.setItem('username', username);
             
             const label = document.getElementById('username-label');
@@ -91,6 +100,8 @@ async function checkSession() {
         } else {
             token = '';
             username = '';
+            currentUserId = null;
+            currentUserEmail = '';
             localStorage.removeItem('token');
             localStorage.removeItem('username');
             showLoginScreen();
@@ -105,6 +116,7 @@ async function checkSession() {
 async function loadAppData() {
     try {
         await fetchSettings();
+        await fetchWorkspaces();
         await fetchProperties();
         
         populateCcaaDropdowns();
@@ -117,6 +129,9 @@ async function loadAppData() {
         renderDashboard();
         renderListings();
         renderSettingsForm();
+
+        // Comprobar si hay un código de invitación en la URL (?invite=HABI-XXXXXX o ?join=HABI-XXXXXX)
+        checkUrlInviteCode();
     } catch (err) {
         console.error('Error loading app data:', err);
     }
@@ -417,9 +432,217 @@ async function saveSettings(newSettings) {
     }
 }
 
+// ==========================================================================
+// WORKSPACES (ESPACIOS COMPARTIDOS)
+// ==========================================================================
+
+async function fetchWorkspaces() {
+    try {
+        const response = await fetch('/api/workspaces', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (response.ok) {
+            const data = await response.json();
+            workspaces = data.workspaces || [];
+            renderWorkspaceSelector();
+        }
+    } catch (err) {
+        console.error('Error fetching workspaces:', err);
+    }
+}
+
+function renderWorkspaceSelector() {
+    const btnName = document.getElementById('active-workspace-name');
+    const dropdownList = document.getElementById('workspace-dropdown-list');
+    if (!dropdownList) return;
+
+    let currentName = 'Todos los Pisos';
+    if (activeWorkspaceId === 'personal') {
+        currentName = 'Mi Espacio Personal';
+    } else if (activeWorkspaceId !== 'all') {
+        const ws = workspaces.find(w => w.id == activeWorkspaceId);
+        if (ws) currentName = ws.name;
+    }
+    if (btnName) btnName.textContent = currentName;
+
+    let html = `
+        <div class="ws-dropdown-item ${activeWorkspaceId === 'all' ? 'active' : ''}" onclick="window.switchWorkspace('all')">
+            <div class="ws-item-left">
+                <i class="fa-solid fa-layer-group text-indigo"></i>
+                <span>Todos los Pisos</span>
+            </div>
+            ${activeWorkspaceId === 'all' ? '<i class="fa-solid fa-check text-primary"></i>' : ''}
+        </div>
+        <div class="ws-dropdown-item ${activeWorkspaceId === 'personal' ? 'active' : ''}" onclick="window.switchWorkspace('personal')">
+            <div class="ws-item-left">
+                <i class="fa-solid fa-user text-secondary"></i>
+                <span>Mi Espacio Personal</span>
+            </div>
+            ${activeWorkspaceId === 'personal' ? '<i class="fa-solid fa-check text-primary"></i>' : ''}
+        </div>
+    `;
+
+    if (workspaces.length > 0) {
+        html += `<div class="ws-dropdown-divider"></div>`;
+        workspaces.forEach(ws => {
+            const isAct = activeWorkspaceId == ws.id;
+            html += `
+                <div class="ws-dropdown-item ${isAct ? 'active' : ''}" onclick="window.switchWorkspace(${ws.id})">
+                    <div class="ws-item-left">
+                        <i class="fa-solid fa-users text-purple"></i>
+                        <span title="${ws.name}">${ws.name}</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 0.4rem;">
+                        <span class="ws-item-badge"><i class="fa-solid fa-user"></i> ${ws.member_count}</span>
+                        ${isAct ? '<i class="fa-solid fa-check text-primary"></i>' : ''}
+                    </div>
+                </div>
+            `;
+        });
+    }
+
+    dropdownList.innerHTML = html;
+}
+
+window.switchWorkspace = async function(wsId) {
+    activeWorkspaceId = String(wsId);
+    localStorage.setItem('habitrack_workspace_id', activeWorkspaceId);
+    renderWorkspaceSelector();
+    
+    // Close dropdown
+    const menu = document.getElementById('workspace-dropdown-menu');
+    if (menu) menu.style.display = 'none';
+
+    currentPage = 1;
+    await fetchProperties();
+    renderDashboard();
+    renderListings();
+    renderMap();
+
+    const currentName = document.getElementById('active-workspace-name')?.textContent || 'Espacio';
+    showToast(`Cambiado a "${currentName}"`, 'info');
+};
+
+async function openWorkspaceModal(targetTab = 'ws-tab-active') {
+    const modal = document.getElementById('workspace-modal');
+    if (!modal) return;
+
+    switchWorkspaceModalTab(targetTab);
+    await updateWorkspaceModalContent();
+
+    modal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeWorkspaceModal() {
+    const modal = document.getElementById('workspace-modal');
+    if (modal) {
+        modal.classList.remove('active');
+        document.body.style.overflow = '';
+    }
+}
+
+function switchWorkspaceModalTab(tabId) {
+    const tabButtons = document.querySelectorAll('.ws-tab-btn');
+    const tabContents = document.querySelectorAll('.ws-tab-content');
+
+    tabButtons.forEach(btn => {
+        btn.classList.toggle('active', btn.getAttribute('data-tab') === tabId);
+    });
+
+    tabContents.forEach(content => {
+        content.style.display = content.id === tabId ? 'block' : 'none';
+    });
+}
+
+async function updateWorkspaceModalContent() {
+    const wsNameEl = document.getElementById('ws-current-name');
+    const wsRoleEl = document.getElementById('ws-current-role-badge');
+    const wsCountEl = document.getElementById('ws-current-count-badge');
+    const wsInviteBox = document.getElementById('ws-invite-box');
+    const wsInviteCodeDisplay = document.getElementById('ws-invite-code-display');
+    const wsMembersSection = document.getElementById('ws-members-section');
+    const wsMembersList = document.getElementById('ws-members-list');
+    const wsMembersCount = document.getElementById('ws-members-count');
+    const wsLeaveWrap = document.getElementById('ws-leave-wrap');
+
+    if (activeWorkspaceId === 'all' || activeWorkspaceId === 'personal') {
+        if (wsNameEl) wsNameEl.textContent = activeWorkspaceId === 'all' ? 'Todos los Pisos' : 'Mi Espacio Personal';
+        if (wsRoleEl) wsRoleEl.textContent = 'Privado';
+        if (wsCountEl) wsCountEl.textContent = `${properties.length} pisos`;
+        if (wsInviteBox) wsInviteBox.style.display = 'none';
+        if (wsMembersSection) wsMembersSection.style.display = 'none';
+        if (wsLeaveWrap) wsLeaveWrap.style.display = 'none';
+        return;
+    }
+
+    const currentWs = workspaces.find(w => w.id == activeWorkspaceId);
+    if (!currentWs) return;
+
+    if (wsNameEl) wsNameEl.textContent = currentWs.name;
+    if (wsRoleEl) wsRoleEl.textContent = currentWs.role === 'owner' ? 'Propietario' : 'Miembro';
+    if (wsCountEl) wsCountEl.textContent = `${currentWs.property_count || properties.length} pisos`;
+
+    if (wsInviteBox) {
+        wsInviteBox.style.display = 'block';
+        if (wsInviteCodeDisplay) wsInviteCodeDisplay.textContent = currentWs.invite_code;
+    }
+
+    if (wsLeaveWrap) {
+        wsLeaveWrap.style.display = currentWs.role === 'owner' ? 'none' : 'block';
+    }
+
+    // Fetch members
+    try {
+        const res = await fetch(`/api/workspaces/${currentWs.id}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+            const data = await res.json();
+            const members = data.members || [];
+            if (wsMembersSection) wsMembersSection.style.display = 'block';
+            if (wsMembersCount) wsMembersCount.textContent = members.length;
+            if (wsMembersList) {
+                wsMembersList.innerHTML = members.map(m => {
+                    const initial = (m.username || m.email || 'U').charAt(0).toUpperCase();
+                    const isOwner = m.role === 'owner';
+                    return `
+                        <div class="ws-member-item">
+                            <div class="ws-member-info">
+                                <div class="ws-member-avatar ${isOwner ? 'bg-primary' : 'bg-emerald'}">${initial}</div>
+                                <div class="ws-member-details">
+                                    <span class="ws-member-name">${m.username || m.email.split('@')[0]}</span>
+                                    <span class="ws-member-email">${m.email}</span>
+                                </div>
+                            </div>
+                            <span class="badge ${isOwner ? 'badge-type' : 'badge-dark'}">${isOwner ? 'Propietario' : 'Miembro'}</span>
+                        </div>
+                    `;
+                }).join('');
+            }
+        }
+    } catch (err) {
+        console.error('Error fetching workspace details:', err);
+    }
+}
+
+function checkUrlInviteCode() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const inviteCode = urlParams.get('invite') || urlParams.get('join');
+    if (inviteCode) {
+        const joinInput = document.getElementById('join-ws-code');
+        if (joinInput) joinInput.value = inviteCode.trim().toUpperCase();
+        openWorkspaceModal('ws-tab-join');
+    }
+}
+
 async function fetchProperties() {
     try {
-        const response = await fetch('/api/propiedades', {
+        let url = '/api/propiedades';
+        if (activeWorkspaceId && activeWorkspaceId !== 'all') {
+            url += `?workspace_id=${encodeURIComponent(activeWorkspaceId)}`;
+        }
+        const response = await fetch(url, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         if (response.status === 401 || response.status === 403) {
@@ -439,6 +662,10 @@ async function fetchProperties() {
 
 async function addProperty(propertyData) {
     try {
+        if (activeWorkspaceId && activeWorkspaceId !== 'all' && activeWorkspaceId !== 'personal') {
+            propertyData.workspace_id = parseInt(activeWorkspaceId, 10);
+        }
+
         const response = await fetch('/api/propiedades', {
             method: 'POST',
             headers: { 
@@ -940,6 +1167,15 @@ function createPropertyCardDOM(prop) {
 
     const calc = calculateExpenses(prop.price, prop.ccaa, prop.estate_type);
     
+    // FASE 5: Votos y comentarios colaborativos
+    const votes = prop.votes || [];
+    const likeCount = votes.filter(v => v.vote === 'like').length;
+    const maybeCount = votes.filter(v => v.vote === 'maybe').length;
+    const dislikeCount = votes.filter(v => v.vote === 'dislike').length;
+    const myVoteObj = votes.find(v => (currentUserId && v.user_id == currentUserId) || (currentUserEmail && v.email === currentUserEmail));
+    const myVote = myVoteObj ? myVoteObj.vote : null;
+    const commentsCount = prop.comments_count || 0;
+
     // Obtener lista completa de fotos
     const photoList = prop.photos ? prop.photos.split(',').map(u => u.trim()).filter(Boolean) : [];
     
@@ -1049,6 +1285,25 @@ function createPropertyCardDOM(prop) {
                     </div>
                     <strong>${formatCurrency(calc.mortgageMonthlyPayment)}<small>/mes</small></strong>
                     <small>Al ${calc.mortgageInterestRate}% a ${calc.mortgageDurationYears}a</small>
+                </div>
+            </div>
+
+            <!-- FASE 5: Votación rápida y comentarios colaborativos -->
+            <div class="card-collab-row">
+                <div class="card-vote-pill-group">
+                    <button type="button" class="card-vote-btn ${myVote === 'like' ? 'active' : ''}" data-vote="like" data-id="${prop.id}" title="Votar: Me encanta ❤️">
+                        ❤️ ${likeCount > 0 ? `<strong class="card-vote-count">${likeCount}</strong>` : ''}
+                    </button>
+                    <button type="button" class="card-vote-btn ${myVote === 'maybe' ? 'active' : ''}" data-vote="maybe" data-id="${prop.id}" title="Votar: Con dudas 🤔">
+                        🤔 ${maybeCount > 0 ? `<strong class="card-vote-count">${maybeCount}</strong>` : ''}
+                    </button>
+                    <button type="button" class="card-vote-btn ${myVote === 'dislike' ? 'active' : ''}" data-vote="dislike" data-id="${prop.id}" title="Votar: Descartar ❌">
+                        ❌ ${dislikeCount > 0 ? `<strong class="card-vote-count">${dislikeCount}</strong>` : ''}
+                    </button>
+                </div>
+                <div class="card-comments-counter" onclick="openPropertyDetailSheet(${prop.id})" title="Ver ${commentsCount} notas y comentarios">
+                    <i class="fa-regular fa-comment-dots text-indigo"></i>
+                    <span>${commentsCount}</span>
                 </div>
             </div>
 
@@ -1317,11 +1572,9 @@ function openPropertyDetailSheet(propertyId, initialPhotoIdx = 0) {
     document.getElementById('detail-spec-garage').textContent = prop.garage === 'si' ? 'Sí incluido' : (prop.garage === 'opcional' ? 'Opcional' : 'No tiene');
     document.getElementById('detail-spec-elevator').textContent = prop.elevator === 'si' ? 'Sí tiene' : (prop.elevator === 'no' ? 'No tiene' : 'No especificado');
 
-    // Comments & Observations
-    const commentsText = document.getElementById('detail-comments-text');
-    if (commentsText) {
-        commentsText.textContent = prop.comments ? prop.comments : 'Sin notas adicionales registradas.';
-    }
+    // FASE 5: Renderizar Votación y Cargar Muro de Comentarios
+    renderDetailCollabVoting(prop);
+    loadPropertyComments(prop.id);
 
     // Mini Map
     const mapSection = document.getElementById('detail-map-section');
@@ -1367,6 +1620,53 @@ function openPropertyDetailSheet(propertyId, initialPhotoIdx = 0) {
         };
     }
 
+    // Configurar formulario de nuevo comentario
+    const commentForm = document.getElementById('form-add-comment');
+    if (commentForm) {
+        commentForm.onsubmit = async (e) => {
+            e.preventDefault();
+            const input = document.getElementById('detail-new-comment-input');
+            const commentVal = input ? input.value.trim() : '';
+            if (!commentVal) return;
+
+            const submitBtn = document.getElementById('btn-submit-comment');
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Publicando...';
+            }
+
+            try {
+                const res = await fetch(`/api/propiedades/${prop.id}/comments`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ comment: commentVal })
+                });
+
+                if (res.ok) {
+                    if (input) input.value = '';
+                    showToast('Nota de visita publicada con éxito.', 'success');
+                    await loadPropertyComments(prop.id);
+                    prop.comments_count = (prop.comments_count || 0) + 1;
+                    renderListings();
+                } else {
+                    const data = await res.json();
+                    showToast(data.error || 'Error al publicar comentario.', 'error');
+                }
+            } catch (err) {
+                console.error('Error submitting comment:', err);
+                showToast('Error de conexión al publicar nota.', 'error');
+            } finally {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Publicar Nota';
+                }
+            }
+        };
+    }
+
     modal.classList.add('active');
     document.body.style.overflow = 'hidden';
 }
@@ -1378,6 +1678,198 @@ function closePropertyDetailSheet() {
         document.body.style.overflow = '';
     }
     activeDetailProperty = null;
+}
+
+// ==========================================================================
+// COLABORACIÓN: VOTACIÓN Y COMENTARIOS
+// ==========================================================================
+
+function renderDetailCollabVoting(prop) {
+    const votingBlock = document.getElementById('detail-collab-voting-block');
+    if (!votingBlock) return;
+
+    const votes = prop.votes || [];
+    const myVoteObj = votes.find(v => (currentUserId && v.user_id == currentUserId) || (currentUserEmail && v.email === currentUserEmail));
+    const myVote = myVoteObj ? myVoteObj.vote : null;
+
+    const myVoteStatusEl = document.getElementById('detail-my-vote-status');
+    if (myVoteStatusEl) {
+        myVoteStatusEl.textContent = myVote === 'like' ? 'Tu voto: ❤️ Me encanta' :
+                                    myVote === 'maybe' ? 'Tu voto: 🤔 Con dudas' :
+                                    myVote === 'dislike' ? 'Tu voto: ❌ Descartado' : 'Tu voto: Ninguno';
+    }
+
+    // Marcar botón activo
+    const votePills = votingBlock.querySelectorAll('.btn-vote-pill');
+    votePills.forEach(pill => {
+        const v = pill.getAttribute('data-vote');
+        pill.classList.toggle('active', v === myVote);
+        pill.onclick = (e) => {
+            e.preventDefault();
+            window.voteProperty(prop.id, v);
+        };
+    });
+
+    // Resumen de votos de los miembros del espacio
+    const summaryEl = document.getElementById('detail-votes-summary');
+    if (summaryEl) {
+        if (votes.length === 0) {
+            summaryEl.innerHTML = '<span style="font-size: 0.78rem; color: var(--text-muted);"><i class="fa-solid fa-users"></i> Aún ningún miembro del espacio ha votado este piso.</span>';
+        } else {
+            summaryEl.innerHTML = votes.map(v => {
+                const initial = (v.username || v.email || 'U').charAt(0).toUpperCase();
+                const emoji = v.vote === 'like' ? '❤️' : (v.vote === 'maybe' ? '🤔' : '❌');
+                const label = v.vote === 'like' ? 'Me encanta' : (v.vote === 'maybe' ? 'Dudas' : 'Descartar');
+                const name = v.username || v.email.split('@')[0];
+                return `
+                    <div class="collab-member-vote-chip" title="${name}: ${label}">
+                        <div class="ws-member-avatar" style="width: 20px; height: 20px; font-size: 0.65rem;">${initial}</div>
+                        <span><strong>${name}:</strong> ${emoji} ${label}</span>
+                    </div>
+                `;
+            }).join('');
+        }
+    }
+}
+
+window.voteProperty = async function(propId, voteType) {
+    if (!token) return;
+    try {
+        const response = await fetch(`/api/propiedades/${propId}/votes`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ vote: voteType, score: 0 })
+        });
+        if (response.ok) {
+            const data = await response.json();
+            const prop = properties.find(p => p.id == propId);
+            if (prop) {
+                prop.votes = data.votes || [];
+            }
+            // Update cards in listings
+            renderListings();
+            // If detail modal is open for this property, refresh detail modal voting
+            if (activeDetailProperty && activeDetailProperty.id == propId) {
+                activeDetailProperty.votes = data.votes || [];
+                renderDetailCollabVoting(activeDetailProperty);
+            }
+            const msg = voteType === 'like' ? '¡Voto "Me encanta" registrado! ❤️' :
+                        voteType === 'maybe' ? 'Voto "Con dudas" registrado. 🤔' :
+                        voteType === 'dislike' ? 'Voto "Descartar" registrado. ❌' :
+                        'Voto eliminado.';
+            showToast(msg, 'success');
+        }
+    } catch (err) {
+        console.error('Error voting property:', err);
+        showToast('Error al registrar el voto.', 'error');
+    }
+};
+
+async function loadPropertyComments(propId) {
+    try {
+        const res = await fetch(`/api/propiedades/${propId}/comments`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+            const data = await res.json();
+            activeDetailComments = data.comments || [];
+            renderPropertyCommentsList(activeDetailComments);
+        }
+    } catch (err) {
+        console.error('Error fetching property comments:', err);
+    }
+}
+
+function renderPropertyCommentsList(comments) {
+    const listEl = document.getElementById('detail-comments-list');
+    if (!listEl) return;
+
+    if (!comments || comments.length === 0) {
+        listEl.innerHTML = `
+            <div class="collab-empty-comments">
+                <i class="fa-solid fa-message-dots" style="font-size: 1.5rem; color: #cbd5e1;"></i>
+                <span>No hay notas de visita ni comentarios en este inmueble aún.</span>
+            </div>
+        `;
+        return;
+    }
+
+    listEl.innerHTML = comments.map(c => {
+        const initial = (c.author_name || c.author_email || 'U').charAt(0).toUpperCase();
+        const dateStr = formatRelativeTime(c.created_at);
+        const isMine = (currentUserId && c.user_id == currentUserId) || (currentUserEmail && c.author_email === currentUserEmail);
+        const deleteBtn = isMine ? `
+            <button type="button" class="collab-comment-delete" onclick="window.deletePropertyComment(${c.property_id}, ${c.id})" title="Eliminar esta nota">
+                <i class="fa-solid fa-trash-can"></i>
+            </button>
+        ` : '';
+
+        return `
+            <div class="collab-comment-item">
+                <div class="collab-comment-avatar">${initial}</div>
+                <div class="collab-comment-bubble">
+                    <div class="collab-comment-header">
+                        <span class="collab-comment-author">${c.author_name || c.author_email.split('@')[0]}</span>
+                        <div style="display: flex; align-items: center;">
+                            <span class="collab-comment-time">${dateStr}</span>
+                            ${deleteBtn}
+                        </div>
+                    </div>
+                    <div class="collab-comment-body">${escapeHTML(c.comment)}</div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+window.deletePropertyComment = async function(propId, commentId) {
+    if (!confirm('¿Seguro que deseas eliminar esta nota de visita?')) return;
+    try {
+        const res = await fetch(`/api/propiedades/${propId}/comments/${commentId}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+            showToast('Nota eliminada.', 'success');
+            await loadPropertyComments(propId);
+            const prop = properties.find(p => p.id == propId);
+            if (prop && prop.comments_count > 0) prop.comments_count--;
+            renderListings();
+        }
+    } catch (err) {
+        console.error('Error deleting comment:', err);
+    }
+};
+
+function formatRelativeTime(dateString) {
+    if (!dateString) return '';
+    try {
+        const date = new Date(dateString);
+        const now = new Date();
+        const diffSecs = Math.floor((now - date) / 1000);
+        if (diffSecs < 60) return 'hace un momento';
+        if (diffSecs < 3600) return `hace ${Math.floor(diffSecs / 60)} min`;
+        if (diffSecs < 86400) return `hace ${Math.floor(diffSecs / 3600)} h`;
+        return date.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
+    } catch (e) {
+        return dateString;
+    }
+}
+
+function escapeHTML(str) {
+    if (!str) return '';
+    return str.replace(/[&<>'"]/g, 
+        tag => ({
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            "'": '&#39;',
+            '"': '&quot;'
+        }[tag] || tag)
+    );
 }
 
 function renderDetailGalleryView(photoList) {
@@ -1777,6 +2269,14 @@ function applyFilters(propsList) {
         });
     }
 
+    // FASE 5: Voto del grupo / colaboración
+    const voteVal = document.getElementById('filter-vote')?.value || '';
+    if (voteVal === 'voted') {
+        result = result.filter(p => p.votes && p.votes.length > 0);
+    } else if (voteVal) {
+        result = result.filter(p => p.votes && p.votes.some(v => v.vote === voteVal));
+    }
+
     // Ordenaciones
     result.sort((a, b) => {
         if (sortBy === 'date-desc') {
@@ -2011,20 +2511,114 @@ function setupEventHandlers() {
 
     const galleryModal = document.getElementById('gallery-modal');
     const detailModal = document.getElementById('property-detail-modal');
+    const workspaceModal = document.getElementById('workspace-modal');
     const btnCloseGallery = document.getElementById('btn-close-gallery-modal');
     const btnCloseDetail = document.getElementById('btn-close-detail-modal');
+    const btnCloseWorkspace = document.getElementById('btn-close-workspace-modal');
     const btnPrevGallery = document.getElementById('gallery-btn-prev');
     const btnNextGallery = document.getElementById('gallery-btn-next');
     const propPhotosInput = document.getElementById('prop-photos');
 
     if (btnCloseGallery) btnCloseGallery.addEventListener('click', closeGalleryModal);
     if (btnCloseDetail) btnCloseDetail.addEventListener('click', closePropertyDetailSheet);
+    if (btnCloseWorkspace) btnCloseWorkspace.addEventListener('click', closeWorkspaceModal);
     if (btnPrevGallery) btnPrevGallery.addEventListener('click', () => navigateGallery(-1));
     if (btnNextGallery) btnNextGallery.addEventListener('click', () => navigateGallery(1));
     if (propPhotosInput) propPhotosInput.addEventListener('input', updateFormPhotosPreview);
 
+    // --- FASE 5: MANEJADORES DE WORKSPACE (ESPACIOS COMPARTIDOS) ---
+    const wsSelectorBtn = document.getElementById('workspace-selector-btn');
+    const wsDropdownMenu = document.getElementById('workspace-dropdown-menu');
+    const btnWsManage = document.getElementById('btn-ws-manage');
+    const btnWsCreateOpen = document.getElementById('btn-ws-create-open');
+    const btnWsJoinOpen = document.getElementById('btn-ws-join-open');
+    const btnCopyInviteCode = document.getElementById('btn-copy-invite-code');
+    const btnCopyInviteLink = document.getElementById('btn-copy-invite-link');
+    const btnLeaveWorkspace = document.getElementById('btn-leave-workspace');
+    const formCreateWorkspace = document.getElementById('form-create-workspace');
+    const formJoinWorkspace = document.getElementById('form-join-workspace');
+
+    if (wsSelectorBtn && wsDropdownMenu) {
+        wsSelectorBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const isShown = wsDropdownMenu.style.display !== 'none';
+            wsDropdownMenu.style.display = isShown ? 'none' : 'block';
+        });
+    }
+
+    if (btnWsManage) {
+        btnWsManage.addEventListener('click', () => {
+            if (wsDropdownMenu) wsDropdownMenu.style.display = 'none';
+            openWorkspaceModal('ws-tab-active');
+        });
+    }
+
+    if (btnWsCreateOpen) {
+        btnWsCreateOpen.addEventListener('click', () => {
+            if (wsDropdownMenu) wsDropdownMenu.style.display = 'none';
+            openWorkspaceModal('ws-tab-create');
+        });
+    }
+
+    if (btnWsJoinOpen) {
+        btnWsJoinOpen.addEventListener('click', () => {
+            if (wsDropdownMenu) wsDropdownMenu.style.display = 'none';
+            openWorkspaceModal('ws-tab-join');
+        });
+    }
+
+    const wsModalTabs = document.querySelectorAll('.ws-tab-btn');
+    wsModalTabs.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const targetTab = btn.getAttribute('data-tab');
+            switchWorkspaceModalTab(targetTab);
+        });
+    });
+
+    if (btnCopyInviteCode) {
+        btnCopyInviteCode.addEventListener('click', () => {
+            const currentWs = workspaces.find(w => w.id == activeWorkspaceId);
+            if (currentWs && currentWs.invite_code) {
+                navigator.clipboard.writeText(currentWs.invite_code).then(() => {
+                    showToast(`Código ${currentWs.invite_code} copiado al portapapeles.`, 'success');
+                }).catch(() => {
+                    prompt('Copia este código de invitación:', currentWs.invite_code);
+                });
+            }
+        });
+    }
+
+    if (btnCopyInviteLink) {
+        btnCopyInviteLink.addEventListener('click', () => {
+            const currentWs = workspaces.find(w => w.id == activeWorkspaceId);
+            if (currentWs && currentWs.invite_code) {
+                const inviteUrl = `${window.location.origin}${window.location.pathname}?invite=${currentWs.invite_code}`;
+                navigator.clipboard.writeText(inviteUrl).then(() => {
+                    showToast('Enlace de invitación copiado al portapapeles.', 'success');
+                }).catch(() => {
+                    prompt('Copia este enlace de invitación:', inviteUrl);
+                });
+            }
+        });
+    }
+
+    if (btnLeaveWorkspace) {
+        btnLeaveWorkspace.addEventListener('click', handleLeaveWorkspace);
+    }
+
+    if (formCreateWorkspace) {
+        formCreateWorkspace.addEventListener('submit', handleCreateWorkspace);
+    }
+
+    if (formJoinWorkspace) {
+        formJoinWorkspace.addEventListener('submit', handleJoinWorkspace);
+    }
+
     // Cerrar modal al hacer click fuera del contenido
     window.addEventListener('click', (e) => {
+        if (wsDropdownMenu && !e.target.closest('#workspace-selector-container')) {
+            wsDropdownMenu.style.display = 'none';
+        }
         if (e.target === propertyModal) {
             closeModal();
         }
@@ -2037,6 +2631,9 @@ function setupEventHandlers() {
         }
         if (e.target === detailModal) {
             closePropertyDetailSheet();
+        }
+        if (e.target === workspaceModal) {
+            closeWorkspaceModal();
         }
     });
 
@@ -2309,6 +2906,7 @@ function setupEventHandlers() {
     const filterRooms = document.getElementById('filter-rooms');
     const filterGarage = document.getElementById('filter-garage');
     const filterStatus = document.getElementById('filter-status');
+    const filterVote = document.getElementById('filter-vote');
     const sortBy = document.getElementById('sort-by');
     const btnVerifyAllLinks = document.getElementById('btn-verify-all-links');
     const btnToggleFiltersMobile = document.getElementById('btn-toggle-filters-mobile');
@@ -2333,6 +2931,7 @@ function setupEventHandlers() {
     if (filterRooms) filterRooms.addEventListener('change', filterTrigger);
     if (filterGarage) filterGarage.addEventListener('change', filterTrigger);
     if (filterStatus) filterStatus.addEventListener('change', filterTrigger);
+    if (filterVote) filterVote.addEventListener('change', filterTrigger);
     if (sortBy) sortBy.addEventListener('change', filterTrigger);
 
     if (btnVerifyAllLinks) {
@@ -2350,6 +2949,7 @@ function setupEventHandlers() {
             if (filterRooms) filterRooms.value = '';
             if (filterGarage) filterGarage.value = '';
             if (filterStatus) filterStatus.value = '';
+            if (filterVote) filterVote.value = '';
             if (sortBy) sortBy.value = 'date-desc';
             filterTrigger();
             showToast('Filtros restablecidos.', 'success');
@@ -2910,12 +3510,140 @@ function setupDynamicButtons() {
             }
         });
     });
+
+    // FASE 5: Botones de Voto Rápido en Tarjetas
+    const btnVotes = document.querySelectorAll('.card-vote-btn');
+    btnVotes.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const id = parseInt(btn.getAttribute('data-id'), 10);
+            const vote = btn.getAttribute('data-vote');
+            window.voteProperty(id, vote);
+        });
+    });
 }
 
 // Configuración adicional para enlazar botones dinámicos en el dashboard
 function setupRecentListingsButtons() {
     // Llamado desde renderRecentListings
     setupDynamicButtons();
+}
+
+async function handleCreateWorkspace(e) {
+    e.preventDefault();
+    const nameInput = document.getElementById('new-ws-name');
+    const name = nameInput ? nameInput.value.trim() : '';
+    if (!name) return;
+
+    const btn = document.getElementById('btn-submit-create-ws');
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Creando...';
+    }
+
+    try {
+        const response = await fetch('/api/workspaces', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ name })
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            showToast(`¡Espacio "${name}" creado con éxito!`, 'success');
+            if (nameInput) nameInput.value = '';
+            await fetchWorkspaces();
+            await window.switchWorkspace(data.workspace.id);
+            openWorkspaceModal('ws-tab-active');
+        } else {
+            const err = await response.json();
+            showToast(err.error || 'Error al crear espacio.', 'error');
+        }
+    } catch (err) {
+        console.error('Error creating workspace:', err);
+        showToast('Error al conectar con el servidor.', 'error');
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-plus"></i> Crear Espacio Compartido';
+        }
+    }
+}
+
+async function handleJoinWorkspace(e) {
+    e.preventDefault();
+    const codeInput = document.getElementById('join-ws-code');
+    const code = codeInput ? codeInput.value.trim().toUpperCase() : '';
+    if (!code) return;
+
+    const btn = document.getElementById('btn-submit-join-ws');
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Uniéndome...';
+    }
+
+    try {
+        const response = await fetch('/api/workspaces/join', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ invite_code: code })
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            showToast(data.message || '¡Te has unido al espacio compartido!', 'success');
+            if (codeInput) codeInput.value = '';
+            await fetchWorkspaces();
+            await window.switchWorkspace(data.workspace.id);
+            openWorkspaceModal('ws-tab-active');
+        } else {
+            const err = await response.json();
+            showToast(err.error || 'Código de invitación inválido.', 'error');
+        }
+    } catch (err) {
+        console.error('Error joining workspace:', err);
+        showToast('Error al conectar con el servidor.', 'error');
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> Unirme al Espacio';
+        }
+    }
+}
+
+async function handleLeaveWorkspace() {
+    if (activeWorkspaceId === 'all' || activeWorkspaceId === 'personal') return;
+    const currentWs = workspaces.find(w => w.id == activeWorkspaceId);
+    if (!currentWs) return;
+
+    if (!confirm(`¿Estás seguro de que deseas salir del espacio "${currentWs.name}"?`)) return;
+
+    try {
+        const response = await fetch(`/api/workspaces/${currentWs.id}/leave`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (response.ok) {
+            showToast(`Has abandonado "${currentWs.name}".`, 'info');
+            closeWorkspaceModal();
+            await fetchWorkspaces();
+            await window.switchWorkspace('all');
+        } else {
+            const err = await response.json();
+            showToast(err.error || 'Error al salir del espacio.', 'error');
+        }
+    } catch (err) {
+        console.error('Error leaving workspace:', err);
+        showToast('Error al conectar con el servidor.', 'error');
+    }
 }
 
 // Helper para alternar entre pestañas en el modal de añadir
