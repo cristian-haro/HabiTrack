@@ -31,8 +31,87 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         return true;
     }
 
+    if (request.action === 'SYNC_AUTH_TOKEN') {
+        const updateData = {};
+        if (request.authToken) updateData.authToken = request.authToken;
+        if (request.serverUrl) updateData.serverUrl = request.serverUrl;
+        chrome.storage.sync.set(updateData, () => {
+            console.log('🔑 Token y servidor sincronizados desde HabiTrack:', request.serverUrl);
+            sendResponse({ success: true });
+        });
+        return true;
+    }
+
+    if (request.action === 'GET_OR_SYNC_AUTH') {
+        getServerConfig()
+            .then(cfg => sendResponse(cfg))
+            .catch(err => sendResponse({ error: err.message }));
+        return true;
+    }
+
     return false;
 });
+
+// Comprobar si un token JWT ha caducado
+function isTokenExpired(token) {
+    if (!token || typeof token !== 'string') return true;
+    try {
+        const clean = token.replace(/^Bearer\s+/i, '').trim();
+        const parts = clean.split('.');
+        if (parts.length !== 3) return false;
+        const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+        if (payload.exp && (payload.exp * 1000) < Date.now()) {
+            return true;
+        }
+        return false;
+    } catch (e) {
+        return false;
+    }
+}
+
+// Buscar token activo en cualquier pestaña abierta de HabiTrack
+async function findTokenFromOpenTabs() {
+    try {
+        const tabs = await new Promise((resolve) => {
+            chrome.tabs.query({}, (t) => {
+                const err = chrome.runtime.lastError;
+                resolve(t || []);
+            });
+        });
+
+        for (const tab of tabs) {
+            if (!tab.id || !tab.url) continue;
+            const isLocal = tab.url.includes('localhost') || tab.url.includes('127.0.0.1');
+            const isHabitrack = tab.url.includes('habitrack') || (tab.title && tab.title.toLowerCase().includes('habitrack'));
+
+            if (isLocal || isHabitrack) {
+                try {
+                    const results = await chrome.scripting.executeScript({
+                        target: { tabId: tab.id },
+                        func: () => {
+                            return {
+                                token: localStorage.getItem('token') || '',
+                                origin: window.location.origin
+                            };
+                        }
+                    });
+                    if (results && results[0] && results[0].result) {
+                        const { token, origin } = results[0].result;
+                        if (token && !isTokenExpired(token)) {
+                            console.log('🔑 Token válido detectado en pestaña:', tab.url);
+                            return { token, origin };
+                        }
+                    }
+                } catch (scriptErr) {
+                    // Ignorar errores en pestañas restringidas
+                }
+            }
+        }
+    } catch (e) {
+        console.warn('Error al buscar pestañas de HabiTrack:', e);
+    }
+    return null;
+}
 
 async function getServerConfig() {
     let stored = await new Promise((resolve) => {
@@ -45,35 +124,19 @@ async function getServerConfig() {
     let serverUrl = (stored && stored.serverUrl ? stored.serverUrl : DEFAULT_SERVER_URL).replace(/\/$/, '');
     let authToken = (stored && stored.authToken) ? stored.authToken : '';
 
-    // Si no hay token configurado, intentar auto-detectarlo de pestañas de HabiTrack abiertas
-    if (!authToken) {
-        try {
-            const tabs = await new Promise((resolve) => {
-                chrome.tabs.query({}, (t) => {
-                    const err = chrome.runtime.lastError;
-                    resolve(t || []);
-                });
-            });
-            for (const tab of tabs) {
-                if (tab.id && tab.url && (tab.url.includes('localhost') || tab.url.includes('127.0.0.1') || tab.url.includes('habitrack'))) {
-                    try {
-                        const results = await chrome.scripting.executeScript({
-                            target: { tabId: tab.id },
-                            func: () => localStorage.getItem('token') || ''
-                        });
-                        if (results && results[0] && results[0].result) {
-                            authToken = results[0].result;
-                            chrome.storage.sync.set({ authToken });
-                            console.log('🔑 Token de sesión auto-sincronizado con HabiTrack.');
-                            break;
-                        }
-                    } catch (scriptErr) {
-                        // Ignorar errores de permisos en pestañas restringidas
-                    }
-                }
+    // Si no hay token guardado o el que hay está expirado, auto-detectar de pestañas de HabiTrack abiertas
+    if (!authToken || isTokenExpired(authToken)) {
+        const tabData = await findTokenFromOpenTabs();
+        if (tabData && tabData.token) {
+            authToken = tabData.token;
+            if (tabData.origin && (tabData.origin.includes('localhost') || tabData.origin.includes('127.0.0.1') || tabData.origin.includes('habitrack'))) {
+                serverUrl = tabData.origin;
             }
-        } catch (e) {
-            // Ignorar errores de pestañas
+            chrome.storage.sync.set({ authToken, serverUrl });
+            console.log('🔑 Token de sesión auto-sincronizado con HabiTrack.');
+        } else if (authToken && isTokenExpired(authToken)) {
+            authToken = '';
+            chrome.storage.sync.set({ authToken: '' });
         }
     }
 
@@ -102,19 +165,30 @@ async function checkServerStatus(customUrl = null) {
 }
 
 async function handleSaveProperty(propertyData) {
-    const { serverUrl, authToken } = await getServerConfig();
+    let { serverUrl, authToken } = await getServerConfig();
 
     if (!propertyData || !propertyData.title || !propertyData.price) {
         throw new Error('Faltan datos obligatorios de la propiedad (título o precio).');
     }
 
-    const headers = {
-        'Content-Type': 'application/json'
-    };
-
-    if (authToken) {
-        headers['Authorization'] = `Bearer ${authToken}`;
+    // Si todavía no tenemos token, intentar una búsqueda activa en pestañas antes de fallar
+    if (!authToken || isTokenExpired(authToken)) {
+        const tabData = await findTokenFromOpenTabs();
+        if (tabData && tabData.token) {
+            authToken = tabData.token;
+            if (tabData.origin) serverUrl = tabData.origin;
+            chrome.storage.sync.set({ authToken, serverUrl });
+        }
     }
+
+    if (!authToken) {
+        throw new Error('Sesión no detectada. Abre tu pestaña de HabiTrack (ej: http://localhost:3007) con sesión iniciada y vuelve a pulsar Guardar.');
+    }
+
+    const headers = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authToken.replace(/^Bearer\s+/i, '')}`
+    };
 
     const payload = {
         title: propertyData.title,
@@ -157,21 +231,42 @@ async function handleSaveProperty(propertyData) {
         }
         clearTimeout(timeout);
 
+        // Si el token falló (401 o 403), intentar recuperar token fresco de una pestaña abierta y reintentar 1 vez
+        if (res.status === 401 || res.status === 403) {
+            console.warn('⚠️ Token 401/403 rechazado. Buscando sesión activa en pestañas abiertas...');
+            const fresh = await findTokenFromOpenTabs();
+            if (fresh && fresh.token && fresh.token !== authToken) {
+                authToken = fresh.token;
+                chrome.storage.sync.set({ authToken });
+                headers['Authorization'] = `Bearer ${authToken.replace(/^Bearer\s+/i, '')}`;
+
+                const retryController = new AbortController();
+                const retryTimeout = setTimeout(() => retryController.abort(), 7000);
+                const retryRes = await fetch(`${serverUrl}/api/propiedades`, {
+                    method: 'POST',
+                    headers,
+                    body: JSON.stringify(payload),
+                    signal: retryController.signal
+                });
+                clearTimeout(retryTimeout);
+
+                if (retryRes.ok) {
+                    const retryJson = await retryRes.json().catch(() => ({}));
+                    return { success: true, property: retryJson.property || retryJson, message: 'Propiedad guardada con éxito en HabiTrack' };
+                }
+            }
+            throw new Error('Sesión de HabiTrack caducada. Abre tu pestaña de HabiTrack (http://localhost:3007), refresca la sesión e inténtalo de nuevo.');
+        }
+
         const text = await res.text();
         let json;
         try {
             json = JSON.parse(text);
         } catch (parseErr) {
-            if (res.status === 401 || res.status === 403) {
-                throw new Error('Inicia sesión en HabiTrack primero para autorizar la extensión.');
-            }
             throw new Error(`El servidor respondió con código ${res.status}: ${text.substring(0, 80)}`);
         }
 
         if (!res.ok) {
-            if (res.status === 401 || res.status === 403) {
-                throw new Error('Inicia sesión en HabiTrack primero para autorizar la extensión.');
-            }
             throw new Error(json.error || `Error del servidor HTTP ${res.status}`);
         }
 

@@ -49,6 +49,19 @@ describe('API Integration Tests', () => {
         });
     });
 
+    describe('GET /api/keep-alive', () => {
+        it('executes database query and returns ok with latency', async () => {
+            const res = await fetch(`${baseUrl}/api/keep-alive`);
+            expect(res.status).toBe(200);
+            const data = await res.json();
+            expect(data.status).toBe('ok');
+            expect(data.message).toContain('Database keep-alive ping successful');
+            expect(data.database).toBeDefined();
+            expect(typeof data.latencyMs).toBe('number');
+            expect(data.timestamp).toBeDefined();
+        });
+    });
+
     describe('POST /api/calcular', () => {
         it('calculates taxes and expenses without auth needed', async () => {
             const res = await fetch(`${baseUrl}/api/calcular`, {

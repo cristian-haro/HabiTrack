@@ -136,8 +136,14 @@
         else if (url.includes('idealista.com')) {
             const h1 = document.querySelector('.main-info__title-main, h1');
             if (h1 && h1.innerText) data.title = h1.innerText.trim();
+            if (!data.title || data.title === 'Inmueble Detectado') {
+                const ogTitle = document.querySelector('meta[property="og:title"]');
+                if (ogTitle && ogTitle.content) {
+                    data.title = ogTitle.content.split(' — ')[0].split(' - ')[0].trim();
+                }
+            }
 
-            const priceEl = document.querySelector('.info-data-price, .price-features__current-price, .info-data-price .txt-bold');
+            const priceEl = document.querySelector('.info-data-price, .price-features__current-price, .info-data-price .txt-bold, .price-features, .price-features .txt-bold, span.price, [data-ad-price]');
             if (priceEl && priceEl.innerText) data.price = cleanPrice(priceEl.innerText);
 
             const details = Array.from(document.querySelectorAll('.info-features span, .details-property-feature-one, .details-property_features li'));
@@ -491,6 +497,12 @@
         const trigger = document.getElementById('habitrack-trigger-save');
         if (trigger) {
             trigger.addEventListener('click', async () => {
+                // Verificar si el contexto de la extensión sigue activo
+                if (!chrome.runtime || !chrome.runtime.id) {
+                    showFloatingToast('La extensión se ha actualizado. Por favor, recarga esta página (F5).', 'error');
+                    return;
+                }
+
                 trigger.classList.add('habitrack-loading');
                 trigger.innerHTML = `
                     <div class="habitrack-floating-logo">⏳</div>
@@ -499,58 +511,121 @@
                     </div>
                 `;
 
-                const freshData = scrapePropertyData();
-                console.log('[HabiTrack Extension] Guardando propiedad detectada:', freshData);
+                let freshData;
+                try {
+                    freshData = scrapePropertyData();
+                    console.log('[HabiTrack Extension] Guardando propiedad detectada:', freshData);
+                } catch (scrapeErr) {
+                    console.warn('[HabiTrack Extension] Error al raspar datos:', scrapeErr);
+                    freshData = propertyData;
+                }
 
-                chrome.runtime.sendMessage({ action: 'SAVE_PROPERTY', propertyData: freshData }, (response) => {
+                if (!freshData || !freshData.price) {
                     trigger.classList.remove('habitrack-loading');
-
-                    if (chrome.runtime.lastError) {
-                        trigger.classList.add('habitrack-error');
+                    trigger.classList.add('habitrack-error');
+                    trigger.innerHTML = `
+                        <div class="habitrack-floating-logo">⚠️</div>
+                        <div class="habitrack-floating-text">
+                            <div class="habitrack-floating-title">Precio no detectado</div>
+                            <div class="habitrack-floating-sub">Usa el icono de HabiTrack</div>
+                        </div>
+                    `;
+                    showFloatingToast('No se pudo detectar el precio automáticamente. Usa el popup de la extensión para guardarlo.', 'error');
+                    setTimeout(() => {
+                        trigger.classList.remove('habitrack-error');
                         trigger.innerHTML = `
-                            <div class="habitrack-floating-logo">⚠️</div>
+                            <div class="habitrack-floating-logo">🏡</div>
                             <div class="habitrack-floating-text">
-                                <div class="habitrack-floating-title">Error de Extensión</div>
-                                <div class="habitrack-floating-sub">Recarga la extensión</div>
+                                <div class="habitrack-floating-title">Reintentar Guardar</div>
                             </div>
                         `;
-                        showFloatingToast('Error: ' + chrome.runtime.lastError.message, 'error');
-                        return;
-                    }
+                    }, 4000);
+                    return;
+                }
 
-                    if (response && response.success) {
-                        trigger.classList.add('habitrack-success');
-                        trigger.innerHTML = `
-                            <div class="habitrack-floating-logo">✅</div>
-                            <div class="habitrack-floating-text">
-                                <div class="habitrack-floating-title">¡Guardado en HabiTrack!</div>
-                                <div class="habitrack-floating-sub">${freshData.price ? freshData.price.toLocaleString('es-ES') + ' €' : 'Completado'}</div>
-                            </div>
-                        `;
-                        showFloatingToast(`🏡 Piso guardado en tu cartera de HabiTrack.`, 'success');
-                    } else {
-                        const errorMsg = response && response.error ? response.error : 'No se pudo conectar con HabiTrack.';
-                        trigger.classList.add('habitrack-error');
-                        trigger.innerHTML = `
-                            <div class="habitrack-floating-logo">⚠️</div>
-                            <div class="habitrack-floating-text">
-                                <div class="habitrack-floating-title">Error al guardar</div>
-                                <div class="habitrack-floating-sub">Comprueba el servidor</div>
-                            </div>
-                        `;
-                        showFloatingToast(errorMsg, 'error');
+                try {
+                    chrome.runtime.sendMessage({ action: 'SAVE_PROPERTY', propertyData: freshData }, (response) => {
+                        const lastErr = chrome.runtime.lastError;
+                        trigger.classList.remove('habitrack-loading');
 
-                        setTimeout(() => {
-                            trigger.classList.remove('habitrack-error');
+                        if (lastErr) {
+                            console.error('[HabiTrack Extension] Error en comunicación:', lastErr);
+                            trigger.classList.add('habitrack-error');
                             trigger.innerHTML = `
-                                <div class="habitrack-floating-logo">🏡</div>
+                                <div class="habitrack-floating-logo">⚠️</div>
                                 <div class="habitrack-floating-text">
-                                    <div class="habitrack-floating-title">Reintentar Guardar</div>
+                                    <div class="habitrack-floating-title">Error de Conexión</div>
+                                    <div class="habitrack-floating-sub">Recarga la página (F5)</div>
                                 </div>
                             `;
-                        }, 3500);
-                    }
-                });
+                            showFloatingToast('Error de conexión con la extensión: ' + (lastErr.message || 'Recarga la página (F5)'), 'error');
+                            setTimeout(() => {
+                                trigger.classList.remove('habitrack-error');
+                                trigger.innerHTML = `
+                                    <div class="habitrack-floating-logo">🏡</div>
+                                    <div class="habitrack-floating-text">
+                                        <div class="habitrack-floating-title">Reintentar Guardar</div>
+                                    </div>
+                                `;
+                            }, 3500);
+                            return;
+                        }
+
+                        if (response && response.success) {
+                            trigger.classList.add('habitrack-success');
+                            trigger.innerHTML = `
+                                <div class="habitrack-floating-logo">✅</div>
+                                <div class="habitrack-floating-text">
+                                    <div class="habitrack-floating-title">¡Guardado en HabiTrack!</div>
+                                    <div class="habitrack-floating-sub">${freshData.price ? freshData.price.toLocaleString('es-ES') + ' €' : 'Completado'}</div>
+                                </div>
+                            `;
+                            showFloatingToast(`🏡 Piso guardado en tu cartera de HabiTrack.`, 'success');
+                        } else {
+                            const errorMsg = response && response.error ? response.error : 'No se pudo conectar con HabiTrack.';
+                            trigger.classList.add('habitrack-error');
+                            trigger.innerHTML = `
+                                <div class="habitrack-floating-logo">⚠️</div>
+                                <div class="habitrack-floating-text">
+                                    <div class="habitrack-floating-title">Error al guardar</div>
+                                    <div class="habitrack-floating-sub">Comprueba el servidor</div>
+                                </div>
+                            `;
+                            showFloatingToast(errorMsg, 'error');
+
+                            setTimeout(() => {
+                                trigger.classList.remove('habitrack-error');
+                                trigger.innerHTML = `
+                                    <div class="habitrack-floating-logo">🏡</div>
+                                    <div class="habitrack-floating-text">
+                                        <div class="habitrack-floating-title">Reintentar Guardar</div>
+                                    </div>
+                                `;
+                            }, 3500);
+                        }
+                    });
+                } catch (sendErr) {
+                    console.error('[HabiTrack Extension] Excepción en sendMessage:', sendErr);
+                    trigger.classList.remove('habitrack-loading');
+                    trigger.classList.add('habitrack-error');
+                    trigger.innerHTML = `
+                        <div class="habitrack-floating-logo">⚠️</div>
+                        <div class="habitrack-floating-text">
+                            <div class="habitrack-floating-title">Extensión actualizada</div>
+                            <div class="habitrack-floating-sub">Recarga la página (F5)</div>
+                        </div>
+                    `;
+                    showFloatingToast('La extensión se ha actualizado. Por favor, recarga esta página (F5).', 'error');
+                    setTimeout(() => {
+                        trigger.classList.remove('habitrack-error');
+                        trigger.innerHTML = `
+                            <div class="habitrack-floating-logo">🏡</div>
+                            <div class="habitrack-floating-text">
+                                <div class="habitrack-floating-title">Reintentar Guardar</div>
+                            </div>
+                        `;
+                    }, 4000);
+                }
             });
         }
     }
@@ -589,6 +664,35 @@
         return false;
     });
 
+    // Auto-sincronización de credenciales si la pestaña actual es HabiTrack
+    const isHabitrackApp = window.location.hostname === 'localhost' || 
+                           window.location.hostname === '127.0.0.1' || 
+                           window.location.href.includes('habitrack');
+
+    if (isHabitrackApp) {
+        function syncTokenToBackground() {
+            try {
+                if (!chrome.runtime || !chrome.runtime.id) return;
+                const token = localStorage.getItem('token');
+                if (token) {
+                    chrome.runtime.sendMessage({
+                        action: 'SYNC_AUTH_TOKEN',
+                        authToken: token,
+                        serverUrl: window.location.origin
+                    }, () => {
+                        const err = chrome.runtime.lastError;
+                    });
+                }
+            } catch (e) {}
+        }
+
+        syncTokenToBackground();
+        window.addEventListener('storage', (e) => {
+            if (!e.key || e.key === 'token') syncTokenToBackground();
+        });
+        setTimeout(syncTokenToBackground, 1200);
+    }
+
     // Ejecutar inyección periódica e instantánea
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', () => setTimeout(injectFloatingWidget, 300));
@@ -598,7 +702,11 @@
 
     // Observador de cambios en SPA y navegación
     let lastUrl = window.location.href;
-    setInterval(() => {
+    const observerInterval = setInterval(() => {
+        if (!chrome.runtime || !chrome.runtime.id) {
+            clearInterval(observerInterval);
+            return;
+        }
         if (window.location.href !== lastUrl) {
             lastUrl = window.location.href;
             const existingBtn = document.getElementById('habitrack-floating-btn');

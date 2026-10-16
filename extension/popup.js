@@ -26,6 +26,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     inputServerUrl.value = config.serverUrl;
     inputAuthToken.value = config.authToken;
 
+    // Sincronizar credenciales frescas desde el background (pestañas abiertas)
+    chrome.runtime.sendMessage({ action: 'GET_OR_SYNC_AUTH' }, (fresh) => {
+        const lastErr = chrome.runtime.lastError;
+        if (!lastErr && fresh && fresh.authToken) {
+            inputAuthToken.value = fresh.authToken;
+            if (fresh.serverUrl) inputServerUrl.value = fresh.serverUrl;
+        }
+    });
+
     // Comprobar estado del servidor
     checkConnection(config.serverUrl);
 
@@ -89,37 +98,44 @@ document.addEventListener('DOMContentLoaded', async () => {
             btnSaveProperty.disabled = true;
             btnSaveProperty.textContent = 'Guardando en HabiTrack...';
 
-            chrome.runtime.sendMessage({ action: 'SAVE_PROPERTY', propertyData: currentDetectedProperty }, (res) => {
-                const err = chrome.runtime.lastError;
+            try {
+                chrome.runtime.sendMessage({ action: 'SAVE_PROPERTY', propertyData: currentDetectedProperty }, (res) => {
+                    const err = chrome.runtime.lastError;
+                    btnSaveProperty.disabled = false;
+
+                    if (err) {
+                        btnSaveProperty.textContent = '⚠️ Error de Extensión';
+                        btnSaveProperty.style.background = '#e11d48';
+                        showToast('Error: ' + err.message, 'error');
+                        return;
+                    }
+
+                    if (res && res.success) {
+                        btnSaveProperty.textContent = '✅ ¡Guardado con Éxito!';
+                        btnSaveProperty.style.background = '#059669';
+                        showToast('Piso añadido a tu cartera de HabiTrack.');
+
+                        setTimeout(() => {
+                            btnSaveProperty.textContent = '💾 Volver a Guardar';
+                            btnSaveProperty.style.background = '#4f46e5';
+                        }, 2500);
+                    } else {
+                        btnSaveProperty.textContent = '⚠️ Error al Guardar';
+                        btnSaveProperty.style.background = '#e11d48';
+                        showToast(res ? res.error : 'Error desconocido al guardar.', 'error');
+
+                        setTimeout(() => {
+                            btnSaveProperty.textContent = '💾 Guardar Inmueble en HabiTrack';
+                            btnSaveProperty.style.background = '#4f46e5';
+                        }, 3000);
+                    }
+                });
+            } catch (err) {
                 btnSaveProperty.disabled = false;
-
-                if (err) {
-                    btnSaveProperty.textContent = '⚠️ Error de Extensión';
-                    btnSaveProperty.style.background = '#e11d48';
-                    showToast('Error: ' + err.message, 'error');
-                    return;
-                }
-
-                if (res && res.success) {
-                    btnSaveProperty.textContent = '✅ ¡Guardado con Éxito!';
-                    btnSaveProperty.style.background = '#059669';
-                    showToast('Piso añadido a tu cartera de HabiTrack.');
-
-                    setTimeout(() => {
-                        btnSaveProperty.textContent = '💾 Volver a Guardar';
-                        btnSaveProperty.style.background = '#4f46e5';
-                    }, 2500);
-                } else {
-                    btnSaveProperty.textContent = '⚠️ Error al Guardar';
-                    btnSaveProperty.style.background = '#e11d48';
-                    showToast(res ? res.error : 'Error desconocido al guardar.', 'error');
-
-                    setTimeout(() => {
-                        btnSaveProperty.textContent = '💾 Guardar Inmueble en HabiTrack';
-                        btnSaveProperty.style.background = '#4f46e5';
-                    }, 3000);
-                }
-            });
+                btnSaveProperty.textContent = '⚠️ Error de Conexión';
+                btnSaveProperty.style.background = '#e11d48';
+                showToast('Error: ' + err.message, 'error');
+            }
         });
     }
 
