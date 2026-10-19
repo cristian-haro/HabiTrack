@@ -1,4 +1,4 @@
-# 🏠 HabiTrack
+# HabiTrack
 
 > **Buscador, Gestor y Calculadora Financiera de Gastos de Compraventa Inmobiliaria en España**  
 > *Real Estate Search, Property Manager & Spanish Real Estate Expense Calculator*
@@ -11,18 +11,18 @@
 
 ---
 
-## 🌐 Idiomas / Languages
-- 🇪🇸 [Español](#-español)
-- 🇬🇧 [English](#-english)
+## Language / Idioma
+[English Version](#english-version) | [Versión en Español](#versión-en-español)
 
 ---
 
-## 🇪🇸 Español
+<a name="versión-en-español"></a>
+## Versión en Español
 
-### 📌 Descripción del Proyecto
+### 1. Descripción del Proyecto
 **HabiTrack** es una plataforma integral diseñada para compradores e inversores inmobiliarios en España. Permite registrar inmuebles favoritos, calcular con precisión milimétrica los impuestos de compra (ITP autonómico por CCAA, IVA y AJD para obra nueva), estimar gastos notariales y registrales, y proyectar las cuotas de hipotecas mediante amortización francesa.
 
-### ✨ Características Principales
+### 2. Características Principales
 1. **Acceso sin Contraseña (Passwordless OTP)**: Autenticación segura mediante código numérico de 6 dígitos enviado al correo electrónico (con modo dev para entorno local).
 2. **Calculadora Financiera de Alta Precisión**:
    - ITP oficial por Comunidad Autónoma (Andalucía, Madrid, Cataluña, C. Valenciana, etc.).
@@ -34,7 +34,7 @@
 5. **Persistencia Dual**: Soporte nativo para SQLite local (`casas.db`) y PostgreSQL en la nube (Supabase, Neon, Vercel Postgres).
 6. **PWA & Soporte Offline**: Service Worker integrado con manifiesto PWA.
 
-### 🚀 Instalación y Puesta en Marcha
+### 3. Instalación y Puesta en Marcha
 
 #### Requisitos Previos
 - Node.js (v18 o superior)
@@ -64,7 +64,7 @@
    ```
    Accede en tu navegador a: **`http://localhost:3000`**
 
-### 🧪 Ejecución de Tests
+### 4. Ejecución de Tests
 ```bash
 # Ejecutar suite de pruebas completa con Vitest
 npm test
@@ -75,12 +75,13 @@ npm run lint
 
 ---
 
-## 🇬🇧 English
+<a name="english-version"></a>
+## English Version
 
-### 📌 Project Overview
+### 1. Project Overview
 **HabiTrack** is an all-in-one property management and financial analysis platform tailored for homebuyers and real estate investors in Spain. It enables users to bookmark properties, calculate exact regional transfer taxes (ITP by Autonomous Community, VAT & AJD for new developments), estimate notary and land registry costs, and simulate mortgage schedules using French amortization.
 
-### ✨ Key Features
+### 2. Key Features
 1. **Passwordless OTP Authentication**: Secure 6-digit one-time passcode login sent via email (includes automated dev OTP fallback for local testing).
 2. **High-Precision Financial Calculator**:
    - Official Transfer Tax (ITP) rates for all 17 Autonomous Communities + Ceuta and Melilla.
@@ -92,7 +93,7 @@ npm run lint
 5. **Dual Database Engine**: Seamless operation with local SQLite (`casas.db`) and Cloud PostgreSQL (Supabase, Neon, Vercel).
 6. **PWA & Offline Readiness**: Built-in Service Worker and Web App Manifest.
 
-### 🚀 Getting Started
+### 3. Getting Started
 
 #### Prerequisites
 - Node.js (v18+)
@@ -121,7 +122,7 @@ npm run lint
    ```
    Open your browser at: **`http://localhost:3000`**
 
-### 🧪 Running Tests
+### 4. Running Tests
 ```bash
 # Run all integration & unit test suites
 npm test
@@ -132,7 +133,7 @@ npm run lint
 
 ---
 
-### 📂 Architecture & Tech Stack
+### 5. Architecture & Tech Stack
 
 ```text
 HabiTrack/
@@ -154,7 +155,7 @@ HabiTrack/
 
 ---
 
-### 📜 Conventional Commits Standard
+### 6. Conventional Commits Standard
 
 This project adheres to [Conventional Commits v1.0.0](https://www.conventionalcommits.org/):
 - `feat`: New feature or user capability.

@@ -4,29 +4,29 @@ const { app, ensureDB } = require('./src/app');
 const PORT = process.env.PORT || 3000;
 
 process.on('uncaughtException', (err) => {
-    console.error('⚠️ [Uncaught Exception]:', err.message || err);
+    console.error('[Uncaught Exception]:', err.message || err);
 });
 
 process.on('unhandledRejection', (reason) => {
-    console.error('⚠️ [Unhandled Rejection]:', reason.message || reason);
+    console.error('[Unhandled Rejection]:', reason.message || reason);
 });
 
 if (!process.env.VERCEL) {
     ensureDB()
         .then(() => {
             const server = app.listen(PORT, () => {
-                console.log(`🚀 Servidor HabiTrack activo en: http://localhost:${PORT}`);
+                console.log(`[HabiTrack] Server active at: http://localhost:${PORT}`);
             });
             server.on('error', (err) => {
                 if (err.code === 'EADDRINUSE') {
-                    console.error(`❌ El puerto ${PORT} ya está en uso.`);
+                    console.error(`[Error] Port ${PORT} is already in use.`);
                 } else {
-                    console.error('❌ Error en el servidor HTTP:', err);
+                    console.error('[Error] HTTP Server error:', err);
                 }
             });
         })
         .catch(err => {
-            console.error('❌ Error al inicializar la base de datos:', err);
+            console.error('[Error] Database initialization failed:', err);
         });
 }
 
