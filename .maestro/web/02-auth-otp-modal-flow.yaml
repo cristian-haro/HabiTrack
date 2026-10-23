@@ -1,0 +1,18 @@
+appId: "com.habitrack.app.web"
+tags:
+  - habitrack
+  - e2e
+  - auth
+  - otp
+---
+# Flow 2: Modal de Acceso Passwordless OTP & Verificación
+- openLink: "${APP_URL}"
+- assertVisible: "HabiTrack"
+
+# Abrir diálogo de autenticación
+- tapOn: "Acceder"
+- assertVisible: "Acceso sin contraseña"
+- assertVisible: "Introduce tu correo electrónico"
+
+# Cerrar diálogo
+- tapOn: "Cerrar"

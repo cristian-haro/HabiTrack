@@ -1,0 +1,21 @@
+appId: "com.habitrack.app.web"
+tags:
+  - habitrack
+  - e2e
+  - dashboard
+  - responsive
+---
+# Flow 1: HabiTrack Dashboard & Búsqueda Smoke Test
+- openLink: "${APP_URL}"
+- assertVisible: "HabiTrack"
+- assertVisible: "Inmuebles"
+- assertVisible: "Calculadora"
+
+# Navegar a Calculadora Financiera de ITP / Gastos
+- tapOn: "Calculadora"
+- assertVisible: "Comunidad Autónoma"
+- assertVisible: "Impuesto de Transmisiones Patrimoniales"
+
+# Volver a Inmuebles
+- tapOn: "Inmuebles"
+- assertVisible: "Buscar inmuebles"
