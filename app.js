@@ -1,5 +1,10 @@
 // HabiTrack Client Orchestrator
-// Modular architecture loader replacing legacy monolithic 209KB file
+// Modular architecture loader replacing legacy monolithic 209KB file.
+//
+// Dynamically injected scripts ignore `defer` and execute asynchronously,
+// usually AFTER DOMContentLoaded has already fired. We therefore force ordered
+// execution (`async = false`) and bootstrap the app explicitly once the last
+// module has loaded, instead of relying on DOMContentLoaded listeners.
 
 (function loadModules() {
   const scripts = [
@@ -20,10 +25,29 @@
     'modules/15-map.js'
   ];
 
+  let pending = scripts.length;
+
+  const onAllLoaded = () => {
+    const start = () => {
+      if (typeof window.bootstrapApp === 'function') window.bootstrapApp();
+      else console.error('[HabiTrack] bootstrapApp no está definido.');
+    };
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', start, { once: true });
+    } else {
+      start();
+    }
+  };
+
   scripts.forEach(src => {
     const s = document.createElement('script');
     s.src = src;
-    s.defer = true;
+    s.async = false;
+    s.onload = () => {
+      pending -= 1;
+      if (pending === 0) onAllLoaded();
+    };
+    s.onerror = () => console.error(`[HabiTrack] No se pudo cargar ${src}`);
     document.head.appendChild(s);
   });
 })();

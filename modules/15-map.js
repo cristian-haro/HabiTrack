@@ -392,7 +392,7 @@ window.addEventListener('paste', (e) => {
 });
 
 // --- INTERACTIVIDAD DEL SELECTOR DE DISPOSITIVOS EN EL BOOKMARKLET ---
-document.addEventListener('DOMContentLoaded', () => {
+const setupBookmarkletToggles = () => {
     const toggleDesktopBtn = document.getElementById('toggle-desktop');
     const toggleMobileBtn = document.getElementById('toggle-mobile');
     const desktopInstructions = document.getElementById('instructions-desktop');
@@ -442,4 +442,10 @@ document.addEventListener('DOMContentLoaded', () => {
             guideMobileInstructions.style.display = 'block';
         });
     }
-});
+};
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', setupBookmarkletToggles, { once: true });
+} else {
+    setupBookmarkletToggles();
+}

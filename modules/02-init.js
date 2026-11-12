@@ -2,7 +2,8 @@
 // INICIALIZACIÓN
 // ==========================================================================
 
-document.addEventListener('DOMContentLoaded', async () => {
+// Invocado por el orquestador (app.js) cuando todos los módulos están cargados.
+window.bootstrapApp = async () => {
     // Manejo de Service Worker y purga de caché en desarrollo
     if ('serviceWorker' in navigator) {
         if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
@@ -28,4 +29,4 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     // Verificar sesión y cargar datos
     await checkSession();
-});
+};
